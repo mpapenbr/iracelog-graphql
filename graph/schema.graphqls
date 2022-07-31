@@ -1,0 +1,28 @@
+# iRacelog GraphQL schema
+#
+# 
+
+type Event {
+  id: ID!
+  name: String!  
+  key: String!  
+  track: Track!
+}
+
+type User {
+  id: ID!
+  name: String!
+}
+
+type Track {
+  id: ID!
+  name: String!
+  shortName: String!
+  length: Float!
+}
+
+type Query {
+  events: [Event!]!
+  tracks: [Track!]!
+}
+
