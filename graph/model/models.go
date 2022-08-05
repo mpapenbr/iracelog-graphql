@@ -4,15 +4,15 @@ package model
 // These models are used to glue both worlds (see definitions in internal and generated graphql stuff)
 
 type Event struct {
-	ID      string `json:"id"`
+	ID      int    `json:"id"`
 	Name    string `json:"name"`
 	Key     string `json:"key"`
-	TrackId int64  `json:"trackId"`
+	TrackId int    `json:"trackId"`
 	Track   *Track `json:"track"`
 }
 
 type Track struct {
-	ID        string  `json:"id"`
+	ID        int     `json:"id"`
 	Name      string  `json:"name"`
 	ShortName string  `json:"shortName"`
 	Length    float64 `json:"length"`

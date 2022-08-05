@@ -13,7 +13,7 @@ import (
 
 var DbPool *pgxpool.Pool
 
-func InitDB() {
+func InitDB() *pgxpool.Pool {
 	dbConfig, err := pgxpool.ParseConfig(os.Getenv("DATABASE_URL"))
 	if err != nil {
 		log.Fatalf("Unable to parse database config %v\n", err)
@@ -32,6 +32,7 @@ func InitDB() {
 	if err != nil {
 		log.Fatalf("Unable to connect to database %v\n", err)
 	}
+	return DbPool
 }
 
 func CloseDb() {

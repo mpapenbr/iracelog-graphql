@@ -2,7 +2,7 @@
 if [ ! -e $HOME/.gitconfig.local ]; then
     if [ -f .gitconfig.local.github ];  then
         echo "Linking .gitconfig.local.github"
-        ln -s $PWD/.gitconfig.local $HOME/.gitconfig.local
+        ln -s $PWD/.gitconfig.local.github $HOME/.gitconfig.local
     fi
     if [ -f .gitconfig.local ]; then
         echo "Linking .gitconfig.local"

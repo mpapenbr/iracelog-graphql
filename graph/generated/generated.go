@@ -38,6 +38,7 @@ type Config struct {
 type ResolverRoot interface {
 	Event() EventResolver
 	Query() QueryResolver
+	Track() TrackResolver
 }
 
 type DirectiveRoot struct {
@@ -52,11 +53,13 @@ type ComplexityRoot struct {
 	}
 
 	Query struct {
-		Events func(childComplexity int) int
-		Tracks func(childComplexity int) int
+		GetEvents func(childComplexity int) int
+		GetTracks func(childComplexity int) int
+		Track     func(childComplexity int, id *int) int
 	}
 
 	Track struct {
+		Events    func(childComplexity int) int
 		ID        func(childComplexity int) int
 		Length    func(childComplexity int) int
 		Name      func(childComplexity int) int
@@ -73,8 +76,12 @@ type EventResolver interface {
 	Track(ctx context.Context, obj *model.Event) (*model.Track, error)
 }
 type QueryResolver interface {
-	Events(ctx context.Context) ([]*model.Event, error)
-	Tracks(ctx context.Context) ([]*model.Track, error)
+	GetEvents(ctx context.Context) ([]*model.Event, error)
+	GetTracks(ctx context.Context) ([]*model.Track, error)
+	Track(ctx context.Context, id *int) (*model.Track, error)
+}
+type TrackResolver interface {
+	Events(ctx context.Context, obj *model.Track) ([]*model.Event, error)
 }
 
 type executableSchema struct {
@@ -120,19 +127,38 @@ func (e *executableSchema) Complexity(typeName, field string, childComplexity in
 
 		return e.complexity.Event.Track(childComplexity), true
 
-	case "Query.events":
-		if e.complexity.Query.Events == nil {
+	case "Query.getEvents":
+		if e.complexity.Query.GetEvents == nil {
 			break
 		}
 
-		return e.complexity.Query.Events(childComplexity), true
+		return e.complexity.Query.GetEvents(childComplexity), true
 
-	case "Query.tracks":
-		if e.complexity.Query.Tracks == nil {
+	case "Query.getTracks":
+		if e.complexity.Query.GetTracks == nil {
 			break
 		}
 
-		return e.complexity.Query.Tracks(childComplexity), true
+		return e.complexity.Query.GetTracks(childComplexity), true
+
+	case "Query.track":
+		if e.complexity.Query.Track == nil {
+			break
+		}
+
+		args, err := ec.field_Query_track_args(context.TODO(), rawArgs)
+		if err != nil {
+			return 0, false
+		}
+
+		return e.complexity.Query.Track(childComplexity, args["id"].(*int)), true
+
+	case "Track.events":
+		if e.complexity.Track.Events == nil {
+			break
+		}
+
+		return e.complexity.Track.Events(childComplexity), true
 
 	case "Track.id":
 		if e.complexity.Track.ID == nil {
@@ -230,12 +256,12 @@ func (ec *executionContext) introspectType(name string) (*introspection.Type, er
 var sources = []*ast.Source{
 	{Name: "../schema.graphqls", Input: `# iRacelog GraphQL schema
 #
-# 
+#
 
 type Event {
   id: ID!
-  name: String!  
-  key: String!  
+  name: String!
+  key: String!
   track: Track!
 }
 
@@ -249,13 +275,14 @@ type Track {
   name: String!
   shortName: String!
   length: Float!
+  events: [Event!]
 }
 
 type Query {
-  events: [Event!]!
-  tracks: [Track!]!
+  getEvents: [Event!]!
+  getTracks: [Track!]!
+  track(id: ID): Track
 }
-
 `, BuiltIn: false},
 }
 var parsedSchema = gqlparser.MustLoadSchema(sources...)
@@ -276,6 +303,21 @@ func (ec *executionContext) field_Query___type_args(ctx context.Context, rawArgs
 		}
 	}
 	args["name"] = arg0
+	return args, nil
+}
+
+func (ec *executionContext) field_Query_track_args(ctx context.Context, rawArgs map[string]interface{}) (map[string]interface{}, error) {
+	var err error
+	args := map[string]interface{}{}
+	var arg0 *int
+	if tmp, ok := rawArgs["id"]; ok {
+		ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("id"))
+		arg0, err = ec.unmarshalOID2ᚖint(ctx, tmp)
+		if err != nil {
+			return nil, err
+		}
+	}
+	args["id"] = arg0
 	return args, nil
 }
 
@@ -343,9 +385,9 @@ func (ec *executionContext) _Event_id(ctx context.Context, field graphql.Collect
 		}
 		return graphql.Null
 	}
-	res := resTmp.(string)
+	res := resTmp.(int)
 	fc.Result = res
-	return ec.marshalNID2string(ctx, field.Selections, res)
+	return ec.marshalNID2int(ctx, field.Selections, res)
 }
 
 func (ec *executionContext) fieldContext_Event_id(ctx context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
@@ -496,6 +538,8 @@ func (ec *executionContext) fieldContext_Event_track(ctx context.Context, field 
 				return ec.fieldContext_Track_shortName(ctx, field)
 			case "length":
 				return ec.fieldContext_Track_length(ctx, field)
+			case "events":
+				return ec.fieldContext_Track_events(ctx, field)
 			}
 			return nil, fmt.Errorf("no field named %q was found under type Track", field.Name)
 		},
@@ -503,8 +547,8 @@ func (ec *executionContext) fieldContext_Event_track(ctx context.Context, field 
 	return fc, nil
 }
 
-func (ec *executionContext) _Query_events(ctx context.Context, field graphql.CollectedField) (ret graphql.Marshaler) {
-	fc, err := ec.fieldContext_Query_events(ctx, field)
+func (ec *executionContext) _Query_getEvents(ctx context.Context, field graphql.CollectedField) (ret graphql.Marshaler) {
+	fc, err := ec.fieldContext_Query_getEvents(ctx, field)
 	if err != nil {
 		return graphql.Null
 	}
@@ -517,7 +561,7 @@ func (ec *executionContext) _Query_events(ctx context.Context, field graphql.Col
 	}()
 	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
 		ctx = rctx // use context from middleware stack in children
-		return ec.resolvers.Query().Events(rctx)
+		return ec.resolvers.Query().GetEvents(rctx)
 	})
 	if err != nil {
 		ec.Error(ctx, err)
@@ -534,7 +578,7 @@ func (ec *executionContext) _Query_events(ctx context.Context, field graphql.Col
 	return ec.marshalNEvent2ᚕᚖgithubᚗcomᚋmpapenbrᚋiracelogᚑgraphqlᚋgraphᚋmodelᚐEventᚄ(ctx, field.Selections, res)
 }
 
-func (ec *executionContext) fieldContext_Query_events(ctx context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+func (ec *executionContext) fieldContext_Query_getEvents(ctx context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
 	fc = &graphql.FieldContext{
 		Object:     "Query",
 		Field:      field,
@@ -557,8 +601,8 @@ func (ec *executionContext) fieldContext_Query_events(ctx context.Context, field
 	return fc, nil
 }
 
-func (ec *executionContext) _Query_tracks(ctx context.Context, field graphql.CollectedField) (ret graphql.Marshaler) {
-	fc, err := ec.fieldContext_Query_tracks(ctx, field)
+func (ec *executionContext) _Query_getTracks(ctx context.Context, field graphql.CollectedField) (ret graphql.Marshaler) {
+	fc, err := ec.fieldContext_Query_getTracks(ctx, field)
 	if err != nil {
 		return graphql.Null
 	}
@@ -571,7 +615,7 @@ func (ec *executionContext) _Query_tracks(ctx context.Context, field graphql.Col
 	}()
 	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
 		ctx = rctx // use context from middleware stack in children
-		return ec.resolvers.Query().Tracks(rctx)
+		return ec.resolvers.Query().GetTracks(rctx)
 	})
 	if err != nil {
 		ec.Error(ctx, err)
@@ -588,7 +632,7 @@ func (ec *executionContext) _Query_tracks(ctx context.Context, field graphql.Col
 	return ec.marshalNTrack2ᚕᚖgithubᚗcomᚋmpapenbrᚋiracelogᚑgraphqlᚋgraphᚋmodelᚐTrackᚄ(ctx, field.Selections, res)
 }
 
-func (ec *executionContext) fieldContext_Query_tracks(ctx context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+func (ec *executionContext) fieldContext_Query_getTracks(ctx context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
 	fc = &graphql.FieldContext{
 		Object:     "Query",
 		Field:      field,
@@ -604,9 +648,75 @@ func (ec *executionContext) fieldContext_Query_tracks(ctx context.Context, field
 				return ec.fieldContext_Track_shortName(ctx, field)
 			case "length":
 				return ec.fieldContext_Track_length(ctx, field)
+			case "events":
+				return ec.fieldContext_Track_events(ctx, field)
 			}
 			return nil, fmt.Errorf("no field named %q was found under type Track", field.Name)
 		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _Query_track(ctx context.Context, field graphql.CollectedField) (ret graphql.Marshaler) {
+	fc, err := ec.fieldContext_Query_track(ctx, field)
+	if err != nil {
+		return graphql.Null
+	}
+	ctx = graphql.WithFieldContext(ctx, fc)
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
+		ctx = rctx // use context from middleware stack in children
+		return ec.resolvers.Query().Track(rctx, fc.Args["id"].(*int))
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		return graphql.Null
+	}
+	res := resTmp.(*model.Track)
+	fc.Result = res
+	return ec.marshalOTrack2ᚖgithubᚗcomᚋmpapenbrᚋiracelogᚑgraphqlᚋgraphᚋmodelᚐTrack(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) fieldContext_Query_track(ctx context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "Query",
+		Field:      field,
+		IsMethod:   true,
+		IsResolver: true,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			switch field.Name {
+			case "id":
+				return ec.fieldContext_Track_id(ctx, field)
+			case "name":
+				return ec.fieldContext_Track_name(ctx, field)
+			case "shortName":
+				return ec.fieldContext_Track_shortName(ctx, field)
+			case "length":
+				return ec.fieldContext_Track_length(ctx, field)
+			case "events":
+				return ec.fieldContext_Track_events(ctx, field)
+			}
+			return nil, fmt.Errorf("no field named %q was found under type Track", field.Name)
+		},
+	}
+	defer func() {
+		if r := recover(); r != nil {
+			err = ec.Recover(ctx, r)
+			ec.Error(ctx, err)
+		}
+	}()
+	ctx = graphql.WithFieldContext(ctx, fc)
+	if fc.Args, err = ec.field_Query_track_args(ctx, field.ArgumentMap(ec.Variables)); err != nil {
+		ec.Error(ctx, err)
+		return
 	}
 	return fc, nil
 }
@@ -766,9 +876,9 @@ func (ec *executionContext) _Track_id(ctx context.Context, field graphql.Collect
 		}
 		return graphql.Null
 	}
-	res := resTmp.(string)
+	res := resTmp.(int)
 	fc.Result = res
-	return ec.marshalNID2string(ctx, field.Selections, res)
+	return ec.marshalNID2int(ctx, field.Selections, res)
 }
 
 func (ec *executionContext) fieldContext_Track_id(ctx context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
@@ -916,6 +1026,57 @@ func (ec *executionContext) fieldContext_Track_length(ctx context.Context, field
 	return fc, nil
 }
 
+func (ec *executionContext) _Track_events(ctx context.Context, field graphql.CollectedField, obj *model.Track) (ret graphql.Marshaler) {
+	fc, err := ec.fieldContext_Track_events(ctx, field)
+	if err != nil {
+		return graphql.Null
+	}
+	ctx = graphql.WithFieldContext(ctx, fc)
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
+		ctx = rctx // use context from middleware stack in children
+		return ec.resolvers.Track().Events(rctx, obj)
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		return graphql.Null
+	}
+	res := resTmp.([]*model.Event)
+	fc.Result = res
+	return ec.marshalOEvent2ᚕᚖgithubᚗcomᚋmpapenbrᚋiracelogᚑgraphqlᚋgraphᚋmodelᚐEventᚄ(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) fieldContext_Track_events(ctx context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "Track",
+		Field:      field,
+		IsMethod:   true,
+		IsResolver: true,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			switch field.Name {
+			case "id":
+				return ec.fieldContext_Event_id(ctx, field)
+			case "name":
+				return ec.fieldContext_Event_name(ctx, field)
+			case "key":
+				return ec.fieldContext_Event_key(ctx, field)
+			case "track":
+				return ec.fieldContext_Event_track(ctx, field)
+			}
+			return nil, fmt.Errorf("no field named %q was found under type Event", field.Name)
+		},
+	}
+	return fc, nil
+}
+
 func (ec *executionContext) _User_id(ctx context.Context, field graphql.CollectedField, obj *model.User) (ret graphql.Marshaler) {
 	fc, err := ec.fieldContext_User_id(ctx, field)
 	if err != nil {
@@ -942,9 +1103,9 @@ func (ec *executionContext) _User_id(ctx context.Context, field graphql.Collecte
 		}
 		return graphql.Null
 	}
-	res := resTmp.(string)
+	res := resTmp.(int)
 	fc.Result = res
-	return ec.marshalNID2string(ctx, field.Selections, res)
+	return ec.marshalNID2int(ctx, field.Selections, res)
 }
 
 func (ec *executionContext) fieldContext_User_id(ctx context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
@@ -2866,7 +3027,7 @@ func (ec *executionContext) _Query(ctx context.Context, sel ast.SelectionSet) gr
 		switch field.Name {
 		case "__typename":
 			out.Values[i] = graphql.MarshalString("Query")
-		case "events":
+		case "getEvents":
 			field := field
 
 			innerFunc := func(ctx context.Context) (res graphql.Marshaler) {
@@ -2875,7 +3036,7 @@ func (ec *executionContext) _Query(ctx context.Context, sel ast.SelectionSet) gr
 						ec.Error(ctx, ec.Recover(ctx, r))
 					}
 				}()
-				res = ec._Query_events(ctx, field)
+				res = ec._Query_getEvents(ctx, field)
 				if res == graphql.Null {
 					atomic.AddUint32(&invalids, 1)
 				}
@@ -2889,7 +3050,7 @@ func (ec *executionContext) _Query(ctx context.Context, sel ast.SelectionSet) gr
 			out.Concurrently(i, func() graphql.Marshaler {
 				return rrm(innerCtx)
 			})
-		case "tracks":
+		case "getTracks":
 			field := field
 
 			innerFunc := func(ctx context.Context) (res graphql.Marshaler) {
@@ -2898,10 +3059,30 @@ func (ec *executionContext) _Query(ctx context.Context, sel ast.SelectionSet) gr
 						ec.Error(ctx, ec.Recover(ctx, r))
 					}
 				}()
-				res = ec._Query_tracks(ctx, field)
+				res = ec._Query_getTracks(ctx, field)
 				if res == graphql.Null {
 					atomic.AddUint32(&invalids, 1)
 				}
+				return res
+			}
+
+			rrm := func(ctx context.Context) graphql.Marshaler {
+				return ec.OperationContext.RootResolverMiddleware(ctx, innerFunc)
+			}
+
+			out.Concurrently(i, func() graphql.Marshaler {
+				return rrm(innerCtx)
+			})
+		case "track":
+			field := field
+
+			innerFunc := func(ctx context.Context) (res graphql.Marshaler) {
+				defer func() {
+					if r := recover(); r != nil {
+						ec.Error(ctx, ec.Recover(ctx, r))
+					}
+				}()
+				res = ec._Query_track(ctx, field)
 				return res
 			}
 
@@ -2950,29 +3131,46 @@ func (ec *executionContext) _Track(ctx context.Context, sel ast.SelectionSet, ob
 			out.Values[i] = ec._Track_id(ctx, field, obj)
 
 			if out.Values[i] == graphql.Null {
-				invalids++
+				atomic.AddUint32(&invalids, 1)
 			}
 		case "name":
 
 			out.Values[i] = ec._Track_name(ctx, field, obj)
 
 			if out.Values[i] == graphql.Null {
-				invalids++
+				atomic.AddUint32(&invalids, 1)
 			}
 		case "shortName":
 
 			out.Values[i] = ec._Track_shortName(ctx, field, obj)
 
 			if out.Values[i] == graphql.Null {
-				invalids++
+				atomic.AddUint32(&invalids, 1)
 			}
 		case "length":
 
 			out.Values[i] = ec._Track_length(ctx, field, obj)
 
 			if out.Values[i] == graphql.Null {
-				invalids++
+				atomic.AddUint32(&invalids, 1)
 			}
+		case "events":
+			field := field
+
+			innerFunc := func(ctx context.Context) (res graphql.Marshaler) {
+				defer func() {
+					if r := recover(); r != nil {
+						ec.Error(ctx, ec.Recover(ctx, r))
+					}
+				}()
+				res = ec._Track_events(ctx, field, obj)
+				return res
+			}
+
+			out.Concurrently(i, func() graphql.Marshaler {
+				return innerFunc(ctx)
+
+			})
 		default:
 			panic("unknown field " + strconv.Quote(field.Name))
 		}
@@ -3421,13 +3619,13 @@ func (ec *executionContext) marshalNFloat2float64(ctx context.Context, sel ast.S
 	return graphql.WrapContextMarshaler(ctx, res)
 }
 
-func (ec *executionContext) unmarshalNID2string(ctx context.Context, v interface{}) (string, error) {
-	res, err := graphql.UnmarshalID(v)
+func (ec *executionContext) unmarshalNID2int(ctx context.Context, v interface{}) (int, error) {
+	res, err := graphql.UnmarshalInt(v)
 	return res, graphql.ErrorOnPath(ctx, err)
 }
 
-func (ec *executionContext) marshalNID2string(ctx context.Context, sel ast.SelectionSet, v string) graphql.Marshaler {
-	res := graphql.MarshalID(v)
+func (ec *executionContext) marshalNID2int(ctx context.Context, sel ast.SelectionSet, v int) graphql.Marshaler {
+	res := graphql.MarshalInt(v)
 	if res == graphql.Null {
 		if !graphql.HasFieldError(ctx, graphql.GetFieldContext(ctx)) {
 			ec.Errorf(ctx, "the requested element is null which the schema does not allow")
@@ -3788,6 +3986,69 @@ func (ec *executionContext) marshalOBoolean2ᚖbool(ctx context.Context, sel ast
 	return res
 }
 
+func (ec *executionContext) marshalOEvent2ᚕᚖgithubᚗcomᚋmpapenbrᚋiracelogᚑgraphqlᚋgraphᚋmodelᚐEventᚄ(ctx context.Context, sel ast.SelectionSet, v []*model.Event) graphql.Marshaler {
+	if v == nil {
+		return graphql.Null
+	}
+	ret := make(graphql.Array, len(v))
+	var wg sync.WaitGroup
+	isLen1 := len(v) == 1
+	if !isLen1 {
+		wg.Add(len(v))
+	}
+	for i := range v {
+		i := i
+		fc := &graphql.FieldContext{
+			Index:  &i,
+			Result: &v[i],
+		}
+		ctx := graphql.WithFieldContext(ctx, fc)
+		f := func(i int) {
+			defer func() {
+				if r := recover(); r != nil {
+					ec.Error(ctx, ec.Recover(ctx, r))
+					ret = nil
+				}
+			}()
+			if !isLen1 {
+				defer wg.Done()
+			}
+			ret[i] = ec.marshalNEvent2ᚖgithubᚗcomᚋmpapenbrᚋiracelogᚑgraphqlᚋgraphᚋmodelᚐEvent(ctx, sel, v[i])
+		}
+		if isLen1 {
+			f(i)
+		} else {
+			go f(i)
+		}
+
+	}
+	wg.Wait()
+
+	for _, e := range ret {
+		if e == graphql.Null {
+			return graphql.Null
+		}
+	}
+
+	return ret
+}
+
+func (ec *executionContext) unmarshalOID2ᚖint(ctx context.Context, v interface{}) (*int, error) {
+	if v == nil {
+		return nil, nil
+	}
+	res, err := graphql.UnmarshalInt(v)
+	return &res, graphql.ErrorOnPath(ctx, err)
+}
+
+func (ec *executionContext) marshalOID2ᚖint(ctx context.Context, sel ast.SelectionSet, v *int) graphql.Marshaler {
+	if v == nil {
+		return graphql.Null
+	}
+	res := graphql.MarshalInt(*v)
+	return res
+}
+
 func (ec *executionContext) unmarshalOString2ᚖstring(ctx context.Context, v interface{}) (*string, error) {
 	if v == nil {
 		return nil, nil
@@ -3802,6 +4063,13 @@ func (ec *executionContext) marshalOString2ᚖstring(ctx context.Context, sel as
 	}
 	res := graphql.MarshalString(*v)
 	return res
+}
+
+func (ec *executionContext) marshalOTrack2ᚖgithubᚗcomᚋmpapenbrᚋiracelogᚑgraphqlᚋgraphᚋmodelᚐTrack(ctx context.Context, sel ast.SelectionSet, v *model.Track) graphql.Marshaler {
+	if v == nil {
+		return graphql.Null
+	}
+	return ec._Track(ctx, sel, v)
 }
 
 func (ec *executionContext) marshalO__EnumValue2ᚕgithubᚗcomᚋ99designsᚋgqlgenᚋgraphqlᚋintrospectionᚐEnumValueᚄ(ctx context.Context, sel ast.SelectionSet, v []introspection.EnumValue) graphql.Marshaler {

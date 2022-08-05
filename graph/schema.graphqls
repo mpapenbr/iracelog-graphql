@@ -1,11 +1,11 @@
 # iRacelog GraphQL schema
 #
-# 
+#
 
 type Event {
   id: ID!
-  name: String!  
-  key: String!  
+  name: String!
+  key: String!
   track: Track!
 }
 
@@ -19,10 +19,11 @@ type Track {
   name: String!
   shortName: String!
   length: Float!
+  events: [Event!]
 }
 
 type Query {
-  events: [Event!]!
-  tracks: [Track!]!
+  getEvents: [Event!]!
+  getTracks: [Track!]!
+  track(id: ID): Track
 }
-
