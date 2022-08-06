@@ -4,8 +4,8 @@ import (
 	"context"
 	"fmt"
 	"log"
-	"strings"
 
+	"github.com/jackc/pgx/v4"
 	"github.com/jackc/pgx/v4/pgxpool"
 	database "github.com/mpapenbr/iracelog-graphql/internal/pkg/db/postgres"
 )
@@ -20,7 +20,7 @@ type DbTrack struct {
 }
 
 func GetALl(pool *pgxpool.Pool) ([]DbTrack, error) {
-	rows, err := pool.Query(context.Background(), "select id,data from track")
+	rows, err := pool.Query(context.Background(), selector)
 	if err != nil {
 		log.Printf("error reading tracks: %v", err)
 		return []DbTrack{}, err
@@ -29,24 +29,23 @@ func GetALl(pool *pgxpool.Pool) ([]DbTrack, error) {
 	var ret []DbTrack
 	for rows.Next() {
 		t := DbTrack{}
-		v, _ := rows.Values()
-		log.Printf("%v\n", v)
+		// v, _ := rows.Values()
+		// log.Printf("%v\n", v)
 
-		err = rows.Scan(&t.ID, &t.Data)
+		err = scan(&t, rows)
 		if err != nil {
 			log.Printf("Error scaning Track: %v\n", err)
 		}
 
-		log.Printf("%v\n", t)
+		// log.Printf("%v\n", t)
 		ret = append(ret, t)
 	}
 	return ret, nil
 }
 
 func GetByIds(pool *pgxpool.Pool, ids []int) ([]DbTrack, error) {
-	arg := strings.Trim(strings.Join(strings.Fields(fmt.Sprint(ids)), ","), "[]")
-	log.Printf("GetByIds: %v\n", arg)
-	rows, err := pool.Query(context.Background(), "select id,data from track where id in ($1)", arg)
+
+	rows, err := pool.Query(context.Background(), fmt.Sprintf("%s where id=any($1)", selector), ids)
 	if err != nil {
 		log.Printf("error reading tracks: %v", err)
 		return []DbTrack{}, err
@@ -55,15 +54,12 @@ func GetByIds(pool *pgxpool.Pool, ids []int) ([]DbTrack, error) {
 	var ret []DbTrack
 	for rows.Next() {
 		t := DbTrack{}
-		v, _ := rows.Values()
-		log.Printf("%v\n", v)
 
-		err = rows.Scan(&t.ID, &t.Data)
+		err = scan(&t, rows)
 		if err != nil {
 			log.Printf("Error scaning Track: %v\n", err)
 		}
 
-		log.Printf("%v\n", t)
 		ret = append(ret, t)
 	}
 	return ret, nil
@@ -71,10 +67,20 @@ func GetByIds(pool *pgxpool.Pool, ids []int) ([]DbTrack, error) {
 
 func GetById(id int) *DbTrack {
 	t := DbTrack{}
-	err := database.DbPool.QueryRow(context.Background(), "select id,data from track where id=$1", id).Scan(&t.ID, &t.Data)
+	err := scanRow(&t, database.DbPool.QueryRow(context.Background(), fmt.Sprintf("%s where id=$1", selector), id))
 	if err != nil {
 		log.Printf("error reading track: %v", err)
 		return nil
 	}
 	return &t
+}
+
+// little helper
+const selector = string("select id,data from track")
+
+func scan(t *DbTrack, rows pgx.Rows) error {
+	return rows.Scan(&t.ID, &t.Data)
+}
+func scanRow(t *DbTrack, row pgx.Row) error {
+	return row.Scan(&t.ID, &t.Data)
 }

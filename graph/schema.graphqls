@@ -6,7 +6,9 @@ type Event {
   id: ID!
   name: String!
   key: String!
-  track: Track!
+  track: Track # will be changed to non-null. For event 23 (NEC Race) the track 262 is not in the DB
+  teams: [Team!]
+  drivers: [Driver!]!
 }
 
 type User {
@@ -22,8 +24,21 @@ type Track {
   events: [Event!]
 }
 
+type Team {
+  name: String!
+  carNum: String!
+  drivers: [Driver]!
+}
+
+type Driver {
+  name: String!
+  carNum: String!
+}
+
 type Query {
   getEvents: [Event!]!
   getTracks: [Track!]!
-  track(id: ID): Track
+  track(id: ID!): Track
+  events(ids: [ID!]!): [Event!]!
+  tracks(ids: [ID!]!): [Track!]!
 }

@@ -7,8 +7,11 @@ require (
 	github.com/graph-gophers/dataloader v5.0.0+incompatible
 	github.com/jackc/pgtype v1.11.0
 	github.com/jackc/pgx/v4 v4.16.1
+	github.com/sirupsen/logrus v1.4.2
 	github.com/vektah/gqlparser/v2 v2.4.6
 )
+
+require github.com/konsorten/go-windows-terminal-sequences v1.0.2 // indirect
 
 require (
 	github.com/agnivade/levenshtein v1.1.1 // indirect

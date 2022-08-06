@@ -2,6 +2,17 @@
 
 package model
 
+type Driver struct {
+	Name   string `json:"name"`
+	CarNum string `json:"carNum"`
+}
+
+type Team struct {
+	Name    string    `json:"name"`
+	CarNum  string    `json:"carNum"`
+	Drivers []*Driver `json:"drivers"`
+}
+
 type User struct {
 	ID   int    `json:"id"`
 	Name string `json:"name"`

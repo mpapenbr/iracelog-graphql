@@ -3,6 +3,7 @@ package dataloader
 import (
 	"context"
 	"fmt"
+	"log"
 	"net/http"
 	"strconv"
 	"strings"
@@ -22,7 +23,7 @@ type DataLoader struct {
 	eventLoader *dataloader.Loader
 }
 
-// GetUser wraps the User dataloader for efficient retrieval by user ID
+// GetTrack wraps the Track dataloader for efficient retrieval by track ID
 func (i *DataLoader) GetTrack(ctx context.Context, trackID int) (*model.Track, error) {
 	thunk := i.trackLoader.Load(ctx, gopher_dataloader.StringKey(fmt.Sprintf("%d", trackID)))
 	result, err := thunk()
@@ -30,6 +31,54 @@ func (i *DataLoader) GetTrack(ctx context.Context, trackID int) (*model.Track, e
 		return nil, err
 	}
 	return result.(*model.Track), nil
+}
+
+func (i *DataLoader) GetTracks(ctx context.Context, trackIds []int) ([]*model.Track, []error) {
+	trackKeys := make([]gopher_dataloader.Key, len(trackIds))
+	for idx, val := range trackIds {
+		trackKeys[idx] = gopher_dataloader.StringKey(fmt.Sprintf("%d", val))
+	}
+	thunkMany := i.trackLoader.LoadMany(ctx, trackKeys)
+	result, err := thunkMany()
+	if err != nil {
+		return nil, err
+	}
+
+	// hmm, this copy bothers me, but my "wish-statement" return result.([]*model.Track) doesn't work
+	ret := make([]*model.Track, len(result))
+	for i, v := range result {
+		ret[i] = v.(*model.Track)
+	}
+	return ret, err
+}
+
+func (i *DataLoader) GetEvents(ctx context.Context, eventIDs []int) ([]*model.Event, []error) {
+	eventKeys := make([]gopher_dataloader.Key, len(eventIDs))
+	for idx, val := range eventIDs {
+		eventKeys[idx] = gopher_dataloader.StringKey(fmt.Sprintf("%d", val))
+	}
+	thunkMany := i.eventLoader.LoadMany(ctx, eventKeys)
+	result, err := thunkMany()
+	if err != nil {
+		return nil, err
+	}
+
+	// hmm, this copy bothers me, but my "wish-statement" return result.([]*model.Event) doesn't work
+	ret := make([]*model.Event, len(result))
+	for i, v := range result {
+		ret[i] = v.(*model.Event)
+	}
+	return ret, err
+}
+
+// GetEvent wraps the Event dataloader for efficient retrieval by event ID
+func (i *DataLoader) GetEvent(ctx context.Context, eventID int) (*model.Event, error) {
+	thunk := i.eventLoader.Load(ctx, gopher_dataloader.StringKey(fmt.Sprintf("%d", eventID)))
+	result, err := thunk()
+	if err != nil {
+		return nil, err
+	}
+	return result.(*model.Event), nil
 }
 
 func Middleware(loaders *DataLoader, next http.Handler) http.Handler {
@@ -50,8 +99,10 @@ func For(ctx context.Context) *DataLoader {
 func NewDataLoader(db storage.Storage) *DataLoader {
 	// define the data loader
 	tracks := &trackBatcher{db: db}
+	events := &eventBatcher{db: db}
 	loaders := &DataLoader{
 		trackLoader: dataloader.NewBatchedLoader(tracks.get),
+		eventLoader: dataloader.NewBatchedLoader(events.get),
 	}
 	return loaders
 }
@@ -64,7 +115,7 @@ type trackBatcher struct {
 // get implements the dataloader for finding many tracks by Id and returns
 // them in the order requested
 func (t *trackBatcher) get(ctx context.Context, keys dataloader.Keys) []*dataloader.Result {
-	fmt.Printf("dataloader.trackBatcher.get, tracks: [%s]\n", strings.Join(keys.Keys(), ","))
+	log.Printf("dataloader.trackBatcher.get, tracks: [%s]\n", strings.Join(keys.Keys(), ","))
 	// create a map for remembering the order of keys passed in
 	keyOrder := make(map[int]int, len(keys))
 	// collect the keys to search for
@@ -95,6 +146,56 @@ func (t *trackBatcher) get(ctx context.Context, keys dataloader.Keys) []*dataloa
 	// fill array positions with errors where not found in DB
 	for userID, ix := range keyOrder {
 		err := fmt.Errorf("track not found %d", userID)
+		results[ix] = &dataloader.Result{Data: nil, Error: err}
+	}
+	// return results
+	return results
+}
+
+// events
+
+// eventBatcher wraps storage and provides a "get" method for the track dataloader
+type eventBatcher struct {
+	db storage.Storage
+}
+
+// get implements the dataloader for finding many tracks by Id and returns
+// them in the order requested
+func (t *eventBatcher) get(ctx context.Context, keys dataloader.Keys) []*dataloader.Result {
+	for i, v := range keys {
+		log.Printf("i:%v v:%v\n", i, v)
+	}
+	log.Printf("dataloader.eventBatcher.get, events: [%s]\n", strings.Join(keys.Keys(), ","))
+	// create a map for remembering the order of keys passed in
+	keyOrder := make(map[int]int, len(keys))
+	// collect the keys to search for
+	var eventIDs []int
+	for ix, key := range keys {
+		id, _ := strconv.Atoi(key.String())
+		eventIDs = append(eventIDs, id)
+		keyOrder[id] = ix
+	}
+	// search for those users
+
+	dbRecords, err := t.db.GetEvents(ctx, eventIDs)
+	// if DB error, return
+	if err != nil {
+		return []*dataloader.Result{{Data: nil, Error: err}}
+	}
+	// construct an output array of dataloader results
+	results := make([]*dataloader.Result, len(keys))
+	// enumerate records, put into output
+	for _, record := range dbRecords {
+		ix, ok := keyOrder[record.ID]
+		// if found, remove from index lookup map so we know elements were found
+		if ok {
+			results[ix] = &dataloader.Result{Data: record, Error: nil}
+			delete(keyOrder, record.ID)
+		}
+	}
+	// fill array positions with errors where not found in DB
+	for userID, ix := range keyOrder {
+		err := fmt.Errorf("event not found %d", userID)
 		results[ix] = &dataloader.Result{Data: nil, Error: err}
 	}
 	// return results
