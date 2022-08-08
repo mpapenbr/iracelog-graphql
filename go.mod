@@ -5,7 +5,7 @@ go 1.19
 require (
 	github.com/99designs/gqlgen v0.17.13
 	github.com/graph-gophers/dataloader v5.0.0+incompatible
-	github.com/jackc/pgtype v1.11.0
+	github.com/jackc/pgtype v1.12.0
 	github.com/jackc/pgx/v4 v4.16.1
 	github.com/sirupsen/logrus v1.4.2
 	github.com/vektah/gqlparser/v2 v2.4.6
