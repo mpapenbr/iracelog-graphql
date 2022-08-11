@@ -22,5 +22,13 @@ type Storage interface {
 	GetAllEvents(ctx context.Context) ([]*model.Event, error)
 
 	// Get all teams for an event. returns empty list if not a team race
-	GetTeamsForEvent(ctx context.Context, event *model.Event) []*model.Team
+	GetTeamsForEvent(ctx context.Context, event *model.Event) []*model.EventTeam
+	// search drivers by name
+	SearchDrivers(ctx context.Context, arg string) []*model.Driver
+	// collect drivers for a given team name accross all events. returned map key is the team name
+	CollectDriversInTeams(ctx context.Context, teams []string) map[string][]*model.Driver
+	// collect drivers for a given team name accross all events. returned map key is the team name
+	CollectTeamsForDrivers(ctx context.Context, drivers []string) map[string][]*model.Team
+	// search team by name
+	SearchTeams(ctx context.Context, arg string) []*model.Team
 }

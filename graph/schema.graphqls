@@ -7,8 +7,8 @@ type Event {
   name: String!
   key: String!
   track: Track # will be changed to non-null. For event 23 (NEC Race) the track 262 is not in the DB
-  teams: [Team!]
-  drivers: [Driver!]!
+  teams: [EventTeam!]
+  drivers: [EventDriver!]!
 }
 
 type User {
@@ -24,16 +24,44 @@ type Track {
   events: [Event!]
 }
 
-type Team {
+type EventTeam {
   name: String!
   carNum: String!
-  drivers: [Driver]!
+  drivers: [EventDriver]!
+  
 }
 
-type Driver {
+"This models a driver in a concrete event"
+type EventDriver {
   name: String!
-  carNum: String!
+  carNum: String!  
 }
+
+"This models a more 'generic' driver with participation in events and teams."
+type Driver {
+  "The driver name used"
+  name: String!    
+  "The teams in which the driver was a member"
+  teams: [Team!]!
+  "The events in which the driver participated"
+  events: [Event!]!
+  "The car numbers used by this driver"
+  carNum: [String!]!
+  "The car classes used by this driver"
+  carClass: [String!]!
+}
+
+"This models a more 'generic' driver with participation in events and teams."
+type Team {
+  name: String!
+  drivers: [Driver!]!
+  carNum: [String!]!
+  carClass: [String!]!
+  teams: [EventTeam!]!
+  events: [Event!]!
+}
+
+
 
 type Query {
   getEvents: [Event!]!
@@ -41,4 +69,8 @@ type Query {
   track(id: ID!): Track
   events(ids: [ID!]!): [Event!]!
   tracks(ids: [ID!]!): [Track!]!
+  "searches for drivers in events. arg is a RegEx"
+  searchDriver(arg:String!): [Driver!]
+  "searches for teams in events. arg is a RegEx"
+  searchTeam(arg:String!): [Team!]
 }

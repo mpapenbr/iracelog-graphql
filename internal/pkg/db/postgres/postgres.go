@@ -25,7 +25,7 @@ func InitDB() *pgxpool.Pool {
 		Out:          os.Stderr,
 		Formatter:    new(logrus.TextFormatter),
 		Hooks:        make(logrus.LevelHooks),
-		Level:        logrus.DebugLevel,
+		Level:        logrus.TraceLevel,
 		ExitFunc:     os.Exit,
 		ReportCaller: false,
 	}

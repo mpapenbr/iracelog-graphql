@@ -2,15 +2,40 @@
 
 package model
 
+// This models a more 'generic' driver with participation in events and teams.
 type Driver struct {
+	// The driver name used
+	Name string `json:"name"`
+	// The teams in which the driver was a member
+	Teams []*Team `json:"teams"`
+	// The events in which the driver participated
+	Events []*Event `json:"events"`
+	// The car numbers used by this driver
+	CarNum []string `json:"carNum"`
+	// The car classes used by this driver
+	CarClass []string `json:"carClass"`
+}
+
+// This models a driver in a concrete event
+type EventDriver struct {
 	Name   string `json:"name"`
 	CarNum string `json:"carNum"`
 }
 
+type EventTeam struct {
+	Name    string         `json:"name"`
+	CarNum  string         `json:"carNum"`
+	Drivers []*EventDriver `json:"drivers"`
+}
+
+// This models a more 'generic' driver with participation in events and teams.
 type Team struct {
-	Name    string    `json:"name"`
-	CarNum  string    `json:"carNum"`
-	Drivers []*Driver `json:"drivers"`
+	Name     string       `json:"name"`
+	Drivers  []*Driver    `json:"drivers"`
+	CarNum   []string     `json:"carNum"`
+	CarClass []string     `json:"carClass"`
+	Teams    []*EventTeam `json:"teams"`
+	Events   []*Event     `json:"events"`
 }
 
 type User struct {

@@ -24,10 +24,10 @@ func main() {
 
 	db := storage.NewDbStorage()
 	// _ := database.InitDB()
-	loader := dataloader.NewDataLoader(db)
+
 	graphResolver := resolver.NewResolver(db)
 	srv := handler.NewDefaultServer(generated.NewExecutableSchema(generated.Config{Resolvers: graphResolver}))
-	dataloaderSrv := dataloader.Middleware(loader, srv)
+	dataloaderSrv := dataloader.Middleware(db, srv)
 
 	http.Handle("/", playground.Handler("GraphQL playground", "/query"))
 	http.Handle("/query", dataloaderSrv)

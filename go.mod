@@ -9,6 +9,7 @@ require (
 	github.com/jackc/pgx/v4 v4.17.0
 	github.com/sirupsen/logrus v1.4.2
 	github.com/vektah/gqlparser/v2 v2.4.7
+	golang.org/x/exp v0.0.0-20220722155223-a9213eeb770e
 )
 
 require github.com/konsorten/go-windows-terminal-sequences v1.0.2 // indirect

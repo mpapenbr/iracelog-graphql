@@ -65,3 +65,18 @@ models:
     fields:
       track:
         resolver: true
+  Team:
+    fields:
+      events:
+        resolver: true
+      drivers:
+        resolver: true
+      
+  Driver:
+    fields:
+      events:
+        resolver: true
+      teams:
+        resolver: true
+      
+      

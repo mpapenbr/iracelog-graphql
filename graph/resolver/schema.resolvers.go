@@ -14,6 +14,18 @@ import (
 	"github.com/mpapenbr/iracelog-graphql/graph/model"
 )
 
+// Teams is the resolver for the teams field.
+func (r *driverResolver) Teams(ctx context.Context, obj *model.Driver) ([]*model.Team, error) {
+	dbResults, _ := dataloader.For(ctx).GetDriversTeams(ctx, obj.Name)
+	// log.Printf("dbResult: %v err: %v\n", dbResults, err)
+	return dbResults, nil
+}
+
+// Events is the resolver for the events field.
+func (r *driverResolver) Events(ctx context.Context, obj *model.Driver) ([]*model.Event, error) {
+	panic(fmt.Errorf("not implemented"))
+}
+
 // Track is the resolver for the track field.
 func (r *eventResolver) Track(ctx context.Context, obj *model.Event) (*model.Track, error) {
 	// track := tracks.GetById(obj.TrackId)
@@ -23,12 +35,12 @@ func (r *eventResolver) Track(ctx context.Context, obj *model.Event) (*model.Tra
 }
 
 // Teams is the resolver for the teams field.
-func (r *eventResolver) Teams(ctx context.Context, obj *model.Event) ([]*model.Team, error) {
+func (r *eventResolver) Teams(ctx context.Context, obj *model.Event) ([]*model.EventTeam, error) {
 	return r.db.GetTeamsForEvent(ctx, obj), nil
 }
 
 // Drivers is the resolver for the drivers field.
-func (r *eventResolver) Drivers(ctx context.Context, obj *model.Event) ([]*model.Driver, error) {
+func (r *eventResolver) Drivers(ctx context.Context, obj *model.Event) ([]*model.EventDriver, error) {
 	panic(fmt.Errorf("not implemented"))
 }
 
@@ -60,6 +72,30 @@ func (r *queryResolver) Tracks(ctx context.Context, ids []int) ([]*model.Track, 
 	return ret, nil
 }
 
+// SearchDriver is the resolver for the searchDriver field.
+func (r *queryResolver) SearchDriver(ctx context.Context, arg string) ([]*model.Driver, error) {
+	dbResults := r.db.SearchDrivers(ctx, arg)
+	return dbResults, nil
+}
+
+// SearchTeam is the resolver for the searchTeam field.
+func (r *queryResolver) SearchTeam(ctx context.Context, arg string) ([]*model.Team, error) {
+	dbResults := r.db.SearchTeams(ctx, arg)
+	return dbResults, nil
+}
+
+// Drivers is the resolver for the drivers field.
+func (r *teamResolver) Drivers(ctx context.Context, obj *model.Team) ([]*model.Driver, error) {
+	dbResults, _ := dataloader.For(ctx).GetTeamDrivers(ctx, obj.Name)
+	// log.Printf("dbResult: %v err: %v\n", dbResults, err)
+	return dbResults, nil
+}
+
+// Events is the resolver for the events field.
+func (r *teamResolver) Events(ctx context.Context, obj *model.Team) ([]*model.Event, error) {
+	panic(fmt.Errorf("not implemented"))
+}
+
 // Events is the resolver for the events field.
 func (r *trackResolver) Events(ctx context.Context, obj *model.Track) ([]*model.Event, error) {
 	eventIds, _ := r.db.GetEventIdsForTrackId(ctx, obj.ID)
@@ -72,15 +108,23 @@ func (r *trackResolver) Events(ctx context.Context, obj *model.Track) ([]*model.
 	return tmp, nil
 }
 
+// Driver returns generated.DriverResolver implementation.
+func (r *Resolver) Driver() generated.DriverResolver { return &driverResolver{r} }
+
 // Event returns generated.EventResolver implementation.
 func (r *Resolver) Event() generated.EventResolver { return &eventResolver{r} }
 
 // Query returns generated.QueryResolver implementation.
 func (r *Resolver) Query() generated.QueryResolver { return &queryResolver{r} }
 
+// Team returns generated.TeamResolver implementation.
+func (r *Resolver) Team() generated.TeamResolver { return &teamResolver{r} }
+
 // Track returns generated.TrackResolver implementation.
 func (r *Resolver) Track() generated.TrackResolver { return &trackResolver{r} }
 
+type driverResolver struct{ *Resolver }
 type eventResolver struct{ *Resolver }
 type queryResolver struct{ *Resolver }
+type teamResolver struct{ *Resolver }
 type trackResolver struct{ *Resolver }
