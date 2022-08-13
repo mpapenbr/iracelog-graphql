@@ -23,7 +23,9 @@ func (r *driverResolver) Teams(ctx context.Context, obj *model.Driver) ([]*model
 
 // Events is the resolver for the events field.
 func (r *driverResolver) Events(ctx context.Context, obj *model.Driver) ([]*model.Event, error) {
-	panic(fmt.Errorf("not implemented"))
+	eventIds := r.db.CollectEventIdsForDriver(ctx, obj.Name)
+	tmp, _ := dataloader.For(ctx).GetEvents(ctx, eventIds)
+	return tmp, nil
 }
 
 // Track is the resolver for the track field.
@@ -93,7 +95,9 @@ func (r *teamResolver) Drivers(ctx context.Context, obj *model.Team) ([]*model.D
 
 // Events is the resolver for the events field.
 func (r *teamResolver) Events(ctx context.Context, obj *model.Team) ([]*model.Event, error) {
-	panic(fmt.Errorf("not implemented"))
+	eventIds := r.db.CollectEventIdsForTeam(ctx, obj.Name)
+	tmp, _ := dataloader.For(ctx).GetEvents(ctx, eventIds)
+	return tmp, nil
 }
 
 // Events is the resolver for the events field.

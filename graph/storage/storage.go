@@ -29,6 +29,10 @@ type Storage interface {
 	CollectDriversInTeams(ctx context.Context, teams []string) map[string][]*model.Driver
 	// collect drivers for a given team name accross all events. returned map key is the team name
 	CollectTeamsForDrivers(ctx context.Context, drivers []string) map[string][]*model.Team
+	// collect the eventIds for a specific driver (name)
+	CollectEventIdsForDriver(ctx context.Context, driver string) []int
+	// collect the eventIds for a specific team (name)
+	CollectEventIdsForTeam(ctx context.Context, team string) []int
 	// search team by name
 	SearchTeams(ctx context.Context, arg string) []*model.Team
 }

@@ -150,6 +150,15 @@ func (db *DbStorage) CollectTeamsForDrivers(ctx context.Context, drivers []strin
 	return ret
 }
 
+func (db *DbStorage) CollectEventIdsForDriver(ctx context.Context, driver string) []int {
+	ret, _ := analysis.CollectEventIdsForDriver(db.pool, driver)
+	return ret
+}
+func (db *DbStorage) CollectEventIdsForTeam(ctx context.Context, team string) []int {
+	ret, _ := analysis.CollectEventIdsForTeam(db.pool, team)
+	return ret
+}
+
 func (db *DbStorage) SearchTeams(ctx context.Context, arg string) []*model.Team {
 	res, _ := analysis.SearchTeams(db.pool, arg)
 	ret := make([]*model.Team, len(res))

@@ -101,6 +101,28 @@ func (i *DataLoader) GetDriversTeams(ctx context.Context, driver string) ([]*mod
 	return result.([]*model.Team), nil
 }
 
+// OoO???
+func (i *DataLoader) GetDriversEvents(ctx context.Context, driver string) ([]*model.Event, []error) {
+
+	thunk := i.eventLoader.Load(ctx, gopher_dataloader.StringKey(driver))
+	result, err := thunk()
+	if err != nil {
+		return nil, nil
+	}
+	return result.([]*model.Event), nil
+}
+
+// OoO???
+func (i *DataLoader) GetTeamsEvents(ctx context.Context, team string) ([]*model.Event, []error) {
+
+	thunk := i.eventLoader.Load(ctx, gopher_dataloader.StringKey(team))
+	result, err := thunk()
+	if err != nil {
+		return nil, nil
+	}
+	return result.([]*model.Event), nil
+}
+
 func Middleware(db *storage.DbStorage, next http.Handler) http.Handler {
 	// return a middleware that injects the loader to the request context
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
