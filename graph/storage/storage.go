@@ -4,6 +4,7 @@ import (
 	"context"
 
 	"github.com/mpapenbr/iracelog-graphql/graph/model"
+	"github.com/mpapenbr/iracelog-graphql/internal/analysis"
 )
 
 // This interface defines all available calls to storage.
@@ -21,8 +22,6 @@ type Storage interface {
 	// GetAllEvents lists all Events in the database
 	GetAllEvents(ctx context.Context) ([]*model.Event, error)
 
-	// Get all teams for an event. returns empty list if not a team race
-	GetTeamsForEvent(ctx context.Context, event *model.Event) []*model.EventTeam
 	// search drivers by name
 	SearchDrivers(ctx context.Context, arg string) []*model.Driver
 	// collect drivers for a given team name accross all events. returned map key is the team name
@@ -33,6 +32,12 @@ type Storage interface {
 	CollectEventIdsForDriver(ctx context.Context, driver string) []int
 	// collect the eventIds for a specific team (name)
 	CollectEventIdsForTeam(ctx context.Context, team string) []int
+	// collect the analysis data for a number of eventIds
+	CollectAnalysisData(ctx context.Context, eventIds []int) []analysis.DbAnalysis
+
+	CollectEventIdsForTeams(ctx context.Context, teams []string) map[string][]int
+	CollectEventIdsForDrivers(ctx context.Context, drivers []string) map[string][]int
+
 	// search team by name
 	SearchTeams(ctx context.Context, arg string) []*model.Team
 }

@@ -190,3 +190,35 @@ func CollectEventIdsForDriver(pool *pgxpool.Pool, driverName string) ([]int, err
 	}
 	return ret, nil
 }
+
+func CollectEventIdsForDrivers(pool *pgxpool.Pool, driverNames []string) (map[string][]int, error) {
+	work := make([]string, len(driverNames))
+	for i, t := range driverNames {
+		work[i] = fmt.Sprintf("('%s')", t)
+	}
+	strings.Join(work, ",")
+	rows, err := pool.Query(context.Background(), fmt.Sprintf(
+		`select a.event_id, args.arg from analysis a cross join (select * from (values %s) as b(arg)) args
+		where jsonb_path_exists(a.data, '$.carInfo[*] ?(@.drivers.driverName == $myArg)', jsonb_build_object('myArg', args.arg))
+		`, strings.Join(work, ",")))
+
+	if err != nil {
+		log.Printf("error reading analysis: %v", err)
+		return map[string][]int{}, err
+	}
+	defer rows.Close()
+
+	ret := map[string][]int{}
+	for rows.Next() {
+		var eventId int
+		var driver string
+		err = rows.Scan(&eventId, &driver)
+		v, ok := ret[driver]
+		if !ok {
+			v = []int{}
+		}
+		v = append(v, eventId)
+		ret[driver] = v
+	}
+	return ret, nil
+}

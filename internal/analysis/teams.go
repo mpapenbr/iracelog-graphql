@@ -127,3 +127,35 @@ func CollectEventIdsForTeam(pool *pgxpool.Pool, teamName string) ([]int, error) 
 	}
 	return ret, nil
 }
+
+func CollectEventIdsForTeams(pool *pgxpool.Pool, teamNames []string) (map[string][]int, error) {
+	work := make([]string, len(teamNames))
+	for i, t := range teamNames {
+		work[i] = fmt.Sprintf("('%s')", t)
+	}
+	strings.Join(work, ",")
+	rows, err := pool.Query(context.Background(), fmt.Sprintf(
+		`select a.event_id, args.arg from analysis a cross join (select * from (values %s) as b(arg)) args
+		where jsonb_path_exists(a.data, '$.carInfo[*] ?(@.name == $myArg)', jsonb_build_object('myArg', args.arg))
+		`, strings.Join(work, ",")))
+
+	if err != nil {
+		log.Printf("error reading analysis: %v", err)
+		return map[string][]int{}, err
+	}
+	defer rows.Close()
+
+	ret := map[string][]int{}
+	for rows.Next() {
+		var eventId int
+		var team string
+		err = rows.Scan(&eventId, &team)
+		v, ok := ret[team]
+		if !ok {
+			v = []int{}
+		}
+		v = append(v, eventId)
+		ret[team] = v
+	}
+	return ret, nil
+}

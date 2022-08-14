@@ -22,7 +22,8 @@ type CarInfo struct {
 	}
 }
 type DbAnalysis struct {
-	ID int `json:"id"`
+	ID      int `json:"id"`
+	EventId int `json:"eventId"`
 	// TODO: Cars
 	CarInfo []CarInfo
 	CarLaps []struct {
@@ -49,6 +50,25 @@ func GetAnalysisForEvent(pool *pgxpool.Pool, eventId int) (*DbAnalysis, error) {
 	var data DbAnalysis
 	pool.QueryRow(context.Background(), "select id,data from analysis where event_id=$1", eventId).Scan(&data.ID, &data)
 	return &data, nil
+
+}
+
+func GetAnalysisForEvents(pool *pgxpool.Pool, eventIds []int) ([]DbAnalysis, error) {
+
+	rows, err := pool.Query(context.Background(), "select id,event_id,data->'carInfo' from analysis where event_id=any($1)", eventIds)
+	if err != nil {
+		log.Printf("error reading analysis: %v", err)
+		return []DbAnalysis{}, err
+	}
+	defer rows.Close()
+	ret := []DbAnalysis{}
+
+	for rows.Next() {
+		var dba DbAnalysis
+		err = rows.Scan(&dba.ID, &dba.EventId, &dba.CarInfo)
+		ret = append(ret, dba)
+	}
+	return ret, err
 
 }
 

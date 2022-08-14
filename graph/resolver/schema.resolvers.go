@@ -6,7 +6,6 @@ package resolver
 import (
 	"context"
 	"errors"
-	"fmt"
 	"log"
 
 	"github.com/mpapenbr/iracelog-graphql/graph/dataloader"
@@ -23,7 +22,7 @@ func (r *driverResolver) Teams(ctx context.Context, obj *model.Driver) ([]*model
 
 // Events is the resolver for the events field.
 func (r *driverResolver) Events(ctx context.Context, obj *model.Driver) ([]*model.Event, error) {
-	eventIds := r.db.CollectEventIdsForDriver(ctx, obj.Name)
+	eventIds := dataloader.For(ctx).GetEventIdsForDriver(ctx, obj.Name)
 	tmp, _ := dataloader.For(ctx).GetEvents(ctx, eventIds)
 	return tmp, nil
 }
@@ -38,12 +37,15 @@ func (r *eventResolver) Track(ctx context.Context, obj *model.Event) (*model.Tra
 
 // Teams is the resolver for the teams field.
 func (r *eventResolver) Teams(ctx context.Context, obj *model.Event) ([]*model.EventTeam, error) {
-	return r.db.GetTeamsForEvent(ctx, obj), nil
+	ret, _ := dataloader.For(ctx).GetEventTeams(ctx, obj.ID)
+	return ret, nil
+	// Old single version: return r.db.GetTeamsForEvent(ctx, obj), nil
 }
 
 // Drivers is the resolver for the drivers field.
 func (r *eventResolver) Drivers(ctx context.Context, obj *model.Event) ([]*model.EventDriver, error) {
-	panic(fmt.Errorf("not implemented"))
+	ret, _ := dataloader.For(ctx).GetEventDrivers(ctx, obj.ID)
+	return ret, nil
 }
 
 // GetEvents is the resolver for the getEvents field.
@@ -95,7 +97,8 @@ func (r *teamResolver) Drivers(ctx context.Context, obj *model.Team) ([]*model.D
 
 // Events is the resolver for the events field.
 func (r *teamResolver) Events(ctx context.Context, obj *model.Team) ([]*model.Event, error) {
-	eventIds := r.db.CollectEventIdsForTeam(ctx, obj.Name)
+	// eventIds := r.db.CollectEventIdsForTeam(ctx, obj.Name)
+	eventIds := dataloader.For(ctx).GetEventIdsForTeam(ctx, obj.Name)
 	tmp, _ := dataloader.For(ctx).GetEvents(ctx, eventIds)
 	return tmp, nil
 }

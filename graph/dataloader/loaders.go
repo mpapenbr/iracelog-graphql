@@ -12,6 +12,7 @@ import (
 	gopher_dataloader "github.com/graph-gophers/dataloader"
 	"github.com/mpapenbr/iracelog-graphql/graph/model"
 	"github.com/mpapenbr/iracelog-graphql/graph/storage"
+	"github.com/mpapenbr/iracelog-graphql/internal/analysis"
 )
 
 type ctxKey string
@@ -19,10 +20,13 @@ type ctxKey string
 const loadersKey = ctxKey("dataloader")
 
 type DataLoader struct {
-	trackLoader  *dataloader.Loader
-	eventLoader  *dataloader.Loader
-	driverLoader *dataloader.Loader
-	teamLoader   *dataloader.Loader
+	trackLoader           *dataloader.Loader
+	eventLoader           *dataloader.Loader
+	driverLoader          *dataloader.Loader
+	teamLoader            *dataloader.Loader
+	analysisLoader        *dataloader.Loader
+	teamEventLinkLoader   *dataloader.Loader
+	driverEventLinkLoader *dataloader.Loader
 }
 
 // GetTrack wraps the Track dataloader for efficient retrieval by track ID
@@ -101,26 +105,62 @@ func (i *DataLoader) GetDriversTeams(ctx context.Context, driver string) ([]*mod
 	return result.([]*model.Team), nil
 }
 
-// OoO???
-func (i *DataLoader) GetDriversEvents(ctx context.Context, driver string) ([]*model.Event, []error) {
-
-	thunk := i.eventLoader.Load(ctx, gopher_dataloader.StringKey(driver))
+func (i *DataLoader) GetEventTeams(ctx context.Context, eventId int) ([]*model.EventTeam, []error) {
+	thunk := i.analysisLoader.Load(ctx, gopher_dataloader.StringKey(fmt.Sprintf("%d", eventId)))
 	result, err := thunk()
 	if err != nil {
+		log.Printf("error loading analysis data: %v", err)
 		return nil, nil
 	}
-	return result.([]*model.Event), nil
+	ret := []*model.EventTeam{}
+
+	dbData := result.(analysis.DbAnalysis)
+	for _, ci := range dbData.CarInfo {
+		drivers := make([]*model.EventDriver, len(ci.Drivers))
+		for j, driver := range ci.Drivers {
+			drivers[j] = &model.EventDriver{Name: driver.DriverName}
+		}
+		ret = append(ret, &model.EventTeam{Name: ci.Name, CarNum: ci.CarNum, Drivers: drivers})
+	}
+	return ret, nil
 }
 
-// OoO???
-func (i *DataLoader) GetTeamsEvents(ctx context.Context, team string) ([]*model.Event, []error) {
-
-	thunk := i.eventLoader.Load(ctx, gopher_dataloader.StringKey(team))
+func (i *DataLoader) GetEventIdsForTeam(ctx context.Context, team string) []int {
+	thunk := i.teamEventLinkLoader.Load(ctx, gopher_dataloader.StringKey(team))
 	result, err := thunk()
 	if err != nil {
+		log.Printf("error loading analysis data: %v", err)
+		return nil
+	}
+	return result.([]int)
+}
+
+func (i *DataLoader) GetEventIdsForDriver(ctx context.Context, driver string) []int {
+	thunk := i.driverEventLinkLoader.Load(ctx, gopher_dataloader.StringKey(driver))
+	result, err := thunk()
+	if err != nil {
+		log.Printf("error loading analysis data: %v", err)
+		return nil
+	}
+	return result.([]int)
+}
+
+func (i *DataLoader) GetEventDrivers(ctx context.Context, eventId int) ([]*model.EventDriver, []error) {
+	thunk := i.analysisLoader.Load(ctx, gopher_dataloader.StringKey(fmt.Sprintf("%d", eventId)))
+	result, err := thunk()
+	if err != nil {
+		log.Printf("error loading analysis data: %v", err)
 		return nil, nil
 	}
-	return result.([]*model.Event), nil
+	ret := []*model.EventDriver{}
+
+	dbData := result.(analysis.DbAnalysis)
+	for _, ci := range dbData.CarInfo {
+		for _, driver := range ci.Drivers {
+			ret = append(ret, &model.EventDriver{Name: driver.DriverName})
+		}
+	}
+	return ret, nil
 }
 
 func Middleware(db *storage.DbStorage, next http.Handler) http.Handler {
@@ -142,78 +182,89 @@ func For(ctx context.Context) *DataLoader {
 // NewDataLoader returns the instantiated Loaders struct for use in a request
 func NewDataLoader(db storage.Storage) *DataLoader {
 	// define the data loader
-	tracks := &trackBatcher{db: db}
-	events := &eventBatcher{db: db}
-	drivers := &driverBatcher{db: db}
-	teams := &teamBatcher{db: db}
+	tracks := &genericByIdBatcher[model.Track]{db: db, collector: db.GetTracks, idExtractor: func(entity *model.Track) int { return entity.ID }}
+	events := &genericByIdBatcher[model.Event]{db: db, collector: db.GetEvents, idExtractor: func(entity *model.Event) int { return entity.ID }}
+
+	drivers := &genericByNameBatcher[model.Driver]{db: db, collector: db.CollectDriversInTeams}
+	teams := &genericByNameBatcher[model.Team]{db: db, collector: db.CollectTeamsForDrivers}
+
+	analysis := &analysisBatcher{db: db}
+	driverEventLink := &genericEventLinkBatcher{db: db, collector: db.CollectEventIdsForDrivers}
+	teamEventLink := &genericEventLinkBatcher{db: db, collector: db.CollectEventIdsForTeams}
 	loaders := &DataLoader{
-		trackLoader:  dataloader.NewBatchedLoader(tracks.get),
-		eventLoader:  dataloader.NewBatchedLoader(events.get),
-		driverLoader: dataloader.NewBatchedLoader(drivers.get),
-		teamLoader:   dataloader.NewBatchedLoader(teams.get),
+		trackLoader:           dataloader.NewBatchedLoader(tracks.get),
+		eventLoader:           dataloader.NewBatchedLoader(events.get),
+		driverLoader:          dataloader.NewBatchedLoader(drivers.get),
+		teamLoader:            dataloader.NewBatchedLoader(teams.get),
+		analysisLoader:        dataloader.NewBatchedLoader(analysis.get),
+		teamEventLinkLoader:   dataloader.NewBatchedLoader(teamEventLink.get),
+		driverEventLinkLoader: dataloader.NewBatchedLoader(driverEventLink.get),
 	}
 	return loaders
 }
 
-// trackBatcher wraps storage and provides a "get" method for the track dataloader
-type trackBatcher struct {
-	db storage.Storage
+type ByNameCollector[E any] func(ctx context.Context, names []string) map[string][]*E
+
+type genericByNameBatcher[E any] struct {
+	db        storage.Storage
+	collector ByNameCollector[E]
 }
 
 // get implements the dataloader for finding many tracks by Id and returns
 // them in the order requested
-func (t *trackBatcher) get(ctx context.Context, keys dataloader.Keys) []*dataloader.Result {
-	log.Printf("dataloader.trackBatcher.get, tracks: [%s]\n", strings.Join(keys.Keys(), ","))
+func (t *genericByNameBatcher[E]) get(ctx context.Context, keys dataloader.Keys) []*dataloader.Result {
+	// for i, v := range keys {
+	// 	log.Printf("driverBatcher.get: i:%v v:%v\n", i, v)
+	// }
+	log.Printf("dataloader.genericByNameBatcher.get, names: [%s]\n", strings.Join(keys.Keys(), ","))
 	// create a map for remembering the order of keys passed in
-	keyOrder := make(map[int]int, len(keys))
+	keyOrder := make(map[string]int, len(keys))
 	// collect the keys to search for
-	var trackIDs []int
+	var refNames []string
 	for ix, key := range keys {
-		id, _ := strconv.Atoi(key.String())
-		trackIDs = append(trackIDs, id)
+		id := key.String()
+		refNames = append(refNames, id)
 		keyOrder[id] = ix
 	}
 	// search for those users
 
-	dbRecords, err := t.db.GetTracks(ctx, trackIDs)
+	dbRecords := t.collector(ctx, refNames)
 	// if DB error, return
-	if err != nil {
-		return []*dataloader.Result{{Data: nil, Error: err}}
-	}
+	// if err != nil {
+	// 	return []*dataloader.Result{{Data: nil, Error: err}}
+	// }
 	// construct an output array of dataloader results
 	results := make([]*dataloader.Result, len(keys))
 	// enumerate records, put into output
-	for _, record := range dbRecords {
-		ix, ok := keyOrder[record.ID]
+	for refName, record := range dbRecords {
+		ix, ok := keyOrder[refName]
 		// if found, remove from index lookup map so we know elements were found
 		if ok {
 			results[ix] = &dataloader.Result{Data: record, Error: nil}
-			delete(keyOrder, record.ID)
+			delete(keyOrder, refName)
 		}
 	}
 	// fill array positions with errors where not found in DB
-	for userID, ix := range keyOrder {
-		err := fmt.Errorf("track not found %d", userID)
+	for refName, ix := range keyOrder {
+		err := fmt.Errorf("refName not found %s", refName)
 		results[ix] = &dataloader.Result{Data: nil, Error: err}
 	}
 	// return results
 	return results
 }
 
-// events
-
-// eventBatcher wraps storage and provides a "get" method for the track dataloader
-type eventBatcher struct {
+// analysisBatcher wraps storage and provides a "get" method for the analysis dataloader
+type analysisBatcher struct {
 	db storage.Storage
 }
 
 // get implements the dataloader for finding many tracks by Id and returns
 // them in the order requested
-func (t *eventBatcher) get(ctx context.Context, keys dataloader.Keys) []*dataloader.Result {
+func (t *analysisBatcher) get(ctx context.Context, keys dataloader.Keys) []*dataloader.Result {
 	for i, v := range keys {
-		log.Printf("i:%v v:%v\n", i, v)
+		log.Printf("analysisBatcher: i:%v v:%v\n", i, v)
 	}
-	log.Printf("dataloader.eventBatcher.get, events: [%s]\n", strings.Join(keys.Keys(), ","))
+	log.Printf("dataloader.analysisBatcher.get, events: [%s]\n", strings.Join(keys.Keys(), ","))
 	// create a map for remembering the order of keys passed in
 	keyOrder := make(map[int]int, len(keys))
 	// collect the keys to search for
@@ -225,7 +276,57 @@ func (t *eventBatcher) get(ctx context.Context, keys dataloader.Keys) []*dataloa
 	}
 	// search for those users
 
-	dbRecords, err := t.db.GetEvents(ctx, eventIDs)
+	dbRecords := t.db.CollectAnalysisData(ctx, eventIDs)
+	// if DB error, return
+	// if err != nil {
+	// 	return []*dataloader.Result{{Data: nil, Error: err}}
+	// }
+	// construct an output array of dataloader results
+	results := make([]*dataloader.Result, len(keys))
+	// enumerate records, put into output
+	for _, record := range dbRecords {
+		ix, ok := keyOrder[record.EventId]
+		// if found, remove from index lookup map so we know elements were found
+		if ok {
+			results[ix] = &dataloader.Result{Data: record, Error: nil}
+			delete(keyOrder, record.EventId)
+		}
+	}
+	// fill array positions with errors where not found in DB
+	for eventId, ix := range keyOrder {
+		err := fmt.Errorf("event not found %d", eventId)
+		results[ix] = &dataloader.Result{Data: nil, Error: err}
+	}
+	// return results
+	return results
+}
+
+type ByIdCollector[E any] func(ctx context.Context, ids []int) ([]*E, error)
+type IntIdExtractor[E any] func(entity E) int
+
+type genericByIdBatcher[E any] struct {
+	db          storage.Storage
+	collector   ByIdCollector[E]
+	idExtractor IntIdExtractor[*E]
+}
+
+func (t *genericByIdBatcher[E]) get(ctx context.Context, keys dataloader.Keys) []*dataloader.Result {
+	// for i, v := range keys {
+	// 	log.Printf("i:%v v:%v\n", i, v)
+	// }
+	log.Printf("dataloader.genericByIdBatcher.get, ids: [%s]\n", strings.Join(keys.Keys(), ","))
+	// create a map for remembering the order of keys passed in
+	keyOrder := make(map[int]int, len(keys))
+	// collect the keys to search for
+	var ids []int
+	for ix, key := range keys {
+		id, _ := strconv.Atoi(key.String())
+		ids = append(ids, id)
+		keyOrder[id] = ix
+	}
+	// search for those users
+
+	dbRecords, err := t.collector(ctx, ids)
 	// if DB error, return
 	if err != nil {
 		return []*dataloader.Result{{Data: nil, Error: err}}
@@ -234,48 +335,47 @@ func (t *eventBatcher) get(ctx context.Context, keys dataloader.Keys) []*dataloa
 	results := make([]*dataloader.Result, len(keys))
 	// enumerate records, put into output
 	for _, record := range dbRecords {
-		ix, ok := keyOrder[record.ID]
+		ix, ok := keyOrder[t.idExtractor(record)]
 		// if found, remove from index lookup map so we know elements were found
 		if ok {
 			results[ix] = &dataloader.Result{Data: record, Error: nil}
-			delete(keyOrder, record.ID)
+			delete(keyOrder, t.idExtractor(record))
 		}
 	}
 	// fill array positions with errors where not found in DB
-	for userID, ix := range keyOrder {
-		err := fmt.Errorf("event not found %d", userID)
+	for id, ix := range keyOrder {
+		err := fmt.Errorf("item not found %d", id)
 		results[ix] = &dataloader.Result{Data: nil, Error: err}
 	}
 	// return results
 	return results
 }
 
-// drivers
-
-// driverBatcher wraps storage and provides a "get" method for the driver dataloader
-type driverBatcher struct {
-	db storage.Storage
+type IdCollector func(ctx context.Context, names []string) map[string][]int
+type genericEventLinkBatcher struct {
+	db        storage.Storage
+	collector IdCollector
 }
 
 // get implements the dataloader for finding many tracks by Id and returns
 // them in the order requested
-func (t *driverBatcher) get(ctx context.Context, keys dataloader.Keys) []*dataloader.Result {
-	for i, v := range keys {
-		log.Printf("driverBatcher.get: i:%v v:%v\n", i, v)
-	}
-	log.Printf("dataloader.driverBatcher.get, events: [%s]\n", strings.Join(keys.Keys(), ","))
+func (t *genericEventLinkBatcher) get(ctx context.Context, keys dataloader.Keys) []*dataloader.Result {
+	// for i, v := range keys {
+	// 	log.Printf("genericEventLinkBatcher: i:%v v:%v\n", i, v)
+	// }
+	log.Printf("dataloader.genericEventLinkBatcher.get, for names: [%s]\n", strings.Join(keys.Keys(), ","))
 	// create a map for remembering the order of keys passed in
 	keyOrder := make(map[string]int, len(keys))
 	// collect the keys to search for
-	var teams []string
+	var drivers []string
 	for ix, key := range keys {
 		id := key.String()
-		teams = append(teams, id)
+		drivers = append(drivers, id)
 		keyOrder[id] = ix
 	}
 	// search for those users
 
-	dbRecords := t.db.CollectDriversInTeams(ctx, teams)
+	dbRecords := t.collector(ctx, drivers)
 	// if DB error, return
 	// if err != nil {
 	// 	return []*dataloader.Result{{Data: nil, Error: err}}
@@ -283,67 +383,17 @@ func (t *driverBatcher) get(ctx context.Context, keys dataloader.Keys) []*datalo
 	// construct an output array of dataloader results
 	results := make([]*dataloader.Result, len(keys))
 	// enumerate records, put into output
-	for team, record := range dbRecords {
-		ix, ok := keyOrder[team]
+	for driver, record := range dbRecords {
+		ix, ok := keyOrder[driver]
 		// if found, remove from index lookup map so we know elements were found
 		if ok {
 			results[ix] = &dataloader.Result{Data: record, Error: nil}
-			delete(keyOrder, team)
+			delete(keyOrder, driver)
 		}
 	}
 	// fill array positions with errors where not found in DB
-	for team, ix := range keyOrder {
-		err := fmt.Errorf("team not found %s", team)
-		results[ix] = &dataloader.Result{Data: nil, Error: err}
-	}
-	// return results
-	return results
-}
-
-// teams
-
-// teamBatcher wraps storage and provides a "get" method for the driver dataloader
-type teamBatcher struct {
-	db storage.Storage
-}
-
-// get implements the dataloader for finding many tracks by Id and returns
-// them in the order requested
-func (t *teamBatcher) get(ctx context.Context, keys dataloader.Keys) []*dataloader.Result {
-	for i, v := range keys {
-		log.Printf("teamBatcher: i:%v v:%v\n", i, v)
-	}
-	log.Printf("dataloader.teamBatcher.get, events: [%s]\n", strings.Join(keys.Keys(), ","))
-	// create a map for remembering the order of keys passed in
-	keyOrder := make(map[string]int, len(keys))
-	// collect the keys to search for
-	var teams []string
-	for ix, key := range keys {
-		id := key.String()
-		teams = append(teams, id)
-		keyOrder[id] = ix
-	}
-	// search for those users
-
-	dbRecords := t.db.CollectTeamsForDrivers(ctx, teams)
-	// if DB error, return
-	// if err != nil {
-	// 	return []*dataloader.Result{{Data: nil, Error: err}}
-	// }
-	// construct an output array of dataloader results
-	results := make([]*dataloader.Result, len(keys))
-	// enumerate records, put into output
-	for team, record := range dbRecords {
-		ix, ok := keyOrder[team]
-		// if found, remove from index lookup map so we know elements were found
-		if ok {
-			results[ix] = &dataloader.Result{Data: record, Error: nil}
-			delete(keyOrder, team)
-		}
-	}
-	// fill array positions with errors where not found in DB
-	for team, ix := range keyOrder {
-		err := fmt.Errorf("driver not found %s", team)
+	for driver, ix := range keyOrder {
+		err := fmt.Errorf("name not found %s", driver)
 		results[ix] = &dataloader.Result{Data: nil, Error: err}
 	}
 	// return results

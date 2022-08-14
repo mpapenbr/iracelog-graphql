@@ -2,7 +2,6 @@ package storage
 
 import (
 	"context"
-	"log"
 
 	"github.com/jackc/pgx/v4/pgxpool"
 	"github.com/mpapenbr/iracelog-graphql/graph/model"
@@ -13,7 +12,7 @@ import (
 )
 
 type DbStorage struct {
-	Storage
+	// Storage
 	pool *pgxpool.Pool
 }
 
@@ -89,25 +88,8 @@ func (db *DbStorage) GetEventIdsForTrackId(ctx context.Context, trackId int) ([]
 	return events.GetIdsByTrackId(db.pool, trackId)
 }
 
-func (db *DbStorage) GetTeamsForEvent(ctx context.Context, event *model.Event) []*model.EventTeam {
-	if event.DbEvent.Info.TeamRacing == 0 {
-		return []*model.EventTeam{}
-	}
-	if event.DbAnalysisData == nil {
-		log.Printf("loading analysis data for event %d\n", event.ID)
-		x, _ := analysis.GetAnalysisForEvent(db.pool, event.ID)
-		event.DbAnalysisData = x
-
-	}
-	ret := make([]*model.EventTeam, len(event.DbAnalysisData.CarInfo))
-	for i, ci := range event.DbAnalysisData.CarInfo {
-		drivers := make([]*model.Driver, len(ci.Drivers))
-		for j, driver := range ci.Drivers {
-			drivers[j] = &model.Driver{Name: driver.DriverName}
-		}
-		ret[i] = &model.EventTeam{Name: ci.Name, CarNum: ci.CarNum}
-
-	}
+func (db *DbStorage) CollectAnalysisData(ctx context.Context, eventIds []int) []analysis.DbAnalysis {
+	ret, _ := analysis.GetAnalysisForEvents(db.pool, eventIds)
 	return ret
 }
 
@@ -156,6 +138,16 @@ func (db *DbStorage) CollectEventIdsForDriver(ctx context.Context, driver string
 }
 func (db *DbStorage) CollectEventIdsForTeam(ctx context.Context, team string) []int {
 	ret, _ := analysis.CollectEventIdsForTeam(db.pool, team)
+	return ret
+}
+
+func (db *DbStorage) CollectEventIdsForTeams(ctx context.Context, teams []string) map[string][]int {
+	ret, _ := analysis.CollectEventIdsForTeams(db.pool, teams)
+	return ret
+}
+
+func (db *DbStorage) CollectEventIdsForDrivers(ctx context.Context, drivers []string) map[string][]int {
+	ret, _ := analysis.CollectEventIdsForDrivers(db.pool, drivers)
 	return ret
 }
 
