@@ -1,3 +1,3 @@
 package graph
 
-var Version = "0.0.0"
+var Version = "0.1.0"
