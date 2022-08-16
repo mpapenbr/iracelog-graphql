@@ -27,6 +27,7 @@ type DataLoader struct {
 	analysisLoader        *dataloader.Loader
 	teamEventLinkLoader   *dataloader.Loader
 	driverEventLinkLoader *dataloader.Loader
+	eventsByTrackLoader   *dataloader.Loader
 }
 
 // GetTrack wraps the Track dataloader for efficient retrieval by track ID
@@ -85,6 +86,15 @@ func (i *DataLoader) GetEvent(ctx context.Context, eventID int) (*model.Event, e
 		return nil, err
 	}
 	return result.(*model.Event), nil
+}
+
+func (i *DataLoader) GetEventsForTrack(ctx context.Context, trackId int) []*model.Event {
+	thunk := i.eventsByTrackLoader.Load(ctx, gopher_dataloader.StringKey(fmt.Sprintf("%d", trackId)))
+	result, err := thunk()
+	if err != nil {
+		return nil
+	}
+	return result.([]*model.Event)
 }
 
 func (i *DataLoader) GetTeamDrivers(ctx context.Context, team string) ([]*model.Driver, []error) {
@@ -185,6 +195,8 @@ func NewDataLoader(db storage.Storage) *DataLoader {
 	tracks := &genericByIdBatcher[model.Track]{db: db, collector: db.GetTracks, idExtractor: func(entity *model.Track) int { return entity.ID }}
 	events := &genericByIdBatcher[model.Event]{db: db, collector: db.GetEvents, idExtractor: func(entity *model.Event) int { return entity.ID }}
 
+	// once we have a "real" generic matcher this should be converted to use map[int]...
+	eventsByTrack := &genericByNameBatcher[model.Event]{db: db, collector: db.GetEventsForTrackIds}
 	drivers := &genericByNameBatcher[model.Driver]{db: db, collector: db.CollectDriversInTeams}
 	teams := &genericByNameBatcher[model.Team]{db: db, collector: db.CollectTeamsForDrivers}
 
@@ -199,6 +211,7 @@ func NewDataLoader(db storage.Storage) *DataLoader {
 		analysisLoader:        dataloader.NewBatchedLoader(analysis.get),
 		teamEventLinkLoader:   dataloader.NewBatchedLoader(teamEventLink.get),
 		driverEventLinkLoader: dataloader.NewBatchedLoader(driverEventLink.get),
+		eventsByTrackLoader:   dataloader.NewBatchedLoader(eventsByTrack.get),
 	}
 	return loaders
 }

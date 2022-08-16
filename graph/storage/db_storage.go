@@ -2,6 +2,8 @@ package storage
 
 import (
 	"context"
+	"fmt"
+	"strconv"
 
 	"github.com/jackc/pgx/v4/pgxpool"
 	"github.com/mpapenbr/iracelog-graphql/graph/model"
@@ -84,8 +86,29 @@ func (db *DbStorage) GetEvents(ctx context.Context, ids []int) ([]*model.Event, 
 	return result, err
 }
 
-func (db *DbStorage) GetEventIdsForTrackId(ctx context.Context, trackId int) ([]int, error) {
-	return events.GetIdsByTrackId(db.pool, trackId)
+// Note: we use (temporary) a string as key (to reuse existing batcher mechanics)
+func (db *DbStorage) GetEventsForTrackIds(ctx context.Context, trackIds []string) map[string][]*model.Event {
+
+	result := map[string][]*model.Event{}
+
+	intTrackIds := make([]int, len(trackIds))
+	for i, id := range trackIds {
+		idInt, _ := strconv.Atoi(id)
+		intTrackIds[i] = idInt
+	}
+	byTrackId, err := events.GetEventsByTrackIds(db.pool, intTrackIds)
+	// log.Printf("Events: %v\n", events)
+	if err == nil {
+		// convert the internal database Event to the GraphQL-Event
+		for k, event := range byTrackId {
+			convertedEvents := make([]*model.Event, len(event))
+			for i, dbData := range event {
+				convertedEvents[i] = &model.Event{ID: dbData.ID, Name: dbData.Name, Key: dbData.Key, TrackId: dbData.Info.TrackId, DbEvent: dbData}
+			}
+			result[fmt.Sprintf("%d", k)] = convertedEvents
+		}
+	}
+	return result
 }
 
 func (db *DbStorage) CollectAnalysisData(ctx context.Context, eventIds []int) []analysis.DbAnalysis {

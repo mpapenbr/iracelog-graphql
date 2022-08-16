@@ -14,8 +14,9 @@ type Storage interface {
 	GetTracks(ctx context.Context, ids []int) ([]*model.Track, error)
 	// GetEvents accepts many event IDs and returns an array of matching Tracks
 	GetEvents(ctx context.Context, ids []int) ([]*model.Event, error)
-	// GetEventIdsForTrack
-	GetEventIdsForTrackId(ctx context.Context, trackId int) ([]int, error)
+
+	// GetEventsForTrackIds (see notes in db_storage)
+	GetEventsForTrackIds(ctx context.Context, trackIds []string) map[string][]*model.Event
 
 	// GetAllTracks lists all Tracks in the database
 	GetAllTracks(ctx context.Context) ([]*model.Track, error)

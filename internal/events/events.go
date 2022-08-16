@@ -93,25 +93,30 @@ func GetById(pool *pgxpool.Pool, id int) (DbEvent, error) {
 
 }
 
-func GetIdsByTrackId(pool *pgxpool.Pool, trackId int) ([]int, error) {
+func GetEventsByTrackIds(pool *pgxpool.Pool, trackIds []int) (map[int][]*DbEvent, error) {
 
-	rows, err := pool.Query(context.Background(), "select id from event where (data->'info'->'trackId')::integer=$1", trackId)
+	rows, err := pool.Query(context.Background(), fmt.Sprintf("%s where (data->'info'->'trackId')::integer=any($1)", selector), trackIds)
 	if err != nil {
 		log.Printf("error reading ids for trackId: %v", err)
-		return []int{}, err
+		return map[int][]*DbEvent{}, err
 	}
 	defer rows.Close()
-	var ret []int
+	ret := map[int][]*DbEvent{}
 	for rows.Next() {
 
-		var id int
-		err = rows.Scan(&id)
+		var e DbEvent
+		err = scan(&e, rows)
 		if err != nil {
 			log.Printf("Error scaning Event: %v\n", err)
 		}
-
-		ret = append(ret, id)
+		val, ok := ret[e.Info.TrackId]
+		if !ok {
+			val = []*DbEvent{}
+		}
+		val = append(val, &e)
+		ret[e.Info.TrackId] = val
 	}
+
 	return ret, nil
 }
 

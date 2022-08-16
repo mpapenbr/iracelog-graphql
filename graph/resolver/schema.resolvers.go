@@ -5,8 +5,6 @@ package resolver
 
 import (
 	"context"
-	"errors"
-	"log"
 
 	"github.com/mpapenbr/iracelog-graphql/graph/dataloader"
 	"github.com/mpapenbr/iracelog-graphql/graph/generated"
@@ -105,13 +103,7 @@ func (r *teamResolver) Events(ctx context.Context, obj *model.Team) ([]*model.Ev
 
 // Events is the resolver for the events field.
 func (r *trackResolver) Events(ctx context.Context, obj *model.Track) ([]*model.Event, error) {
-	eventIds, _ := r.db.GetEventIdsForTrackId(ctx, obj.ID)
-
-	tmp, err := dataloader.For(ctx).GetEvents(ctx, eventIds)
-	if err != nil {
-		log.Printf("%v\n", err)
-		return nil, errors.New("Dings")
-	}
+	tmp := dataloader.For(ctx).GetEventsForTrack(ctx, obj.ID)
 	return tmp, nil
 }
 
