@@ -106,28 +106,6 @@ func SearchTeamsForDrivers(pool *pgxpool.Pool, drivers []string) (map[string][]D
 	return driverLookup, nil
 }
 
-func CollectEventIdsForTeam(pool *pgxpool.Pool, teamName string) ([]int, error) {
-	rows, err := pool.Query(context.Background(), fmt.Sprintf(
-		`select a.event_id from analysis a where a.data @? '$.carInfo[*] ?(@.name =="%s")'`, teamName))
-
-	if err != nil {
-		log.Printf("error reading analysis: %v", err)
-		return []int{}, err
-	}
-	defer rows.Close()
-
-	ret := []int{}
-	for rows.Next() {
-		var eventId int
-		err = rows.Scan(&eventId)
-		if err != nil {
-			log.Printf("Error scaning result: %v\n", err)
-		}
-		ret = append(ret, eventId)
-	}
-	return ret, nil
-}
-
 func CollectEventIdsForTeams(pool *pgxpool.Pool, teamNames []string) (map[string][]int, error) {
 	work := make([]string, len(teamNames))
 	for i, t := range teamNames {

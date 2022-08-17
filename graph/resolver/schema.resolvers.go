@@ -59,11 +59,13 @@ func (r *queryResolver) GetTracks(ctx context.Context) ([]*model.Track, error) {
 // Track is the resolver for the track field.
 func (r *queryResolver) Track(ctx context.Context, id int) (*model.Track, error) {
 	return dataloader.For(ctx).GetTrack(ctx, id)
+	// return dataloader.For(ctx).GetTrackNew(ctx, id)
 }
 
 // Events is the resolver for the events field.
 func (r *queryResolver) Events(ctx context.Context, ids []int) ([]*model.Event, error) {
-	ret, _ := r.db.GetEvents(ctx, ids)
+	// ret, _ := r.db.GetEvents(ctx, ids)
+	ret, _ := dataloader.For(ctx).GetEvents(ctx, ids)
 	return ret, nil
 }
 

@@ -3,9 +3,10 @@ package storage
 import (
 	"context"
 	"fmt"
-	"strconv"
 
+	"github.com/graph-gophers/dataloader"
 	"github.com/jackc/pgx/v4/pgxpool"
+
 	"github.com/mpapenbr/iracelog-graphql/graph/model"
 	"github.com/mpapenbr/iracelog-graphql/internal/analysis"
 	"github.com/mpapenbr/iracelog-graphql/internal/events"
@@ -36,19 +37,21 @@ func (db *DbStorage) GetAllTracks(ctx context.Context) ([]*model.Track, error) {
 	}
 	return result, err
 }
-func (db *DbStorage) GetTracks(ctx context.Context, ids []int) ([]*model.Track, error) {
 
-	var result []*model.Track
+func (db *DbStorage) GetTracksByKeys(ctx context.Context, ids dataloader.Keys) map[string]*model.Track {
 
-	tracks, err := tracks.GetByIds(db.pool, ids)
+	intIds := IntKeysToSlice(ids)
+	result := map[string]*model.Track{}
+
+	tracks, _ := tracks.GetByIds(db.pool, intIds)
 	// log.Printf("Tracks: %v\n", tracks)
-	if err == nil {
-		// convert the internal database Track to the GraphQL-Track
-		for _, track := range tracks {
-			result = append(result, &model.Track{ID: track.ID, Name: track.Data.Name, ShortName: track.Data.ShortName, Length: track.Data.Length})
-		}
+
+	// convert the internal database Track to the GraphQL-Track
+	for _, track := range tracks {
+		result[IntKey(track.ID).String()] = &model.Track{ID: track.ID, Name: track.Data.Name, ShortName: track.Data.ShortName, Length: track.Data.Length}
 	}
-	return result, err
+
+	return result
 }
 
 // events
@@ -68,33 +71,32 @@ func (db *DbStorage) GetAllEvents(ctx context.Context) ([]*model.Event, error) {
 	return result, err
 }
 
-func (db *DbStorage) GetEvents(ctx context.Context, ids []int) ([]*model.Event, error) {
+func (db *DbStorage) GetEventsByKeys(ctx context.Context, ids dataloader.Keys) map[string]*model.Event {
 
-	var result []*model.Event
+	intIds := IntKeysToSlice(ids)
+	result := map[string]*model.Event{}
 
-	events, err := events.GetByIds(db.pool, ids)
-	// log.Printf("Events: %v\n", events)
-	if err == nil {
-		// convert the internal database Event to the GraphQL-Event
-		for _, event := range events {
-			// note: this is required. don't use the loop directly for DbEvent:&event.
-			// this would cause assigning the last loop content to all result entries
-			dbData := event
-			result = append(result, &model.Event{ID: event.ID, Name: event.Name, Key: event.Key, TrackId: event.Info.TrackId, DbEvent: &dbData})
-		}
+	events, _ := events.GetByIds(db.pool, intIds)
+	// log.Printf("Tracks: %v\n", tracks)
+
+	// convert the internal database Track to the GraphQL-Track
+	for _, event := range events {
+		// this would cause assigning the last loop content to all result entries
+		dbData := event
+		result[IntKey(event.ID).String()] = &model.Event{ID: event.ID, Name: event.Name, Key: event.Key, TrackId: event.Info.TrackId, DbEvent: &dbData}
 	}
-	return result, err
+
+	return result
 }
 
 // Note: we use (temporary) a string as key (to reuse existing batcher mechanics)
-func (db *DbStorage) GetEventsForTrackIds(ctx context.Context, trackIds []string) map[string][]*model.Event {
+func (db *DbStorage) GetEventsForTrackIdsKeys(ctx context.Context, trackIds dataloader.Keys) map[string][]*model.Event {
 
 	result := map[string][]*model.Event{}
 
 	intTrackIds := make([]int, len(trackIds))
 	for i, id := range trackIds {
-		idInt, _ := strconv.Atoi(id)
-		intTrackIds[i] = idInt
+		intTrackIds[i] = id.Raw().(int)
 	}
 	byTrackId, err := events.GetEventsByTrackIds(db.pool, intTrackIds)
 	// log.Printf("Events: %v\n", events)
@@ -111,8 +113,12 @@ func (db *DbStorage) GetEventsForTrackIds(ctx context.Context, trackIds []string
 	return result
 }
 
-func (db *DbStorage) CollectAnalysisData(ctx context.Context, eventIds []int) []analysis.DbAnalysis {
-	ret, _ := analysis.GetAnalysisForEvents(db.pool, eventIds)
+func (db *DbStorage) CollectAnalysisData(ctx context.Context, eventIds dataloader.Keys) map[string]analysis.DbAnalysis {
+	res, _ := analysis.GetAnalysisForEvents(db.pool, IntKeysToSlice(eventIds))
+	ret := map[string]analysis.DbAnalysis{}
+	for _, a := range res {
+		ret[IntKey(a.EventId).String()] = a
+	}
 	return ret
 }
 
@@ -129,8 +135,9 @@ func (db *DbStorage) SearchDrivers(ctx context.Context, arg string) []*model.Dri
 	return ret
 }
 
-func (db *DbStorage) CollectDriversInTeams(ctx context.Context, teams []string) map[string][]*model.Driver {
-	res, _ := analysis.SearchDriversInTeams(db.pool, teams)
+func (db *DbStorage) CollectDriversInTeams(ctx context.Context, teams dataloader.Keys) map[string][]*model.Driver {
+
+	res, _ := analysis.SearchDriversInTeams(db.pool, teams.Keys())
 	ret := map[string][]*model.Driver{}
 	for k, v := range res {
 		drivers := make([]*model.Driver, len(v))
@@ -142,8 +149,8 @@ func (db *DbStorage) CollectDriversInTeams(ctx context.Context, teams []string) 
 	return ret
 }
 
-func (db *DbStorage) CollectTeamsForDrivers(ctx context.Context, drivers []string) map[string][]*model.Team {
-	res, _ := analysis.SearchTeamsForDrivers(db.pool, drivers)
+func (db *DbStorage) CollectTeamsForDrivers(ctx context.Context, drivers dataloader.Keys) map[string][]*model.Team {
+	res, _ := analysis.SearchTeamsForDrivers(db.pool, drivers.Keys())
 	ret := map[string][]*model.Team{}
 	for k, v := range res {
 		teams := make([]*model.Team, len(v))
@@ -155,22 +162,13 @@ func (db *DbStorage) CollectTeamsForDrivers(ctx context.Context, drivers []strin
 	return ret
 }
 
-func (db *DbStorage) CollectEventIdsForDriver(ctx context.Context, driver string) []int {
-	ret, _ := analysis.CollectEventIdsForDriver(db.pool, driver)
-	return ret
-}
-func (db *DbStorage) CollectEventIdsForTeam(ctx context.Context, team string) []int {
-	ret, _ := analysis.CollectEventIdsForTeam(db.pool, team)
+func (db *DbStorage) CollectEventIdsForTeams(ctx context.Context, teams dataloader.Keys) map[string][]int {
+	ret, _ := analysis.CollectEventIdsForTeams(db.pool, teams.Keys())
 	return ret
 }
 
-func (db *DbStorage) CollectEventIdsForTeams(ctx context.Context, teams []string) map[string][]int {
-	ret, _ := analysis.CollectEventIdsForTeams(db.pool, teams)
-	return ret
-}
-
-func (db *DbStorage) CollectEventIdsForDrivers(ctx context.Context, drivers []string) map[string][]int {
-	ret, _ := analysis.CollectEventIdsForDrivers(db.pool, drivers)
+func (db *DbStorage) CollectEventIdsForDrivers(ctx context.Context, drivers dataloader.Keys) map[string][]int {
+	ret, _ := analysis.CollectEventIdsForDrivers(db.pool, drivers.Keys())
 	return ret
 }
 
