@@ -16,3 +16,4 @@
 dist/
 .gitconfig.local*
 .env
+.npmrc
