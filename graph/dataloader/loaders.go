@@ -2,7 +2,6 @@ package dataloader
 
 import (
 	"context"
-	"fmt"
 	"log"
 	"net/http"
 
@@ -112,7 +111,7 @@ func (i *DataLoader) GetDriversTeams(ctx context.Context, driver string) ([]*mod
 }
 
 func (i *DataLoader) GetEventTeams(ctx context.Context, eventId int) ([]*model.EventTeam, []error) {
-	thunk := i.analysisLoader.Load(ctx, gopher_dataloader.StringKey(fmt.Sprintf("%d", eventId)))
+	thunk := i.analysisLoader.Load(ctx, storage.IntKey(eventId))
 	result, err := thunk()
 	if err != nil {
 		log.Printf("error loading analysis data: %v", err)
@@ -152,7 +151,8 @@ func (i *DataLoader) GetEventIdsForDriver(ctx context.Context, driver string) []
 }
 
 func (i *DataLoader) GetEventDrivers(ctx context.Context, eventId int) ([]*model.EventDriver, []error) {
-	thunk := i.analysisLoader.Load(ctx, gopher_dataloader.StringKey(fmt.Sprintf("%d", eventId)))
+	// thunk := i.analysisLoader.Load(ctx, gopher_dataloader.StringKey(fmt.Sprintf("%d", eventId)))
+	thunk := i.analysisLoader.Load(ctx, storage.IntKey(eventId))
 	result, err := thunk()
 	if err != nil {
 		log.Printf("error loading analysis data: %v", err)
