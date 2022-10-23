@@ -25,7 +25,7 @@ type Storage interface {
 	// GetAllTracks lists all Tracks in the database
 	GetAllTracks(ctx context.Context) ([]*model.Track, error)
 	// GetAllEvents lists all Events in the database
-	GetAllEvents(ctx context.Context) ([]*model.Event, error)
+	GetAllEvents(ctx context.Context, limit *int, sort []*model.EventSortArg) ([]*model.Event, error)
 
 	// search drivers by name
 	SearchDrivers(ctx context.Context, arg string) []*model.Driver

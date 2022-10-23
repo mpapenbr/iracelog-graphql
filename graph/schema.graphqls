@@ -28,19 +28,18 @@ type EventTeam {
   name: String!
   carNum: String!
   drivers: [EventDriver]!
-  
 }
 
 "This models a driver in a concrete event"
 type EventDriver {
   name: String!
-  carNum: String!  
+  carNum: String!
 }
 
 "This models a more 'generic' driver with participation in events and teams."
 type Driver {
   "The driver name used"
-  name: String!    
+  name: String!
   "The teams in which the driver was a member"
   teams: [Team!]!
   "The events in which the driver participated"
@@ -61,16 +60,29 @@ type Team {
   events: [Event!]!
 }
 
-
-
 type Query {
-  getEvents: [Event!]!
+  getEvents(limit: Int, sort: [EventSortArg!]): [Event!]!
   getTracks: [Track!]!
   track(id: ID!): Track
   events(ids: [ID!]!): [Event!]!
   tracks(ids: [ID!]!): [Track!]!
   "searches for drivers in events. arg is a RegEx"
-  searchDriver(arg:String!): [Driver!]
+  searchDriver(arg: String!): [Driver!]
   "searches for teams in events. arg is a RegEx"
-  searchTeam(arg:String!): [Team!]
+  searchTeam(arg: String!): [Team!]
+}
+
+enum SortOrder {
+  ASC
+  DESC
+}
+enum EventSortField {
+  NAME
+  RECORD_DATE
+  TRACK
+}
+
+input EventSortArg {
+  field: EventSortField!
+  order: SortOrder
 }
