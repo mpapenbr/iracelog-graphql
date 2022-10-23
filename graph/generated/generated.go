@@ -77,7 +77,7 @@ type ComplexityRoot struct {
 
 	Query struct {
 		Events       func(childComplexity int, ids []int) int
-		GetEvents    func(childComplexity int) int
+		GetEvents    func(childComplexity int, limit *int, sort []*model.EventSortArg) int
 		GetTracks    func(childComplexity int) int
 		SearchDriver func(childComplexity int, arg string) int
 		SearchTeam   func(childComplexity int, arg string) int
@@ -118,7 +118,7 @@ type EventResolver interface {
 	Drivers(ctx context.Context, obj *model.Event) ([]*model.EventDriver, error)
 }
 type QueryResolver interface {
-	GetEvents(ctx context.Context) ([]*model.Event, error)
+	GetEvents(ctx context.Context, limit *int, sort []*model.EventSortArg) ([]*model.Event, error)
 	GetTracks(ctx context.Context) ([]*model.Track, error)
 	Track(ctx context.Context, id int) (*model.Track, error)
 	Events(ctx context.Context, ids []int) ([]*model.Event, error)
@@ -279,7 +279,12 @@ func (e *executableSchema) Complexity(typeName, field string, childComplexity in
 			break
 		}
 
-		return e.complexity.Query.GetEvents(childComplexity), true
+		args, err := ec.field_Query_getEvents_args(context.TODO(), rawArgs)
+		if err != nil {
+			return 0, false
+		}
+
+		return e.complexity.Query.GetEvents(childComplexity, args["limit"].(*int), args["sort"].([]*model.EventSortArg)), true
 
 	case "Query.getTracks":
 		if e.complexity.Query.GetTracks == nil {
@@ -434,7 +439,9 @@ func (e *executableSchema) Complexity(typeName, field string, childComplexity in
 func (e *executableSchema) Exec(ctx context.Context) graphql.ResponseHandler {
 	rc := graphql.GetOperationContext(ctx)
 	ec := executionContext{rc, e}
-	inputUnmarshalMap := graphql.BuildUnmarshalerMap()
+	inputUnmarshalMap := graphql.BuildUnmarshalerMap(
+		ec.unmarshalInputEventSortArg,
+	)
 	first := true
 
 	switch rc.Operation.Operation {
@@ -509,19 +516,18 @@ type EventTeam {
   name: String!
   carNum: String!
   drivers: [EventDriver]!
-  
 }
 
 "This models a driver in a concrete event"
 type EventDriver {
   name: String!
-  carNum: String!  
+  carNum: String!
 }
 
 "This models a more 'generic' driver with participation in events and teams."
 type Driver {
   "The driver name used"
-  name: String!    
+  name: String!
   "The teams in which the driver was a member"
   teams: [Team!]!
   "The events in which the driver participated"
@@ -542,18 +548,31 @@ type Team {
   events: [Event!]!
 }
 
-
-
 type Query {
-  getEvents: [Event!]!
+  getEvents(limit: Int, sort: [EventSortArg!]): [Event!]!
   getTracks: [Track!]!
   track(id: ID!): Track
   events(ids: [ID!]!): [Event!]!
   tracks(ids: [ID!]!): [Track!]!
   "searches for drivers in events. arg is a RegEx"
-  searchDriver(arg:String!): [Driver!]
+  searchDriver(arg: String!): [Driver!]
   "searches for teams in events. arg is a RegEx"
-  searchTeam(arg:String!): [Team!]
+  searchTeam(arg: String!): [Team!]
+}
+
+enum SortOrder {
+  ASC
+  DESC
+}
+enum EventSortField {
+  NAME
+  RECORD_DATE
+  TRACK
+}
+
+input EventSortArg {
+  field: EventSortField!
+  order: SortOrder
 }
 `, BuiltIn: false},
 }
@@ -590,6 +609,30 @@ func (ec *executionContext) field_Query_events_args(ctx context.Context, rawArgs
 		}
 	}
 	args["ids"] = arg0
+	return args, nil
+}
+
+func (ec *executionContext) field_Query_getEvents_args(ctx context.Context, rawArgs map[string]interface{}) (map[string]interface{}, error) {
+	var err error
+	args := map[string]interface{}{}
+	var arg0 *int
+	if tmp, ok := rawArgs["limit"]; ok {
+		ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("limit"))
+		arg0, err = ec.unmarshalOInt2ᚖint(ctx, tmp)
+		if err != nil {
+			return nil, err
+		}
+	}
+	args["limit"] = arg0
+	var arg1 []*model.EventSortArg
+	if tmp, ok := rawArgs["sort"]; ok {
+		ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("sort"))
+		arg1, err = ec.unmarshalOEventSortArg2ᚕᚖgithubᚗcomᚋmpapenbrᚋiracelogᚑgraphqlᚋgraphᚋmodelᚐEventSortArgᚄ(ctx, tmp)
+		if err != nil {
+			return nil, err
+		}
+	}
+	args["sort"] = arg1
 	return args, nil
 }
 
@@ -1463,7 +1506,7 @@ func (ec *executionContext) _Query_getEvents(ctx context.Context, field graphql.
 	}()
 	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
 		ctx = rctx // use context from middleware stack in children
-		return ec.resolvers.Query().GetEvents(rctx)
+		return ec.resolvers.Query().GetEvents(rctx, fc.Args["limit"].(*int), fc.Args["sort"].([]*model.EventSortArg))
 	})
 	if err != nil {
 		ec.Error(ctx, err)
@@ -1503,6 +1546,17 @@ func (ec *executionContext) fieldContext_Query_getEvents(ctx context.Context, fi
 			}
 			return nil, fmt.Errorf("no field named %q was found under type Event", field.Name)
 		},
+	}
+	defer func() {
+		if r := recover(); r != nil {
+			err = ec.Recover(ctx, r)
+			ec.Error(ctx, err)
+		}
+	}()
+	ctx = graphql.WithFieldContext(ctx, fc)
+	if fc.Args, err = ec.field_Query_getEvents_args(ctx, field.ArgumentMap(ec.Variables)); err != nil {
+		ec.Error(ctx, err)
+		return
 	}
 	return fc, nil
 }
@@ -4412,6 +4466,42 @@ func (ec *executionContext) fieldContext___Type_specifiedByURL(ctx context.Conte
 
 // region    **************************** input.gotpl *****************************
 
+func (ec *executionContext) unmarshalInputEventSortArg(ctx context.Context, obj interface{}) (model.EventSortArg, error) {
+	var it model.EventSortArg
+	asMap := map[string]interface{}{}
+	for k, v := range obj.(map[string]interface{}) {
+		asMap[k] = v
+	}
+
+	fieldsInOrder := [...]string{"field", "order"}
+	for _, k := range fieldsInOrder {
+		v, ok := asMap[k]
+		if !ok {
+			continue
+		}
+		switch k {
+		case "field":
+			var err error
+
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("field"))
+			it.Field, err = ec.unmarshalNEventSortField2githubᚗcomᚋmpapenbrᚋiracelogᚑgraphqlᚋgraphᚋmodelᚐEventSortField(ctx, v)
+			if err != nil {
+				return it, err
+			}
+		case "order":
+			var err error
+
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("order"))
+			it.Order, err = ec.unmarshalOSortOrder2ᚖgithubᚗcomᚋmpapenbrᚋiracelogᚑgraphqlᚋgraphᚋmodelᚐSortOrder(ctx, v)
+			if err != nil {
+				return it, err
+			}
+		}
+	}
+
+	return it, nil
+}
+
 // endregion **************************** input.gotpl *****************************
 
 // region    ************************** interface.gotpl ***************************
@@ -5592,6 +5682,21 @@ func (ec *executionContext) marshalNEventDriver2ᚖgithubᚗcomᚋmpapenbrᚋira
 	return ec._EventDriver(ctx, sel, v)
 }
 
+func (ec *executionContext) unmarshalNEventSortArg2ᚖgithubᚗcomᚋmpapenbrᚋiracelogᚑgraphqlᚋgraphᚋmodelᚐEventSortArg(ctx context.Context, v interface{}) (*model.EventSortArg, error) {
+	res, err := ec.unmarshalInputEventSortArg(ctx, v)
+	return &res, graphql.ErrorOnPath(ctx, err)
+}
+
+func (ec *executionContext) unmarshalNEventSortField2githubᚗcomᚋmpapenbrᚋiracelogᚑgraphqlᚋgraphᚋmodelᚐEventSortField(ctx context.Context, v interface{}) (model.EventSortField, error) {
+	var res model.EventSortField
+	err := res.UnmarshalGQL(v)
+	return res, graphql.ErrorOnPath(ctx, err)
+}
+
+func (ec *executionContext) marshalNEventSortField2githubᚗcomᚋmpapenbrᚋiracelogᚑgraphqlᚋgraphᚋmodelᚐEventSortField(ctx context.Context, sel ast.SelectionSet, v model.EventSortField) graphql.Marshaler {
+	return v
+}
+
 func (ec *executionContext) marshalNEventTeam2ᚕᚖgithubᚗcomᚋmpapenbrᚋiracelogᚑgraphqlᚋgraphᚋmodelᚐEventTeamᚄ(ctx context.Context, sel ast.SelectionSet, v []*model.EventTeam) graphql.Marshaler {
 	ret := make(graphql.Array, len(v))
 	var wg sync.WaitGroup
@@ -6243,6 +6348,26 @@ func (ec *executionContext) marshalOEventDriver2ᚖgithubᚗcomᚋmpapenbrᚋira
 	return ec._EventDriver(ctx, sel, v)
 }
 
+func (ec *executionContext) unmarshalOEventSortArg2ᚕᚖgithubᚗcomᚋmpapenbrᚋiracelogᚑgraphqlᚋgraphᚋmodelᚐEventSortArgᚄ(ctx context.Context, v interface{}) ([]*model.EventSortArg, error) {
+	if v == nil {
+		return nil, nil
+	}
+	var vSlice []interface{}
+	if v != nil {
+		vSlice = graphql.CoerceList(v)
+	}
+	var err error
+	res := make([]*model.EventSortArg, len(vSlice))
+	for i := range vSlice {
+		ctx := graphql.WithPathContext(ctx, graphql.NewPathWithIndex(i))
+		res[i], err = ec.unmarshalNEventSortArg2ᚖgithubᚗcomᚋmpapenbrᚋiracelogᚑgraphqlᚋgraphᚋmodelᚐEventSortArg(ctx, vSlice[i])
+		if err != nil {
+			return nil, err
+		}
+	}
+	return res, nil
+}
+
 func (ec *executionContext) marshalOEventTeam2ᚕᚖgithubᚗcomᚋmpapenbrᚋiracelogᚑgraphqlᚋgraphᚋmodelᚐEventTeamᚄ(ctx context.Context, sel ast.SelectionSet, v []*model.EventTeam) graphql.Marshaler {
 	if v == nil {
 		return graphql.Null
@@ -6288,6 +6413,38 @@ func (ec *executionContext) marshalOEventTeam2ᚕᚖgithubᚗcomᚋmpapenbrᚋir
 	}
 
 	return ret
+}
+
+func (ec *executionContext) unmarshalOInt2ᚖint(ctx context.Context, v interface{}) (*int, error) {
+	if v == nil {
+		return nil, nil
+	}
+	res, err := graphql.UnmarshalInt(v)
+	return &res, graphql.ErrorOnPath(ctx, err)
+}
+
+func (ec *executionContext) marshalOInt2ᚖint(ctx context.Context, sel ast.SelectionSet, v *int) graphql.Marshaler {
+	if v == nil {
+		return graphql.Null
+	}
+	res := graphql.MarshalInt(*v)
+	return res
+}
+
+func (ec *executionContext) unmarshalOSortOrder2ᚖgithubᚗcomᚋmpapenbrᚋiracelogᚑgraphqlᚋgraphᚋmodelᚐSortOrder(ctx context.Context, v interface{}) (*model.SortOrder, error) {
+	if v == nil {
+		return nil, nil
+	}
+	var res = new(model.SortOrder)
+	err := res.UnmarshalGQL(v)
+	return res, graphql.ErrorOnPath(ctx, err)
+}
+
+func (ec *executionContext) marshalOSortOrder2ᚖgithubᚗcomᚋmpapenbrᚋiracelogᚑgraphqlᚋgraphᚋmodelᚐSortOrder(ctx context.Context, sel ast.SelectionSet, v *model.SortOrder) graphql.Marshaler {
+	if v == nil {
+		return graphql.Null
+	}
+	return v
 }
 
 func (ec *executionContext) unmarshalOString2ᚖstring(ctx context.Context, v interface{}) (*string, error) {

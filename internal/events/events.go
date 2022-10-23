@@ -4,6 +4,8 @@ import (
 	"context"
 	"fmt"
 	"log"
+	"strings"
+	"time"
 
 	"github.com/jackc/pgx/v4"
 	"github.com/jackc/pgx/v4/pgxpool"
@@ -14,10 +16,11 @@ type DbEvent struct {
 	Name        string `json:"name"`
 	Key         string `json:"key"`
 	Description string
+	RecordStamp time.Time `json:"recordStamp"`
 	Info        struct {
 		TrackId           int    `json:"trackId"`
 		EventTime         string `json:"eventTime"`
-		RaceLoggerVersion string `json:"raceLoggerVersion"`
+		RaceloggerVersion string `json:"raceloggerVersion"`
 		TeamRacing        int    `json:"teamRacing"` // 0: false
 		IrSessionId       int    `json:"irSessionId"`
 		Sessions          []struct {
@@ -38,8 +41,30 @@ type DbEvent struct {
 	}
 }
 
-func GetALl(pool *pgxpool.Pool) ([]DbEvent, error) {
-	rows, err := pool.Query(context.Background(), selector)
+type DbEventSortArg struct {
+	Column string
+	Order  string
+}
+
+func convertSortArg(x []DbEventSortArg) string {
+	var ret []string
+	for _, val := range x {
+		ret = append(ret, fmt.Sprintf("%s %s", val.Column, val.Order))
+	}
+	return strings.Join(ret, ",")
+}
+
+func GetALl(pool *pgxpool.Pool, limit *int, sort []DbEventSortArg) ([]DbEvent, error) {
+	query := selector
+
+	if len(sort) > 0 {
+		query = fmt.Sprintf("%s order by %s", query, convertSortArg(sort))
+	}
+
+	if limit != nil {
+		query = fmt.Sprintf("%s limit %d", query, *limit)
+	}
+	rows, err := pool.Query(context.Background(), query)
 	if err != nil {
 		log.Printf("error reading events: %v", err)
 		return []DbEvent{}, err
@@ -121,8 +146,8 @@ func GetEventsByTrackIds(pool *pgxpool.Pool, trackIds []int) (map[int][]*DbEvent
 }
 
 // little helper
-const selector = string("select id,name,event_key,coalesce(description,''),data->'info',data->'manifests', data->'replayInfo' from event ")
+const selector = string("select id,name,event_key,coalesce(description,''),record_stamp, data->'info',data->'manifests', data->'replayInfo' from event ")
 
 func scan(e *DbEvent, rows pgx.Rows) error {
-	return rows.Scan(&e.ID, &e.Name, &e.Key, &e.Description, &e.Info, &e.Manifests, &e.ReplayInfo)
+	return rows.Scan(&e.ID, &e.Name, &e.Key, &e.Description, &e.RecordStamp, &e.Info, &e.Manifests, &e.ReplayInfo)
 }
