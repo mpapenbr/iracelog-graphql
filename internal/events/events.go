@@ -54,13 +54,16 @@ func convertSortArg(x []DbEventSortArg) string {
 	return strings.Join(ret, ",")
 }
 
-func GetALl(pool *pgxpool.Pool, limit *int, sort []DbEventSortArg) ([]DbEvent, error) {
+func GetALl(pool *pgxpool.Pool, limit *int, offset *int, sort []DbEventSortArg) ([]DbEvent, error) {
 	query := selector
 
 	if len(sort) > 0 {
 		query = fmt.Sprintf("%s order by %s", query, convertSortArg(sort))
 	}
 
+	if offset != nil {
+		query = fmt.Sprintf("%s offset %d", query, *offset)
+	}
 	if limit != nil {
 		query = fmt.Sprintf("%s limit %d", query, *limit)
 	}

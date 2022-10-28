@@ -6,6 +6,7 @@ type Event {
   id: ID!
   name: String!
   key: String!
+  recordDate: String
   track: Track # will be changed to non-null. For event 23 (NEC Race) the track 262 is not in the DB
   teams: [EventTeam!]
   drivers: [EventDriver!]!
@@ -61,7 +62,11 @@ type Team {
 }
 
 type Query {
-  getEvents(limit: Int, sort: [EventSortArg!]): [Event!]!
+  getEvents(
+    limit: Int = 10
+    offset: Int
+    sort: [EventSortArg!] = [{ field: RECORD_DATE, order: DESC }]
+  ): [Event!]!
   getTracks: [Track!]!
   track(id: ID!): Track
   events(ids: [ID!]!): [Event!]!
