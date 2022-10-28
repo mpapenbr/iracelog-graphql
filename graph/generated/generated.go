@@ -77,7 +77,7 @@ type ComplexityRoot struct {
 
 	Query struct {
 		Events       func(childComplexity int, ids []int) int
-		GetEvents    func(childComplexity int, limit *int, sort []*model.EventSortArg) int
+		GetEvents    func(childComplexity int, limit *int, offset *int, sort []*model.EventSortArg) int
 		GetTracks    func(childComplexity int) int
 		SearchDriver func(childComplexity int, arg string) int
 		SearchTeam   func(childComplexity int, arg string) int
@@ -118,7 +118,7 @@ type EventResolver interface {
 	Drivers(ctx context.Context, obj *model.Event) ([]*model.EventDriver, error)
 }
 type QueryResolver interface {
-	GetEvents(ctx context.Context, limit *int, sort []*model.EventSortArg) ([]*model.Event, error)
+	GetEvents(ctx context.Context, limit *int, offset *int, sort []*model.EventSortArg) ([]*model.Event, error)
 	GetTracks(ctx context.Context) ([]*model.Track, error)
 	Track(ctx context.Context, id int) (*model.Track, error)
 	Events(ctx context.Context, ids []int) ([]*model.Event, error)
@@ -284,7 +284,7 @@ func (e *executableSchema) Complexity(typeName, field string, childComplexity in
 			return 0, false
 		}
 
-		return e.complexity.Query.GetEvents(childComplexity, args["limit"].(*int), args["sort"].([]*model.EventSortArg)), true
+		return e.complexity.Query.GetEvents(childComplexity, args["limit"].(*int), args["offset"].(*int), args["sort"].([]*model.EventSortArg)), true
 
 	case "Query.getTracks":
 		if e.complexity.Query.GetTracks == nil {
@@ -549,7 +549,11 @@ type Team {
 }
 
 type Query {
-  getEvents(limit: Int, sort: [EventSortArg!]): [Event!]!
+  getEvents(
+    limit: Int = 10
+    offset: Int
+    sort: [EventSortArg!] = [{ field: RECORD_DATE, order: DESC }]
+  ): [Event!]!
   getTracks: [Track!]!
   track(id: ID!): Track
   events(ids: [ID!]!): [Event!]!
@@ -624,15 +628,24 @@ func (ec *executionContext) field_Query_getEvents_args(ctx context.Context, rawA
 		}
 	}
 	args["limit"] = arg0
-	var arg1 []*model.EventSortArg
-	if tmp, ok := rawArgs["sort"]; ok {
-		ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("sort"))
-		arg1, err = ec.unmarshalOEventSortArg2ᚕᚖgithubᚗcomᚋmpapenbrᚋiracelogᚑgraphqlᚋgraphᚋmodelᚐEventSortArgᚄ(ctx, tmp)
+	var arg1 *int
+	if tmp, ok := rawArgs["offset"]; ok {
+		ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("offset"))
+		arg1, err = ec.unmarshalOInt2ᚖint(ctx, tmp)
 		if err != nil {
 			return nil, err
 		}
 	}
-	args["sort"] = arg1
+	args["offset"] = arg1
+	var arg2 []*model.EventSortArg
+	if tmp, ok := rawArgs["sort"]; ok {
+		ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("sort"))
+		arg2, err = ec.unmarshalOEventSortArg2ᚕᚖgithubᚗcomᚋmpapenbrᚋiracelogᚑgraphqlᚋgraphᚋmodelᚐEventSortArgᚄ(ctx, tmp)
+		if err != nil {
+			return nil, err
+		}
+	}
+	args["sort"] = arg2
 	return args, nil
 }
 
@@ -1506,7 +1519,7 @@ func (ec *executionContext) _Query_getEvents(ctx context.Context, field graphql.
 	}()
 	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
 		ctx = rctx // use context from middleware stack in children
-		return ec.resolvers.Query().GetEvents(rctx, fc.Args["limit"].(*int), fc.Args["sort"].([]*model.EventSortArg))
+		return ec.resolvers.Query().GetEvents(rctx, fc.Args["limit"].(*int), fc.Args["offset"].(*int), fc.Args["sort"].([]*model.EventSortArg))
 	})
 	if err != nil {
 		ec.Error(ctx, err)

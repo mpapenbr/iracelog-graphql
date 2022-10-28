@@ -55,11 +55,11 @@ func (db *DbStorage) GetTracksByKeys(ctx context.Context, ids dataloader.Keys) m
 }
 
 // events
-func (db *DbStorage) GetAllEvents(ctx context.Context, limit *int, sort []*model.EventSortArg) ([]*model.Event, error) {
+func (db *DbStorage) GetAllEvents(ctx context.Context, limit *int, offset *int, sort []*model.EventSortArg) ([]*model.Event, error) {
 
 	var result []*model.Event
 	dbEventSortArg := convertEventSortArgs(sort)
-	events, err := events.GetALl(db.pool, limit, dbEventSortArg)
+	events, err := events.GetALl(db.pool, limit, offset, dbEventSortArg)
 	if err == nil {
 		// convert the internal database Track to the GraphQL-Track
 		for _, event := range events {

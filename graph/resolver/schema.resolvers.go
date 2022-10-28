@@ -47,8 +47,8 @@ func (r *eventResolver) Drivers(ctx context.Context, obj *model.Event) ([]*model
 }
 
 // GetEvents is the resolver for the getEvents field.
-func (r *queryResolver) GetEvents(ctx context.Context, limit *int, sort []*model.EventSortArg) ([]*model.Event, error) {
-	return r.db.GetAllEvents(ctx, limit, sort)
+func (r *queryResolver) GetEvents(ctx context.Context, limit *int, offset *int, sort []*model.EventSortArg) ([]*model.Event, error) {
+	return r.db.GetAllEvents(ctx, limit, offset, sort)
 }
 
 // GetTracks is the resolver for the getTracks field.
