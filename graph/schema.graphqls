@@ -6,7 +6,14 @@ type Event {
   id: ID!
   name: String!
   key: String!
-  recordDate: String
+  recordDate: Time
+  eventDate: Time
+  teamRacing: Boolean
+  multiClass: Boolean
+  numCarTypes: Int
+  numCarClasses: Int
+  raceloggerVersion: String
+  iRacingSessionId: Int
   track: Track # will be changed to non-null. For event 23 (NEC Race) the track 262 is not in the DB
   teams: [EventTeam!]
   drivers: [EventDriver!]!
@@ -91,3 +98,5 @@ input EventSortArg {
   field: EventSortField!
   order: SortOrder
 }
+
+scalar Time

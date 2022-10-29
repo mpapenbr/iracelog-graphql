@@ -22,6 +22,9 @@ type DbEvent struct {
 		EventTime         string `json:"eventTime"`
 		RaceloggerVersion string `json:"raceloggerVersion"`
 		TeamRacing        int    `json:"teamRacing"` // 0: false
+		MultiClass        bool   `json:"multiClass"`
+		NumCarTypes       int    `json:"numCarTypes"`
+		NumCarClasses     int    `json:"numCarClasses"`
 		IrSessionId       int    `json:"irSessionId"`
 		Sessions          []struct {
 			Num  int    `json:"num"`

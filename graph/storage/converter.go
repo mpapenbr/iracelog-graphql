@@ -1,6 +1,8 @@
 package storage
 
 import (
+	"time"
+
 	"github.com/mpapenbr/iracelog-graphql/graph/model"
 	"github.com/mpapenbr/iracelog-graphql/internal/events"
 )
@@ -37,4 +39,25 @@ func convertEventSortArgs(modelArgs []*model.EventSortArg) []events.DbEventSortA
 
 	return ret
 
+}
+
+func convertDbEventToModel(dbEvent events.DbEvent) *model.Event {
+	eventTime, _ := time.Parse("2006-01-02T15:04:05", dbEvent.Info.EventTime)
+
+	return &model.Event{
+		ID:                dbEvent.ID,
+		Name:              dbEvent.Name,
+		Key:               dbEvent.Key,
+		TrackId:           dbEvent.Info.TrackId,
+		RecordDate:        dbEvent.RecordStamp,
+		EventDate:         eventTime,
+		RaceloggerVersion: dbEvent.Info.RaceloggerVersion,
+		TeamRacing:        dbEvent.Info.TeamRacing == 1,
+		MultiClass:        dbEvent.Info.MultiClass,
+		IracingSessionId:  dbEvent.Info.IrSessionId,
+		NumCarClasses:     dbEvent.Info.NumCarClasses,
+		NumCarTypes:       dbEvent.Info.NumCarTypes,
+		Track:             &model.Track{},
+		DbEvent:           &dbEvent,
+	}
 }
