@@ -62,10 +62,10 @@ func (db *DbStorage) GetAllEvents(ctx context.Context, limit *int, offset *int, 
 	events, err := events.GetALl(db.pool, limit, offset, dbEventSortArg)
 	if err == nil {
 		// convert the internal database Track to the GraphQL-Track
-		for _, event := range events {
+		for _, dbEvents := range events {
 			// this would cause assigning the last loop content to all result entries
-			dbData := event
-			result = append(result, &model.Event{ID: event.ID, Name: event.Name, Key: event.Key, TrackId: event.Info.TrackId, DbEvent: &dbData})
+
+			result = append(result, convertDbEventToModel(dbEvents))
 		}
 	}
 	return result, err
@@ -80,10 +80,9 @@ func (db *DbStorage) GetEventsByKeys(ctx context.Context, ids dataloader.Keys) m
 	// log.Printf("Tracks: %v\n", tracks)
 
 	// convert the internal database Track to the GraphQL-Track
-	for _, event := range events {
+	for _, dbEvents := range events {
 		// this would cause assigning the last loop content to all result entries
-		dbData := event
-		result[IntKey(event.ID).String()] = &model.Event{ID: event.ID, Name: event.Name, Key: event.Key, TrackId: event.Info.TrackId, DbEvent: &dbData}
+		result[IntKey(dbEvents.ID).String()] = convertDbEventToModel(dbEvents)
 	}
 
 	return result
@@ -104,8 +103,8 @@ func (db *DbStorage) GetEventsForTrackIdsKeys(ctx context.Context, trackIds data
 		// convert the internal database Event to the GraphQL-Event
 		for k, event := range byTrackId {
 			convertedEvents := make([]*model.Event, len(event))
-			for i, dbData := range event {
-				convertedEvents[i] = &model.Event{ID: dbData.ID, Name: dbData.Name, Key: dbData.Key, TrackId: dbData.Info.TrackId, DbEvent: dbData}
+			for i, dbEvent := range event {
+				convertedEvents[i] = convertDbEventToModel(*dbEvent)
 			}
 			result[fmt.Sprintf("%d", k)] = convertedEvents
 		}
