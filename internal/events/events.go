@@ -4,11 +4,11 @@ import (
 	"context"
 	"fmt"
 	"log"
-	"strings"
 	"time"
 
 	"github.com/jackc/pgx/v4"
 	"github.com/jackc/pgx/v4/pgxpool"
+	"github.com/mpapenbr/iracelog-graphql/internal"
 )
 
 type DbEvent struct {
@@ -44,32 +44,35 @@ type DbEvent struct {
 	}
 }
 
-type DbEventSortArg struct {
-	Column string
-	Order  string
+func handlePageableArgs(query string, pageable internal.DbPageable) string {
+	ret := query
+	if len(pageable.Sort) > 0 {
+		ret = fmt.Sprintf("%s order by %s", ret, internal.ConvertSortArg(pageable.Sort))
+	}
+
+	if pageable.Offset != nil {
+		ret = fmt.Sprintf("%s offset %d", ret, *pageable.Offset)
+	}
+	if pageable.Limit != nil {
+		ret = fmt.Sprintf("%s limit %d", ret, *pageable.Limit)
+	}
+	return ret
 }
 
-func convertSortArg(x []DbEventSortArg) string {
-	var ret []string
-	for _, val := range x {
-		ret = append(ret, fmt.Sprintf("%s %s", val.Column, val.Order))
-	}
-	return strings.Join(ret, ",")
-}
+func GetALl(pool *pgxpool.Pool, pageable internal.DbPageable) ([]DbEvent, error) {
+	query := handlePageableArgs(selector, pageable)
 
-func GetALl(pool *pgxpool.Pool, limit *int, offset *int, sort []DbEventSortArg) ([]DbEvent, error) {
-	query := selector
+	// if len(sort) > 0 {
+	// 	query = fmt.Sprintf("%s order by %s", query, convertSortArg(sort))
+	// }
 
-	if len(sort) > 0 {
-		query = fmt.Sprintf("%s order by %s", query, convertSortArg(sort))
-	}
+	// if offset != nil {
+	// 	query = fmt.Sprintf("%s offset %d", query, *offset)
+	// }
+	// if limit != nil {
+	// 	query = fmt.Sprintf("%s limit %d", query, *limit)
+	// }
 
-	if offset != nil {
-		query = fmt.Sprintf("%s offset %d", query, *offset)
-	}
-	if limit != nil {
-		query = fmt.Sprintf("%s limit %d", query, *limit)
-	}
 	rows, err := pool.Query(context.Background(), query)
 	if err != nil {
 		log.Printf("error reading events: %v", err)
@@ -124,9 +127,17 @@ func GetById(pool *pgxpool.Pool, id int) (DbEvent, error) {
 
 }
 
-func GetEventsByTrackIds(pool *pgxpool.Pool, trackIds []int) (map[int][]*DbEvent, error) {
-
-	rows, err := pool.Query(context.Background(), fmt.Sprintf("%s where (data->'info'->'trackId')::integer=any($1)", selector), trackIds)
+/*
+note: currently only pageable.sort is processed.
+Discussion: how should limit/offset be interpreted?
+We can't put it on the query as this would limit/offset the overall data.
+So we have to process it "manually" for each event, which yields the next question:
+should offset apply only for those tracks having more than offset events?
+consider a track with 2 and another with 10 events and a query with offset 5
+*/
+func GetEventsByTrackIds(pool *pgxpool.Pool, trackIds []int, pageable internal.DbPageable) (map[int][]*DbEvent, error) {
+	query := handlePageableArgs(fmt.Sprintf("%s where (data->'info'->'trackId')::integer=any($1)", selector), pageable)
+	rows, err := pool.Query(context.Background(), query, trackIds)
 	if err != nil {
 		log.Printf("error reading ids for trackId: %v", err)
 		return map[int][]*DbEvent{}, err

@@ -4,22 +4,22 @@ import (
 	"time"
 
 	"github.com/mpapenbr/iracelog-graphql/graph/model"
+	"github.com/mpapenbr/iracelog-graphql/internal"
 	"github.com/mpapenbr/iracelog-graphql/internal/events"
 )
 
 // converts model arguments to db arguments
 
-func convertEventSortArgs(modelArgs []*model.EventSortArg) []events.DbEventSortArg {
+func convertEventSortArgs(modelArgs []*model.EventSortArg) []internal.DbSortArg {
 	if modelArgs == nil || len(modelArgs) == 0 {
-		ret := []events.DbEventSortArg{
-			// {Column: "data->'info'->'trackDisplayName'", Order: "asc"},
-			{Column: "id", Order: "desc"},
+		ret := []internal.DbSortArg{
+			{Column: "record_stamp", Order: "desc"},
 		}
 		return ret
 	}
-	var ret []events.DbEventSortArg
+	var ret []internal.DbSortArg
 	for _, arg := range modelArgs {
-		var item events.DbEventSortArg
+		var item internal.DbSortArg
 		switch arg.Field {
 		case model.EventSortFieldName:
 			item.Column = "name"

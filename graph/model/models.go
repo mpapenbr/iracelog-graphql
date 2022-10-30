@@ -36,3 +36,13 @@ type Track struct {
 	ShortName string  `json:"shortName"`
 	Length    float64 `json:"length"`
 }
+
+type Pageable struct {
+	Limit  *int
+	Offset *int
+}
+
+type EventPageable struct {
+	Pageable
+	Sort []EventSortArg
+}
