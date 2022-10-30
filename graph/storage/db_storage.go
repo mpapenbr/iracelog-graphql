@@ -8,6 +8,7 @@ import (
 	"github.com/jackc/pgx/v4/pgxpool"
 
 	"github.com/mpapenbr/iracelog-graphql/graph/model"
+	"github.com/mpapenbr/iracelog-graphql/internal"
 	"github.com/mpapenbr/iracelog-graphql/internal/analysis"
 	"github.com/mpapenbr/iracelog-graphql/internal/events"
 	database "github.com/mpapenbr/iracelog-graphql/internal/pkg/db/postgres"
@@ -59,7 +60,7 @@ func (db *DbStorage) GetAllEvents(ctx context.Context, limit *int, offset *int, 
 
 	var result []*model.Event
 	dbEventSortArg := convertEventSortArgs(sort)
-	events, err := events.GetALl(db.pool, limit, offset, dbEventSortArg)
+	events, err := events.GetALl(db.pool, internal.DbPageable{Limit: limit, Offset: offset, Sort: dbEventSortArg})
 	if err == nil {
 		// convert the internal database Track to the GraphQL-Track
 		for _, dbEvents := range events {
@@ -97,7 +98,7 @@ func (db *DbStorage) GetEventsForTrackIdsKeys(ctx context.Context, trackIds data
 	for i, id := range trackIds {
 		intTrackIds[i] = id.Raw().(int)
 	}
-	byTrackId, err := events.GetEventsByTrackIds(db.pool, intTrackIds)
+	byTrackId, err := events.GetEventsByTrackIds(db.pool, intTrackIds, internal.DbPageable{Sort: convertEventSortArgs([]*model.EventSortArg{})})
 	// log.Printf("Events: %v\n", events)
 	if err == nil {
 		// convert the internal database Event to the GraphQL-Event
