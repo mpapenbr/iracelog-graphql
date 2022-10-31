@@ -44,34 +44,8 @@ type DbEvent struct {
 	}
 }
 
-func handlePageableArgs(query string, pageable internal.DbPageable) string {
-	ret := query
-	if len(pageable.Sort) > 0 {
-		ret = fmt.Sprintf("%s order by %s", ret, internal.ConvertSortArg(pageable.Sort))
-	}
-
-	if pageable.Offset != nil {
-		ret = fmt.Sprintf("%s offset %d", ret, *pageable.Offset)
-	}
-	if pageable.Limit != nil {
-		ret = fmt.Sprintf("%s limit %d", ret, *pageable.Limit)
-	}
-	return ret
-}
-
 func GetALl(pool *pgxpool.Pool, pageable internal.DbPageable) ([]DbEvent, error) {
-	query := handlePageableArgs(selector, pageable)
-
-	// if len(sort) > 0 {
-	// 	query = fmt.Sprintf("%s order by %s", query, convertSortArg(sort))
-	// }
-
-	// if offset != nil {
-	// 	query = fmt.Sprintf("%s offset %d", query, *offset)
-	// }
-	// if limit != nil {
-	// 	query = fmt.Sprintf("%s limit %d", query, *limit)
-	// }
+	query := internal.HandlePageableArgs(selector, pageable)
 
 	rows, err := pool.Query(context.Background(), query)
 	if err != nil {
@@ -136,7 +110,7 @@ should offset apply only for those tracks having more than offset events?
 consider a track with 2 and another with 10 events and a query with offset 5
 */
 func GetEventsByTrackIds(pool *pgxpool.Pool, trackIds []int, pageable internal.DbPageable) (map[int][]*DbEvent, error) {
-	query := handlePageableArgs(fmt.Sprintf("%s where (data->'info'->'trackId')::integer=any($1)", selector), pageable)
+	query := internal.HandlePageableArgs(fmt.Sprintf("%s where (data->'info'->'trackId')::integer=any($1)", selector), pageable)
 	rows, err := pool.Query(context.Background(), query, trackIds)
 	if err != nil {
 		log.Printf("error reading ids for trackId: %v", err)

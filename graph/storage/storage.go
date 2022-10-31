@@ -23,7 +23,7 @@ type Storage interface {
 	GetEventsForTrackIdsKeys(ctx context.Context, trackIds dataloader.Keys) map[string][]*model.Event
 
 	// GetAllTracks lists all Tracks in the database
-	GetAllTracks(ctx context.Context) ([]*model.Track, error)
+	GetAllTracks(ctx context.Context, limit *int, offset *int, sort []*model.TrackSortArg) ([]*model.Track, error)
 	// GetAllEvents lists all Events in the database
 	GetAllEvents(ctx context.Context, limit *int, offset *int, sort []*model.EventSortArg) ([]*model.Event, error)
 

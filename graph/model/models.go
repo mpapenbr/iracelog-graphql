@@ -31,10 +31,13 @@ type Event struct {
 }
 
 type Track struct {
-	ID        int     `json:"id"`
-	Name      string  `json:"name"`
-	ShortName string  `json:"shortName"`
-	Length    float64 `json:"length"`
+	ID            int     `json:"id"`
+	Name          string  `json:"name"`
+	ShortName     string  `json:"shortName"`
+	ConfigName    string  `json:"configName"`
+	Length        float64 `json:"length"`
+	NumSectors    int     `json:"numSectors"`
+	PitlaneLength float64 `json:"pitlaneLength"`
 }
 
 type Pageable struct {

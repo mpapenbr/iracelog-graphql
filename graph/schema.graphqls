@@ -28,6 +28,9 @@ type Track {
   id: ID!
   name: String!
   shortName: String!
+  configName: String
+  numSectors: Int
+  pitlaneLength: Float!
   length: Float!
   events: [Event!]
 }
@@ -74,7 +77,11 @@ type Query {
     offset: Int
     sort: [EventSortArg!] = [{ field: RECORD_DATE, order: DESC }]
   ): [Event!]!
-  getTracks: [Track!]!
+  getTracks(
+    limit: Int = 10
+    offset: Int
+    sort: [TrackSortArg!] = [{ field: NAME, order: ASC }]
+  ): [Track!]!
   track(id: ID!): Track
   events(ids: [ID!]!): [Event!]!
   tracks(ids: [ID!]!): [Track!]!
@@ -94,8 +101,22 @@ enum EventSortField {
   TRACK
 }
 
+enum TrackSortField {
+  ID
+  NAME
+  SHORT_NAME
+  LENGTH
+  PITLANE_LENGTH
+  NUM_SECTORS
+}
+
 input EventSortArg {
   field: EventSortField!
+  order: SortOrder
+}
+
+input TrackSortArg {
+  field: TrackSortField!
   order: SortOrder
 }
 

@@ -5,8 +5,6 @@ package resolver
 
 import (
 	"context"
-	"fmt"
-	"time"
 
 	"github.com/mpapenbr/iracelog-graphql/graph/dataloader"
 	"github.com/mpapenbr/iracelog-graphql/graph/generated"
@@ -54,8 +52,8 @@ func (r *queryResolver) GetEvents(ctx context.Context, limit *int, offset *int, 
 }
 
 // GetTracks is the resolver for the getTracks field.
-func (r *queryResolver) GetTracks(ctx context.Context) ([]*model.Track, error) {
-	return r.db.GetAllTracks(ctx)
+func (r *queryResolver) GetTracks(ctx context.Context, limit *int, offset *int, sort []*model.TrackSortArg) ([]*model.Track, error) {
+	return r.db.GetAllTracks(ctx, limit, offset, sort)
 }
 
 // Track is the resolver for the track field.
@@ -131,16 +129,3 @@ type eventResolver struct{ *Resolver }
 type queryResolver struct{ *Resolver }
 type teamResolver struct{ *Resolver }
 type trackResolver struct{ *Resolver }
-
-// !!! WARNING !!!
-// The code below was going to be deleted when updating resolvers. It has been copied here so you have
-// one last chance to move it out of harms way if you want. There are two reasons this happens:
-//   - When renaming or deleting a resolver the old code will be put in here. You can safely delete
-//     it when you're done.
-//   - You have helper methods in this file. Move them out to keep these resolver files clean.
-func (r *eventResolver) SessionEventDate(ctx context.Context, obj *model.Event) (*time.Time, error) {
-	panic(fmt.Errorf("not implemented: SessionEventDate - sessionEventDate"))
-}
-func (r *eventResolver) RecordDate(ctx context.Context, obj *model.Event) (*string, error) {
-	panic(fmt.Errorf("not implemented: RecordDate - recordDate"))
-}

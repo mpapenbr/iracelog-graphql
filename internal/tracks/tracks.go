@@ -7,6 +7,7 @@ import (
 
 	"github.com/jackc/pgx/v4"
 	"github.com/jackc/pgx/v4/pgxpool"
+	"github.com/mpapenbr/iracelog-graphql/internal"
 	database "github.com/mpapenbr/iracelog-graphql/internal/pkg/db/postgres"
 )
 
@@ -15,12 +16,23 @@ type DbTrack struct {
 	Data struct {
 		Name      string  `json:"trackDisplayName"`
 		ShortName string  `json:"trackDisplayShortName"`
+		Config    string  `json:"trackConfigName"`
 		Length    float64 `json:"trackLength"`
+		Pit       struct {
+			Exit       float64 `json:"exit"`
+			Entry      float64 `json:"entry"`
+			LaneLength float64 `json:"laneLength"`
+		} `json:"pit"`
+		Sectors []struct {
+			SectorNum      int     `json:"sectorNum"`
+			SectorStartpct float64 `json:"sectorStartPct"`
+		} `json:"sectors"`
 	}
 }
 
-func GetALl(pool *pgxpool.Pool) ([]DbTrack, error) {
-	rows, err := pool.Query(context.Background(), selector)
+func GetALl(pool *pgxpool.Pool, pageable internal.DbPageable) ([]DbTrack, error) {
+	query := internal.HandlePageableArgs(selector, pageable)
+	rows, err := pool.Query(context.Background(), query)
 	if err != nil {
 		log.Printf("error reading tracks: %v", err)
 		return []DbTrack{}, err
