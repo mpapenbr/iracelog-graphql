@@ -87,7 +87,7 @@ type ComplexityRoot struct {
 	Query struct {
 		Events       func(childComplexity int, ids []int) int
 		GetEvents    func(childComplexity int, limit *int, offset *int, sort []*model.EventSortArg) int
-		GetTracks    func(childComplexity int) int
+		GetTracks    func(childComplexity int, limit *int, offset *int, sort []*model.TrackSortArg) int
 		SearchDriver func(childComplexity int, arg string) int
 		SearchTeam   func(childComplexity int, arg string) int
 		Track        func(childComplexity int, id int) int
@@ -104,11 +104,14 @@ type ComplexityRoot struct {
 	}
 
 	Track struct {
-		Events    func(childComplexity int) int
-		ID        func(childComplexity int) int
-		Length    func(childComplexity int) int
-		Name      func(childComplexity int) int
-		ShortName func(childComplexity int) int
+		ConfigName    func(childComplexity int) int
+		Events        func(childComplexity int) int
+		ID            func(childComplexity int) int
+		Length        func(childComplexity int) int
+		Name          func(childComplexity int) int
+		NumSectors    func(childComplexity int) int
+		PitlaneLength func(childComplexity int) int
+		ShortName     func(childComplexity int) int
 	}
 
 	User struct {
@@ -128,7 +131,7 @@ type EventResolver interface {
 }
 type QueryResolver interface {
 	GetEvents(ctx context.Context, limit *int, offset *int, sort []*model.EventSortArg) ([]*model.Event, error)
-	GetTracks(ctx context.Context) ([]*model.Track, error)
+	GetTracks(ctx context.Context, limit *int, offset *int, sort []*model.TrackSortArg) ([]*model.Track, error)
 	Track(ctx context.Context, id int) (*model.Track, error)
 	Events(ctx context.Context, ids []int) ([]*model.Event, error)
 	Tracks(ctx context.Context, ids []int) ([]*model.Track, error)
@@ -356,7 +359,12 @@ func (e *executableSchema) Complexity(typeName, field string, childComplexity in
 			break
 		}
 
-		return e.complexity.Query.GetTracks(childComplexity), true
+		args, err := ec.field_Query_getTracks_args(context.TODO(), rawArgs)
+		if err != nil {
+			return 0, false
+		}
+
+		return e.complexity.Query.GetTracks(childComplexity, args["limit"].(*int), args["offset"].(*int), args["sort"].([]*model.TrackSortArg)), true
 
 	case "Query.searchDriver":
 		if e.complexity.Query.SearchDriver == nil {
@@ -448,6 +456,13 @@ func (e *executableSchema) Complexity(typeName, field string, childComplexity in
 
 		return e.complexity.Team.Teams(childComplexity), true
 
+	case "Track.configName":
+		if e.complexity.Track.ConfigName == nil {
+			break
+		}
+
+		return e.complexity.Track.ConfigName(childComplexity), true
+
 	case "Track.events":
 		if e.complexity.Track.Events == nil {
 			break
@@ -475,6 +490,20 @@ func (e *executableSchema) Complexity(typeName, field string, childComplexity in
 		}
 
 		return e.complexity.Track.Name(childComplexity), true
+
+	case "Track.numSectors":
+		if e.complexity.Track.NumSectors == nil {
+			break
+		}
+
+		return e.complexity.Track.NumSectors(childComplexity), true
+
+	case "Track.pitlaneLength":
+		if e.complexity.Track.PitlaneLength == nil {
+			break
+		}
+
+		return e.complexity.Track.PitlaneLength(childComplexity), true
 
 	case "Track.shortName":
 		if e.complexity.Track.ShortName == nil {
@@ -506,6 +535,7 @@ func (e *executableSchema) Exec(ctx context.Context) graphql.ResponseHandler {
 	ec := executionContext{rc, e}
 	inputUnmarshalMap := graphql.BuildUnmarshalerMap(
 		ec.unmarshalInputEventSortArg,
+		ec.unmarshalInputTrackSortArg,
 	)
 	first := true
 
@@ -581,6 +611,9 @@ type Track {
   id: ID!
   name: String!
   shortName: String!
+  configName: String
+  numSectors: Int
+  pitlaneLength: Float!
   length: Float!
   events: [Event!]
 }
@@ -627,7 +660,11 @@ type Query {
     offset: Int
     sort: [EventSortArg!] = [{ field: RECORD_DATE, order: DESC }]
   ): [Event!]!
-  getTracks: [Track!]!
+  getTracks(
+    limit: Int = 10
+    offset: Int
+    sort: [TrackSortArg!] = [{ field: NAME, order: ASC }]
+  ): [Track!]!
   track(id: ID!): Track
   events(ids: [ID!]!): [Event!]!
   tracks(ids: [ID!]!): [Track!]!
@@ -647,8 +684,22 @@ enum EventSortField {
   TRACK
 }
 
+enum TrackSortField {
+  ID
+  NAME
+  SHORT_NAME
+  LENGTH
+  PITLANE_LENGTH
+  NUM_SECTORS
+}
+
 input EventSortArg {
   field: EventSortField!
+  order: SortOrder
+}
+
+input TrackSortArg {
+  field: TrackSortField!
   order: SortOrder
 }
 
@@ -716,6 +767,39 @@ func (ec *executionContext) field_Query_getEvents_args(ctx context.Context, rawA
 	if tmp, ok := rawArgs["sort"]; ok {
 		ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("sort"))
 		arg2, err = ec.unmarshalOEventSortArg2ᚕᚖgithubᚗcomᚋmpapenbrᚋiracelogᚑgraphqlᚋgraphᚋmodelᚐEventSortArgᚄ(ctx, tmp)
+		if err != nil {
+			return nil, err
+		}
+	}
+	args["sort"] = arg2
+	return args, nil
+}
+
+func (ec *executionContext) field_Query_getTracks_args(ctx context.Context, rawArgs map[string]interface{}) (map[string]interface{}, error) {
+	var err error
+	args := map[string]interface{}{}
+	var arg0 *int
+	if tmp, ok := rawArgs["limit"]; ok {
+		ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("limit"))
+		arg0, err = ec.unmarshalOInt2ᚖint(ctx, tmp)
+		if err != nil {
+			return nil, err
+		}
+	}
+	args["limit"] = arg0
+	var arg1 *int
+	if tmp, ok := rawArgs["offset"]; ok {
+		ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("offset"))
+		arg1, err = ec.unmarshalOInt2ᚖint(ctx, tmp)
+		if err != nil {
+			return nil, err
+		}
+	}
+	args["offset"] = arg1
+	var arg2 []*model.TrackSortArg
+	if tmp, ok := rawArgs["sort"]; ok {
+		ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("sort"))
+		arg2, err = ec.unmarshalOTrackSortArg2ᚕᚖgithubᚗcomᚋmpapenbrᚋiracelogᚑgraphqlᚋgraphᚋmodelᚐTrackSortArgᚄ(ctx, tmp)
 		if err != nil {
 			return nil, err
 		}
@@ -1588,6 +1672,12 @@ func (ec *executionContext) fieldContext_Event_track(ctx context.Context, field 
 				return ec.fieldContext_Track_name(ctx, field)
 			case "shortName":
 				return ec.fieldContext_Track_shortName(ctx, field)
+			case "configName":
+				return ec.fieldContext_Track_configName(ctx, field)
+			case "numSectors":
+				return ec.fieldContext_Track_numSectors(ctx, field)
+			case "pitlaneLength":
+				return ec.fieldContext_Track_pitlaneLength(ctx, field)
 			case "length":
 				return ec.fieldContext_Track_length(ctx, field)
 			case "events":
@@ -2023,7 +2113,7 @@ func (ec *executionContext) _Query_getTracks(ctx context.Context, field graphql.
 	}()
 	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
 		ctx = rctx // use context from middleware stack in children
-		return ec.resolvers.Query().GetTracks(rctx)
+		return ec.resolvers.Query().GetTracks(rctx, fc.Args["limit"].(*int), fc.Args["offset"].(*int), fc.Args["sort"].([]*model.TrackSortArg))
 	})
 	if err != nil {
 		ec.Error(ctx, err)
@@ -2054,6 +2144,12 @@ func (ec *executionContext) fieldContext_Query_getTracks(ctx context.Context, fi
 				return ec.fieldContext_Track_name(ctx, field)
 			case "shortName":
 				return ec.fieldContext_Track_shortName(ctx, field)
+			case "configName":
+				return ec.fieldContext_Track_configName(ctx, field)
+			case "numSectors":
+				return ec.fieldContext_Track_numSectors(ctx, field)
+			case "pitlaneLength":
+				return ec.fieldContext_Track_pitlaneLength(ctx, field)
 			case "length":
 				return ec.fieldContext_Track_length(ctx, field)
 			case "events":
@@ -2061,6 +2157,17 @@ func (ec *executionContext) fieldContext_Query_getTracks(ctx context.Context, fi
 			}
 			return nil, fmt.Errorf("no field named %q was found under type Track", field.Name)
 		},
+	}
+	defer func() {
+		if r := recover(); r != nil {
+			err = ec.Recover(ctx, r)
+			ec.Error(ctx, err)
+		}
+	}()
+	ctx = graphql.WithFieldContext(ctx, fc)
+	if fc.Args, err = ec.field_Query_getTracks_args(ctx, field.ArgumentMap(ec.Variables)); err != nil {
+		ec.Error(ctx, err)
+		return
 	}
 	return fc, nil
 }
@@ -2107,6 +2214,12 @@ func (ec *executionContext) fieldContext_Query_track(ctx context.Context, field 
 				return ec.fieldContext_Track_name(ctx, field)
 			case "shortName":
 				return ec.fieldContext_Track_shortName(ctx, field)
+			case "configName":
+				return ec.fieldContext_Track_configName(ctx, field)
+			case "numSectors":
+				return ec.fieldContext_Track_numSectors(ctx, field)
+			case "pitlaneLength":
+				return ec.fieldContext_Track_pitlaneLength(ctx, field)
 			case "length":
 				return ec.fieldContext_Track_length(ctx, field)
 			case "events":
@@ -2259,6 +2372,12 @@ func (ec *executionContext) fieldContext_Query_tracks(ctx context.Context, field
 				return ec.fieldContext_Track_name(ctx, field)
 			case "shortName":
 				return ec.fieldContext_Track_shortName(ctx, field)
+			case "configName":
+				return ec.fieldContext_Track_configName(ctx, field)
+			case "numSectors":
+				return ec.fieldContext_Track_numSectors(ctx, field)
+			case "pitlaneLength":
+				return ec.fieldContext_Track_pitlaneLength(ctx, field)
 			case "length":
 				return ec.fieldContext_Track_length(ctx, field)
 			case "events":
@@ -2981,6 +3100,132 @@ func (ec *executionContext) fieldContext_Track_shortName(ctx context.Context, fi
 		IsResolver: false,
 		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
 			return nil, errors.New("field of type String does not have child fields")
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _Track_configName(ctx context.Context, field graphql.CollectedField, obj *model.Track) (ret graphql.Marshaler) {
+	fc, err := ec.fieldContext_Track_configName(ctx, field)
+	if err != nil {
+		return graphql.Null
+	}
+	ctx = graphql.WithFieldContext(ctx, fc)
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
+		ctx = rctx // use context from middleware stack in children
+		return obj.ConfigName, nil
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		return graphql.Null
+	}
+	res := resTmp.(string)
+	fc.Result = res
+	return ec.marshalOString2string(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) fieldContext_Track_configName(ctx context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "Track",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type String does not have child fields")
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _Track_numSectors(ctx context.Context, field graphql.CollectedField, obj *model.Track) (ret graphql.Marshaler) {
+	fc, err := ec.fieldContext_Track_numSectors(ctx, field)
+	if err != nil {
+		return graphql.Null
+	}
+	ctx = graphql.WithFieldContext(ctx, fc)
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
+		ctx = rctx // use context from middleware stack in children
+		return obj.NumSectors, nil
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		return graphql.Null
+	}
+	res := resTmp.(int)
+	fc.Result = res
+	return ec.marshalOInt2int(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) fieldContext_Track_numSectors(ctx context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "Track",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type Int does not have child fields")
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _Track_pitlaneLength(ctx context.Context, field graphql.CollectedField, obj *model.Track) (ret graphql.Marshaler) {
+	fc, err := ec.fieldContext_Track_pitlaneLength(ctx, field)
+	if err != nil {
+		return graphql.Null
+	}
+	ctx = graphql.WithFieldContext(ctx, fc)
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
+		ctx = rctx // use context from middleware stack in children
+		return obj.PitlaneLength, nil
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		if !graphql.HasFieldError(ctx, fc) {
+			ec.Errorf(ctx, "must not be null")
+		}
+		return graphql.Null
+	}
+	res := resTmp.(float64)
+	fc.Result = res
+	return ec.marshalNFloat2float64(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) fieldContext_Track_pitlaneLength(ctx context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "Track",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type Float does not have child fields")
 		},
 	}
 	return fc, nil
@@ -4998,6 +5243,42 @@ func (ec *executionContext) unmarshalInputEventSortArg(ctx context.Context, obj 
 	return it, nil
 }
 
+func (ec *executionContext) unmarshalInputTrackSortArg(ctx context.Context, obj interface{}) (model.TrackSortArg, error) {
+	var it model.TrackSortArg
+	asMap := map[string]interface{}{}
+	for k, v := range obj.(map[string]interface{}) {
+		asMap[k] = v
+	}
+
+	fieldsInOrder := [...]string{"field", "order"}
+	for _, k := range fieldsInOrder {
+		v, ok := asMap[k]
+		if !ok {
+			continue
+		}
+		switch k {
+		case "field":
+			var err error
+
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("field"))
+			it.Field, err = ec.unmarshalNTrackSortField2githubᚗcomᚋmpapenbrᚋiracelogᚑgraphqlᚋgraphᚋmodelᚐTrackSortField(ctx, v)
+			if err != nil {
+				return it, err
+			}
+		case "order":
+			var err error
+
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("order"))
+			it.Order, err = ec.unmarshalOSortOrder2ᚖgithubᚗcomᚋmpapenbrᚋiracelogᚑgraphqlᚋgraphᚋmodelᚐSortOrder(ctx, v)
+			if err != nil {
+				return it, err
+			}
+		}
+	}
+
+	return it, nil
+}
+
 // endregion **************************** input.gotpl *****************************
 
 // region    ************************** interface.gotpl ***************************
@@ -5603,6 +5884,21 @@ func (ec *executionContext) _Track(ctx context.Context, sel ast.SelectionSet, ob
 		case "shortName":
 
 			out.Values[i] = ec._Track_shortName(ctx, field, obj)
+
+			if out.Values[i] == graphql.Null {
+				atomic.AddUint32(&invalids, 1)
+			}
+		case "configName":
+
+			out.Values[i] = ec._Track_configName(ctx, field, obj)
+
+		case "numSectors":
+
+			out.Values[i] = ec._Track_numSectors(ctx, field, obj)
+
+		case "pitlaneLength":
+
+			out.Values[i] = ec._Track_pitlaneLength(ctx, field, obj)
 
 			if out.Values[i] == graphql.Null {
 				atomic.AddUint32(&invalids, 1)
@@ -6496,6 +6792,21 @@ func (ec *executionContext) marshalNTrack2ᚖgithubᚗcomᚋmpapenbrᚋiracelog�
 	return ec._Track(ctx, sel, v)
 }
 
+func (ec *executionContext) unmarshalNTrackSortArg2ᚖgithubᚗcomᚋmpapenbrᚋiracelogᚑgraphqlᚋgraphᚋmodelᚐTrackSortArg(ctx context.Context, v interface{}) (*model.TrackSortArg, error) {
+	res, err := ec.unmarshalInputTrackSortArg(ctx, v)
+	return &res, graphql.ErrorOnPath(ctx, err)
+}
+
+func (ec *executionContext) unmarshalNTrackSortField2githubᚗcomᚋmpapenbrᚋiracelogᚑgraphqlᚋgraphᚋmodelᚐTrackSortField(ctx context.Context, v interface{}) (model.TrackSortField, error) {
+	var res model.TrackSortField
+	err := res.UnmarshalGQL(v)
+	return res, graphql.ErrorOnPath(ctx, err)
+}
+
+func (ec *executionContext) marshalNTrackSortField2githubᚗcomᚋmpapenbrᚋiracelogᚑgraphqlᚋgraphᚋmodelᚐTrackSortField(ctx context.Context, sel ast.SelectionSet, v model.TrackSortField) graphql.Marshaler {
+	return v
+}
+
 func (ec *executionContext) marshalN__Directive2githubᚗcomᚋ99designsᚋgqlgenᚋgraphqlᚋintrospectionᚐDirective(ctx context.Context, sel ast.SelectionSet, v introspection.Directive) graphql.Marshaler {
 	return ec.___Directive(ctx, sel, &v)
 }
@@ -7073,6 +7384,26 @@ func (ec *executionContext) marshalOTrack2ᚖgithubᚗcomᚋmpapenbrᚋiracelog�
 		return graphql.Null
 	}
 	return ec._Track(ctx, sel, v)
+}
+
+func (ec *executionContext) unmarshalOTrackSortArg2ᚕᚖgithubᚗcomᚋmpapenbrᚋiracelogᚑgraphqlᚋgraphᚋmodelᚐTrackSortArgᚄ(ctx context.Context, v interface{}) ([]*model.TrackSortArg, error) {
+	if v == nil {
+		return nil, nil
+	}
+	var vSlice []interface{}
+	if v != nil {
+		vSlice = graphql.CoerceList(v)
+	}
+	var err error
+	res := make([]*model.TrackSortArg, len(vSlice))
+	for i := range vSlice {
+		ctx := graphql.WithPathContext(ctx, graphql.NewPathWithIndex(i))
+		res[i], err = ec.unmarshalNTrackSortArg2ᚖgithubᚗcomᚋmpapenbrᚋiracelogᚑgraphqlᚋgraphᚋmodelᚐTrackSortArg(ctx, vSlice[i])
+		if err != nil {
+			return nil, err
+		}
+	}
+	return res, nil
 }
 
 func (ec *executionContext) marshalO__EnumValue2ᚕgithubᚗcomᚋ99designsᚋgqlgenᚋgraphqlᚋintrospectionᚐEnumValueᚄ(ctx context.Context, sel ast.SelectionSet, v []introspection.EnumValue) graphql.Marshaler {

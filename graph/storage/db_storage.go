@@ -25,15 +25,16 @@ func NewDbStorage() *DbStorage {
 }
 
 // tracks
-func (db *DbStorage) GetAllTracks(ctx context.Context) ([]*model.Track, error) {
+func (db *DbStorage) GetAllTracks(ctx context.Context, limit *int, offset *int, sort []*model.TrackSortArg) ([]*model.Track, error) {
 
 	var result []*model.Track
 
-	tracks, err := tracks.GetALl(db.pool)
+	dbTrackSortArg := convertTrackSortArgs(sort)
+	tracks, err := tracks.GetALl(db.pool, internal.DbPageable{Limit: limit, Offset: offset, Sort: dbTrackSortArg})
 	if err == nil {
 		// convert the internal database Track to the GraphQL-Track
 		for _, track := range tracks {
-			result = append(result, &model.Track{ID: track.ID, Name: track.Data.Name, ShortName: track.Data.ShortName, Length: track.Data.Length})
+			result = append(result, convertDbTrackToModel(track))
 		}
 	}
 	return result, err
@@ -49,7 +50,7 @@ func (db *DbStorage) GetTracksByKeys(ctx context.Context, ids dataloader.Keys) m
 
 	// convert the internal database Track to the GraphQL-Track
 	for _, track := range tracks {
-		result[IntKey(track.ID).String()] = &model.Track{ID: track.ID, Name: track.Data.Name, ShortName: track.Data.ShortName, Length: track.Data.Length}
+		result[IntKey(track.ID).String()] = convertDbTrackToModel(track)
 	}
 
 	return result

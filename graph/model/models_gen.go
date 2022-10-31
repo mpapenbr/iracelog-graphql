@@ -49,6 +49,11 @@ type Team struct {
 	Events   []*Event     `json:"events"`
 }
 
+type TrackSortArg struct {
+	Field TrackSortField `json:"field"`
+	Order *SortOrder     `json:"order"`
+}
+
 type User struct {
 	ID   int    `json:"id"`
 	Name string `json:"name"`
@@ -135,5 +140,54 @@ func (e *SortOrder) UnmarshalGQL(v interface{}) error {
 }
 
 func (e SortOrder) MarshalGQL(w io.Writer) {
+	fmt.Fprint(w, strconv.Quote(e.String()))
+}
+
+type TrackSortField string
+
+const (
+	TrackSortFieldID            TrackSortField = "ID"
+	TrackSortFieldName          TrackSortField = "NAME"
+	TrackSortFieldShortName     TrackSortField = "SHORT_NAME"
+	TrackSortFieldLength        TrackSortField = "LENGTH"
+	TrackSortFieldPitlaneLength TrackSortField = "PITLANE_LENGTH"
+	TrackSortFieldNumSectors    TrackSortField = "NUM_SECTORS"
+)
+
+var AllTrackSortField = []TrackSortField{
+	TrackSortFieldID,
+	TrackSortFieldName,
+	TrackSortFieldShortName,
+	TrackSortFieldLength,
+	TrackSortFieldPitlaneLength,
+	TrackSortFieldNumSectors,
+}
+
+func (e TrackSortField) IsValid() bool {
+	switch e {
+	case TrackSortFieldID, TrackSortFieldName, TrackSortFieldShortName, TrackSortFieldLength, TrackSortFieldPitlaneLength, TrackSortFieldNumSectors:
+		return true
+	}
+	return false
+}
+
+func (e TrackSortField) String() string {
+	return string(e)
+}
+
+func (e *TrackSortField) UnmarshalGQL(v interface{}) error {
+	str, ok := v.(string)
+	if !ok {
+		return fmt.Errorf("enums must be strings")
+	}
+
+	*e = TrackSortField(str)
+	if !e.IsValid() {
+		return fmt.Errorf("%s is not a valid TrackSortField", str)
+	}
+	return nil
+}
+
+func (e TrackSortField) MarshalGQL(w io.Writer) {
 	fmt.Fprint(w, strconv.Quote(e.String()))
 }
