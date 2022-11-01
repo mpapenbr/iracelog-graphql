@@ -4,9 +4,11 @@ go 1.19
 
 require (
 	github.com/99designs/gqlgen v0.17.20
+	github.com/go-chi/chi v1.5.4
 	github.com/graph-gophers/dataloader v5.0.0+incompatible
 	github.com/jackc/pgtype v1.12.0
 	github.com/jackc/pgx/v4 v4.17.2
+	github.com/rs/cors v1.8.2
 	github.com/sirupsen/logrus v1.9.0
 	github.com/vektah/gqlparser/v2 v2.5.1
 	golang.org/x/exp v0.0.0-20220722155223-a9213eeb770e
