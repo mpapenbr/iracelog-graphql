@@ -86,6 +86,7 @@ func convertDbEventToModel(dbEvent events.DbEvent) *model.Event {
 	return &model.Event{
 		ID:                dbEvent.ID,
 		Name:              dbEvent.Name,
+		Description:       dbEvent.Description,
 		Key:               dbEvent.Key,
 		TrackId:           dbEvent.Info.TrackId,
 		RecordDate:        dbEvent.RecordStamp,

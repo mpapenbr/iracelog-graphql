@@ -14,6 +14,7 @@ import (
 type Event struct {
 	ID                int       `json:"id"`
 	Name              string    `json:"name"`
+	Description       string    `json:"description"`
 	Key               string    `json:"key"`
 	TrackId           int       `json:"trackId"`
 	RecordDate        time.Time `json:"recordDate"`

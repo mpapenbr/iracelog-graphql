@@ -5,6 +5,7 @@
 type Event {
   id: ID!
   name: String!
+  description: String
   key: String!
   recordDate: Time
   eventDate: Time

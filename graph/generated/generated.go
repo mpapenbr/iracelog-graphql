@@ -57,6 +57,7 @@ type ComplexityRoot struct {
 	}
 
 	Event struct {
+		Description       func(childComplexity int) int
 		Drivers           func(childComplexity int) int
 		EventDate         func(childComplexity int) int
 		ID                func(childComplexity int) int
@@ -196,6 +197,13 @@ func (e *executableSchema) Complexity(typeName, field string, childComplexity in
 		}
 
 		return e.complexity.Driver.Teams(childComplexity), true
+
+	case "Event.description":
+		if e.complexity.Event.Description == nil {
+			break
+		}
+
+		return e.complexity.Event.Description(childComplexity), true
 
 	case "Event.drivers":
 		if e.complexity.Event.Drivers == nil {
@@ -588,6 +596,7 @@ var sources = []*ast.Source{
 type Event {
   id: ID!
   name: String!
+  description: String
   key: String!
   recordDate: Time
   eventDate: Time
@@ -1051,6 +1060,8 @@ func (ec *executionContext) fieldContext_Driver_events(ctx context.Context, fiel
 				return ec.fieldContext_Event_id(ctx, field)
 			case "name":
 				return ec.fieldContext_Event_name(ctx, field)
+			case "description":
+				return ec.fieldContext_Event_description(ctx, field)
 			case "key":
 				return ec.fieldContext_Event_key(ctx, field)
 			case "recordDate":
@@ -1246,6 +1257,47 @@ func (ec *executionContext) _Event_name(ctx context.Context, field graphql.Colle
 }
 
 func (ec *executionContext) fieldContext_Event_name(ctx context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "Event",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type String does not have child fields")
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _Event_description(ctx context.Context, field graphql.CollectedField, obj *model.Event) (ret graphql.Marshaler) {
+	fc, err := ec.fieldContext_Event_description(ctx, field)
+	if err != nil {
+		return graphql.Null
+	}
+	ctx = graphql.WithFieldContext(ctx, fc)
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
+		ctx = rctx // use context from middleware stack in children
+		return obj.Description, nil
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		return graphql.Null
+	}
+	res := resTmp.(string)
+	fc.Result = res
+	return ec.marshalOString2string(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) fieldContext_Event_description(ctx context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
 	fc = &graphql.FieldContext{
 		Object:     "Event",
 		Field:      field,
@@ -2057,6 +2109,8 @@ func (ec *executionContext) fieldContext_Query_getEvents(ctx context.Context, fi
 				return ec.fieldContext_Event_id(ctx, field)
 			case "name":
 				return ec.fieldContext_Event_name(ctx, field)
+			case "description":
+				return ec.fieldContext_Event_description(ctx, field)
 			case "key":
 				return ec.fieldContext_Event_key(ctx, field)
 			case "recordDate":
@@ -2285,6 +2339,8 @@ func (ec *executionContext) fieldContext_Query_events(ctx context.Context, field
 				return ec.fieldContext_Event_id(ctx, field)
 			case "name":
 				return ec.fieldContext_Event_name(ctx, field)
+			case "description":
+				return ec.fieldContext_Event_description(ctx, field)
 			case "key":
 				return ec.fieldContext_Event_key(ctx, field)
 			case "recordDate":
@@ -2942,6 +2998,8 @@ func (ec *executionContext) fieldContext_Team_events(ctx context.Context, field 
 				return ec.fieldContext_Event_id(ctx, field)
 			case "name":
 				return ec.fieldContext_Event_name(ctx, field)
+			case "description":
+				return ec.fieldContext_Event_description(ctx, field)
 			case "key":
 				return ec.fieldContext_Event_key(ctx, field)
 			case "recordDate":
@@ -3315,6 +3373,8 @@ func (ec *executionContext) fieldContext_Track_events(ctx context.Context, field
 				return ec.fieldContext_Event_id(ctx, field)
 			case "name":
 				return ec.fieldContext_Event_name(ctx, field)
+			case "description":
+				return ec.fieldContext_Event_description(ctx, field)
 			case "key":
 				return ec.fieldContext_Event_key(ctx, field)
 			case "recordDate":
@@ -5393,6 +5453,10 @@ func (ec *executionContext) _Event(ctx context.Context, sel ast.SelectionSet, ob
 			if out.Values[i] == graphql.Null {
 				atomic.AddUint32(&invalids, 1)
 			}
+		case "description":
+
+			out.Values[i] = ec._Event_description(ctx, field, obj)
+
 		case "key":
 
 			out.Values[i] = ec._Event_key(ctx, field, obj)
