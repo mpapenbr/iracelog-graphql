@@ -4,7 +4,7 @@ go 1.19
 
 require (
 	github.com/99designs/gqlgen v0.17.20
-	github.com/go-chi/chi v1.5.4
+	github.com/go-chi/chi v4.1.2+incompatible
 	github.com/gorilla/websocket v1.5.0
 	github.com/graph-gophers/dataloader v5.0.0+incompatible
 	github.com/jackc/pgtype v1.12.0
