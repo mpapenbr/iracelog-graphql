@@ -4,10 +4,7 @@ if [ ! -e $HOME/.gitconfig.local ]; then
         echo "Linking .gitconfig.local.github"
         ln -s $PWD/.gitconfig.local.github $HOME/.gitconfig.local
     fi
-    if [ -f .gitconfig.local ]; then
-        echo "Linking .gitconfig.local"
-        ln -s $PWD/.gitconfig.local $HOME/.gitconfig.local
-    fi
+    
 fi
 
 # linking .cobra.yaml
