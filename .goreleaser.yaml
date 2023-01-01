@@ -14,23 +14,25 @@ builds:
     goarch:
       - amd64
     ldflags:
-      - -s -w -X github.com/mpapenbr/iracelog-graphql/graph.Version={{.Version}} 
+      - -s -w -X github.com/mpapenbr/iracelog-graphql/graph.Version={{.Version}}
 
 dockers:
-  - image_templates:    
-    - "ghcr.io/mpapenbr/{{ .ProjectName }}:{{ .Tag }}"
+  - image_templates:
+      - "ghcr.io/mpapenbr/{{ .ProjectName }}:{{ .Tag }}"
     build_flag_templates:
-    - "--pull"
-    - "--label=org.opencontainers.image.created={{.Date}}"
-    - "--label=org.opencontainers.image.title={{.ProjectName}}"
-    - "--label=org.opencontainers.image.revision={{.FullCommit}}"
-    - "--label=org.opencontainers.image.version={{.Version}}"    
-    - "--platform=linux/amd64"
+      - "--pull"
+      - "--label=org.opencontainers.image.created={{.Date}}"
+      - "--label=org.opencontainers.image.title={{.ProjectName}}"
+      - "--label=org.opencontainers.image.revision={{.FullCommit}}"
+      - "--label=org.opencontainers.image.version={{.Version}}"
+      - "--platform=linux/amd64"
+    extra_files:
+      - scripts/wait-for-it.sh
 
 docker_manifests:
   - name_template: "ghcr.io/mpapenbr/{{ .ProjectName }}:{{ .Tag }}"
-    image_templates:    
-    - "ghcr.io/mpapenbr/{{ .ProjectName }}:{{ .Tag }}"
+    image_templates:
+      - "ghcr.io/mpapenbr/{{ .ProjectName }}:{{ .Tag }}"
 
 snapshot:
   name_template: "{{ incpatch .Version }}-next"
@@ -41,16 +43,16 @@ changelog:
     - title: Features
       regexp: "^.*feat[(\\w)]*!?:+.*$"
       order: 0
-    - title: 'Bug fixes'
+    - title: "Bug fixes"
       regexp: "^.*fix[(\\w)]*!?:+.*$"
       order: 1
     - title: Others
       order: 999
   filters:
     exclude:
-      - '^docs:'
-      - '^test:'
-      - '^chore'
+      - "^docs:"
+      - "^test:"
+      - "^chore"
       - Merge pull request
       - Merge remote-tracking branch
       - Merge branch
@@ -60,4 +62,3 @@ release:
   footer: |
     ---
     _Released with [GoReleaser](https://goreleaser.com)!_
-
