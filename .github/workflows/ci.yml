@@ -2,10 +2,10 @@ name: Go Build & Test
 on:
   push:
     branches:
-      - 'main'
+      - "main"
   pull_request:
     branches:
-      - '*'
+      - "*"
 jobs:
   build:
     strategy:
@@ -15,16 +15,16 @@ jobs:
     runs-on: ${{ matrix.os }}
     name: Build & Test
     steps:
-    - uses: actions/checkout@v3
-    - uses: actions/setup-go@v3
-      with:
-        go-version: '1.19'
-    - name: Build & Test
-      run: |
-        go build -v
-        go test ./...
-    - name: Run GoReleaser
-      uses: goreleaser/goreleaser-action@v4
-      with:
-        args: release --snapshot --skip-publish --rm-dist
-    
+      - uses: actions/checkout@v3
+      - uses: actions/setup-go@v3
+        with:
+          go-version: "1.19"
+      # don't execute tests in parallel - will collide with reusable testcontainers
+      - name: Build & Test
+        run: |
+          go build -v
+          go test ./... -p 1
+      - name: Run GoReleaser
+        uses: goreleaser/goreleaser-action@v4
+        with:
+          args: release --snapshot --skip-publish --rm-dist
