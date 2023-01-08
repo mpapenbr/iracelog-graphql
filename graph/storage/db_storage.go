@@ -23,6 +23,9 @@ type DbStorage struct {
 func NewDbStorage() *DbStorage {
 	return &DbStorage{pool: database.InitDB()}
 }
+func NewDbStorageWithPool(pool *pgxpool.Pool) *DbStorage {
+	return &DbStorage{pool: pool}
+}
 
 // tracks
 func (db *DbStorage) GetAllTracks(ctx context.Context, limit *int, offset *int, sort []*model.TrackSortArg) ([]*model.Track, error) {
