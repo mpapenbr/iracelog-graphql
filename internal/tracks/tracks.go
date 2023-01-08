@@ -8,7 +8,6 @@ import (
 	"github.com/jackc/pgx/v4"
 	"github.com/jackc/pgx/v4/pgxpool"
 	"github.com/mpapenbr/iracelog-graphql/internal"
-	database "github.com/mpapenbr/iracelog-graphql/internal/pkg/db/postgres"
 )
 
 type DbTrack struct {
@@ -30,6 +29,7 @@ type DbTrack struct {
 	}
 }
 
+// github.com/cweill/gotests/gotests@v1.6.0
 func GetALl(pool *pgxpool.Pool, pageable internal.DbPageable) ([]DbTrack, error) {
 	query := internal.HandlePageableArgs(selector, pageable)
 	rows, err := pool.Query(context.Background(), query)
@@ -38,7 +38,7 @@ func GetALl(pool *pgxpool.Pool, pageable internal.DbPageable) ([]DbTrack, error)
 		return []DbTrack{}, err
 	}
 	defer rows.Close()
-	var ret []DbTrack
+	ret := []DbTrack{}
 	for rows.Next() {
 		t := DbTrack{}
 		// v, _ := rows.Values()
@@ -75,16 +75,6 @@ func GetByIds(pool *pgxpool.Pool, ids []int) ([]DbTrack, error) {
 		ret = append(ret, t)
 	}
 	return ret, nil
-}
-
-func GetById(id int) *DbTrack {
-	t := DbTrack{}
-	err := scanRow(&t, database.DbPool.QueryRow(context.Background(), fmt.Sprintf("%s where id=$1", selector), id))
-	if err != nil {
-		log.Printf("error reading track: %v", err)
-		return nil
-	}
-	return &t
 }
 
 // little helper

@@ -91,16 +91,6 @@ func GetByIds(pool *pgxpool.Pool, ids []int) ([]DbEvent, error) {
 	return ret, nil
 }
 
-func GetById(pool *pgxpool.Pool, id int) (DbEvent, error) {
-
-	res, err := GetByIds(pool, []int{id})
-	if err != nil {
-		return DbEvent{}, err
-	}
-	return res[0], nil
-
-}
-
 /*
 note: currently only pageable.sort is processed.
 Discussion: how should limit/offset be interpreted?

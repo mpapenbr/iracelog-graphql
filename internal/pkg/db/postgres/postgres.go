@@ -16,7 +16,11 @@ import (
 var DbPool *pgxpool.Pool
 
 func InitDB() *pgxpool.Pool {
-	dbConfig, err := pgxpool.ParseConfig(os.Getenv("DATABASE_URL"))
+	return InitWithUrl(os.Getenv("DATABASE_URL"))
+}
+
+func InitWithUrl(url string) *pgxpool.Pool {
+	dbConfig, err := pgxpool.ParseConfig(url)
 	if err != nil {
 		log.Fatalf("Unable to parse database config %v\n", err)
 	}

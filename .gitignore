@@ -20,3 +20,4 @@ dist/
 .gitconfig.local*
 .env
 .npmrc
+iracelog-graphql
