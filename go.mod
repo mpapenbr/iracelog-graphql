@@ -7,7 +7,7 @@ require (
 	github.com/docker/go-connections v0.4.0
 	github.com/gorilla/websocket v1.5.0
 	github.com/graph-gophers/dataloader v5.0.0+incompatible
-	github.com/jackc/pgtype v1.13.0
+	github.com/jackc/pgtype v1.14.0
 	github.com/jackc/pgx/v4 v4.17.2
 	github.com/rs/cors v1.8.3
 	github.com/sirupsen/logrus v1.9.0
