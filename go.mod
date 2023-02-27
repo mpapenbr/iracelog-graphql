@@ -11,7 +11,7 @@ require (
 	github.com/jackc/pgx/v4 v4.17.2
 	github.com/rs/cors v1.8.3
 	github.com/sirupsen/logrus v1.9.0
-	github.com/stretchr/testify v1.8.1
+	github.com/stretchr/testify v1.8.2
 	github.com/testcontainers/testcontainers-go v0.17.0
 	github.com/vektah/gqlparser/v2 v2.5.1
 	golang.org/x/exp v0.0.0-20221230185412-738e83a70c30
