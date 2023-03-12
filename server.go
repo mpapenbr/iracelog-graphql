@@ -4,6 +4,7 @@ import (
 	"log"
 	"net/http"
 	"os"
+	"time"
 
 	"github.com/99designs/gqlgen/graphql/handler"
 	"github.com/99designs/gqlgen/graphql/handler/transport"
@@ -17,6 +18,7 @@ import (
 	"github.com/mpapenbr/iracelog-graphql/graph/generated"
 	"github.com/mpapenbr/iracelog-graphql/graph/resolver"
 	"github.com/mpapenbr/iracelog-graphql/graph/storage"
+	"github.com/mpapenbr/iracelog-graphql/internal/utils"
 )
 
 const defaultPort = "8080"
@@ -26,7 +28,19 @@ func main() {
 	if port == "" {
 		port = defaultPort
 	}
+	var connectTimeout time.Duration
+	var err error
+	
+	if connectTimeout,err = time.ParseDuration(os.Getenv("CONNECT_TIMEOUT")); err != nil {
+		log.Printf("CONNECT_TIMEOUT '%s' not valid. Using default 60s", os.Getenv("CONNECT_TIMEOUT"))
+		connectTimeout = time.Second * 60
+	}
 
+	if err := utils.WaitForTCP(
+		utils.ExtractFromDBUrl(os.Getenv("DATABASE_URL")),
+		connectTimeout); err != nil {
+			log.Fatal(err)
+	}
 	db := storage.NewDbStorage()
 	// _ := database.InitDB()
 
