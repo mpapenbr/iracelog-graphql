@@ -27,6 +27,9 @@ type Storage interface {
 	// GetAllEvents lists all Events in the database
 	GetAllEvents(ctx context.Context, limit *int, offset *int, sort []*model.EventSortArg) ([]*model.Event, error)
 
+	// simple search events by name,description,driver.name,team.name,car.name,track.name
+	SimpleSearchEvents(ctx context.Context, arg string, limit *int, offset *int, sort []*model.EventSortArg) ([]*model.Event,error)
+
 	// search drivers by name
 	SearchDrivers(ctx context.Context, arg string) []*model.Driver
 	// collect drivers for given team name (StringKey) accross all events. returned map key is the team name
@@ -42,4 +45,5 @@ type Storage interface {
 
 	// search team by name
 	SearchTeams(ctx context.Context, arg string) []*model.Team
+
 }

@@ -30,7 +30,7 @@ type EventDriver struct {
 
 type EventSortArg struct {
 	Field EventSortField `json:"field"`
-	Order *SortOrder     `json:"order"`
+	Order *SortOrder     `json:"order,omitempty"`
 }
 
 type EventTeam struct {
@@ -51,7 +51,7 @@ type Team struct {
 
 type TrackSortArg struct {
 	Field TrackSortField `json:"field"`
-	Order *SortOrder     `json:"order"`
+	Order *SortOrder     `json:"order,omitempty"`
 }
 
 type User struct {

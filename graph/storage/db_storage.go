@@ -76,6 +76,22 @@ func (db *DbStorage) GetAllEvents(ctx context.Context, limit *int, offset *int, 
 	return result, err
 }
 
+func (db *DbStorage) SimpleSearchEvents(ctx context.Context, arg string, limit *int, offset *int, sort []*model.EventSortArg) ([]*model.Event, error) {
+
+	var result []*model.Event
+	dbEventSortArg := convertEventSortArgs(sort)
+	events, err := events.SimpleEventSearch(db.pool, arg, internal.DbPageable{Limit: limit, Offset: offset, Sort: dbEventSortArg})
+	if err == nil {
+		// convert the internal database Track to the GraphQL-Track
+		for _, dbEvents := range events {
+			// this would cause assigning the last loop content to all result entries
+
+			result = append(result, convertDbEventToModel(dbEvents))
+		}
+	}
+	return result, err
+}
+
 func (db *DbStorage) GetEventsByKeys(ctx context.Context, ids dataloader.Keys) map[string]*model.Event {
 
 	intIds := IntKeysToSlice(ids)
