@@ -23,13 +23,13 @@ type DbStorage struct {
 func NewDbStorage() *DbStorage {
 	return &DbStorage{pool: database.InitDB()}
 }
+
 func NewDbStorageWithPool(pool *pgxpool.Pool) *DbStorage {
 	return &DbStorage{pool: pool}
 }
 
 // tracks
 func (db *DbStorage) GetAllTracks(ctx context.Context, limit *int, offset *int, sort []*model.TrackSortArg) ([]*model.Track, error) {
-
 	var result []*model.Track
 
 	dbTrackSortArg := convertTrackSortArgs(sort)
@@ -44,7 +44,6 @@ func (db *DbStorage) GetAllTracks(ctx context.Context, limit *int, offset *int, 
 }
 
 func (db *DbStorage) GetTracksByKeys(ctx context.Context, ids dataloader.Keys) map[string]*model.Track {
-
 	intIds := IntKeysToSlice(ids)
 	result := map[string]*model.Track{}
 
@@ -61,7 +60,6 @@ func (db *DbStorage) GetTracksByKeys(ctx context.Context, ids dataloader.Keys) m
 
 // events
 func (db *DbStorage) GetAllEvents(ctx context.Context, limit *int, offset *int, sort []*model.EventSortArg) ([]*model.Event, error) {
-
 	var result []*model.Event
 	dbEventSortArg := convertEventSortArgs(sort)
 	events, err := events.GetALl(db.pool, internal.DbPageable{Limit: limit, Offset: offset, Sort: dbEventSortArg})
@@ -77,7 +75,6 @@ func (db *DbStorage) GetAllEvents(ctx context.Context, limit *int, offset *int, 
 }
 
 func (db *DbStorage) SimpleSearchEvents(ctx context.Context, arg string, limit *int, offset *int, sort []*model.EventSortArg) ([]*model.Event, error) {
-
 	var result []*model.Event
 	dbEventSortArg := convertEventSortArgs(sort)
 	events, err := events.SimpleEventSearch(db.pool, arg, internal.DbPageable{Limit: limit, Offset: offset, Sort: dbEventSortArg})
@@ -92,8 +89,22 @@ func (db *DbStorage) SimpleSearchEvents(ctx context.Context, arg string, limit *
 	return result, err
 }
 
-func (db *DbStorage) GetEventsByKeys(ctx context.Context, ids dataloader.Keys) map[string]*model.Event {
+func (db *DbStorage) AdvancedSearchEvents(ctx context.Context, arg *events.EventSearchKeys, limit *int, offset *int, sort []*model.EventSortArg) ([]*model.Event, error) {
+	var result []*model.Event
+	dbEventSortArg := convertEventSortArgs(sort)
+	events, err := events.AdvancedEventSearch(db.pool, arg, internal.DbPageable{Limit: limit, Offset: offset, Sort: dbEventSortArg})
+	if err == nil {
+		// convert the internal database Track to the GraphQL-Track
+		for _, dbEvents := range events {
+			// this would cause assigning the last loop content to all result entries
 
+			result = append(result, convertDbEventToModel(dbEvents))
+		}
+	}
+	return result, err
+}
+
+func (db *DbStorage) GetEventsByKeys(ctx context.Context, ids dataloader.Keys) map[string]*model.Event {
 	intIds := IntKeysToSlice(ids)
 	result := map[string]*model.Event{}
 
@@ -111,7 +122,6 @@ func (db *DbStorage) GetEventsByKeys(ctx context.Context, ids dataloader.Keys) m
 
 // Note: we use (temporary) a string as key (to reuse existing batcher mechanics)
 func (db *DbStorage) GetEventsForTrackIdsKeys(ctx context.Context, trackIds dataloader.Keys) map[string][]*model.Event {
-
 	result := map[string][]*model.Event{}
 
 	intTrackIds := make([]int, len(trackIds))
@@ -156,7 +166,6 @@ func (db *DbStorage) SearchDrivers(ctx context.Context, arg string) []*model.Dri
 }
 
 func (db *DbStorage) CollectDriversInTeams(ctx context.Context, teams dataloader.Keys) map[string][]*model.Driver {
-
 	res, _ := analysis.SearchDriversInTeams(db.pool, teams.Keys())
 	ret := map[string][]*model.Driver{}
 	for k, v := range res {

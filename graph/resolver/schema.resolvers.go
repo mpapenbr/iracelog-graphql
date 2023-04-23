@@ -10,6 +10,7 @@ import (
 	"github.com/mpapenbr/iracelog-graphql/graph/dataloader"
 	"github.com/mpapenbr/iracelog-graphql/graph/generated"
 	"github.com/mpapenbr/iracelog-graphql/graph/model"
+	"github.com/mpapenbr/iracelog-graphql/graph/storage"
 )
 
 // Teams is the resolver for the teams field.
@@ -94,6 +95,16 @@ func (r *queryResolver) SimpleSearchEvent(ctx context.Context, arg string, limit
 	return r.db.SimpleSearchEvents(ctx, arg, limit, offset, sort)
 }
 
+// AdvancedSearchEvent is the resolver for the advancedSearchEvent field.
+func (r *queryResolver) AdvancedSearchEvent(ctx context.Context, arg string, limit *int, offset *int, sort []*model.EventSortArg) ([]*model.Event, error) {
+	searchArgs, err := storage.ExtractEventSearchKeys(arg)
+	if err != nil {
+		return r.db.SimpleSearchEvents(ctx, arg, limit, offset, sort)
+	} else {
+		return r.db.AdvancedSearchEvents(ctx, searchArgs, limit, offset, sort)
+	}
+}
+
 // Drivers is the resolver for the drivers field.
 func (r *teamResolver) Drivers(ctx context.Context, obj *model.Team) ([]*model.Driver, error) {
 	dbResults, _ := dataloader.For(ctx).GetTeamDrivers(ctx, obj.Name)
@@ -130,8 +141,10 @@ func (r *Resolver) Team() generated.TeamResolver { return &teamResolver{r} }
 // Track returns generated.TrackResolver implementation.
 func (r *Resolver) Track() generated.TrackResolver { return &trackResolver{r} }
 
-type driverResolver struct{ *Resolver }
-type eventResolver struct{ *Resolver }
-type queryResolver struct{ *Resolver }
-type teamResolver struct{ *Resolver }
-type trackResolver struct{ *Resolver }
+type (
+	driverResolver struct{ *Resolver }
+	eventResolver  struct{ *Resolver }
+	queryResolver  struct{ *Resolver }
+	teamResolver   struct{ *Resolver }
+	trackResolver  struct{ *Resolver }
+)

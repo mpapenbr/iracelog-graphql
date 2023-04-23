@@ -256,3 +256,71 @@ func TestSimpleSearchEvents(t *testing.T) {
 		})
 	}
 }
+
+func TestAdvancedEventSearch(t *testing.T) {
+	pool := tcpg.SetupTestDb()
+	type args struct {
+		search EventSearchKeys
+	}
+	tests := []struct {
+		name    string
+		args    args
+		want    []checkData
+		wantErr bool
+	}{
+		{
+			name: "Name", args: args{search: EventSearchKeys{Name: "Petite"}},
+			want: []checkData{{id: 50, eventName: "Petite Lemans"}},
+		},
+		{
+			name: "Track", args: args{search: EventSearchKeys{Track: "Ohio"}},
+			want: []checkData{
+				{id: 64, eventName: "Mid-Ohio 2022-11-20-1617"}, {id: 98, eventName: "Mid-Ohio 2022-11-20-1617 "},
+			},
+		},
+		{
+			name: "Track+Name", args: args{search: EventSearchKeys{Track: "Suzuka", Name: "10h"}},
+			want: []checkData{
+				{id: 63, eventName: "Suzuka 10h"},
+			},
+		},
+		{
+			name: "Driver", args: args{search: EventSearchKeys{Driver: "Sven"}},
+			want: []checkData{
+				{id: 50, eventName: "Petite Lemans"},
+				{id: 63, eventName: "Suzuka 10h"},
+			},
+		},
+		{
+			name: "Car", args: args{search: EventSearchKeys{Car: "Dallara"}},
+			want: []checkData{
+				{id: 50, eventName: "Petite Lemans"},
+			},
+		},
+		{
+			name: "Team", args: args{search: EventSearchKeys{Team: "biela"}},
+			want: []checkData{
+				{id: 50, eventName: "Petite Lemans"},
+				{id: 63, eventName: "Suzuka 10h"},
+			},
+		},
+		{
+			name: "NonExisting Combo", args: args{search: EventSearchKeys{Team: "biela", Car: "Ferrari"}},
+			want: []checkData{},
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			got, err := AdvancedEventSearch(pool, &tt.args.search,
+				internal.DbPageable{Sort: []internal.DbSortArg{{Column: "id", Order: "asc"}}})
+			if (err != nil) != tt.wantErr {
+				t.Errorf("AdvancedEventSearch() error = %v, wantErr %v", err, tt.wantErr)
+				return
+			}
+			check := extractCheckData(got)
+			if !reflect.DeepEqual(check, tt.want) {
+				t.Errorf("AdvancedEventSearch() = %v, want %v", got, tt.want)
+			}
+		})
+	}
+}

@@ -90,8 +90,15 @@ type Query {
   searchDriver(arg: String!): [Driver!]
   "searches for teams in events. arg is a RegEx"
   searchTeam(arg: String!): [Team!]
-  "searches for events. arg is a RegEx"
+  "searches for events. arg is used case insensitive on event.name,event.description,track.name,car.name,driver.name,team.name"
   simpleSearchEvent(
+    arg: String!
+    limit: Int = 10
+    offset: Int
+    sort: [EventSortArg!] = [{ field: RECORD_DATE, order: DESC }]
+  ): [Event!]!
+  "searches for events. arg may contain keys name,car,driver,team followed by colon to assign specific search args. Example: car:Merc track: Interlagos"
+  advancedSearchEvent(
     arg: String!
     limit: Int = 10
     offset: Int
