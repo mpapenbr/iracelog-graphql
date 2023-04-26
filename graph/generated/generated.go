@@ -86,13 +86,15 @@ type ComplexityRoot struct {
 	}
 
 	Query struct {
-		Events       func(childComplexity int, ids []int) int
-		GetEvents    func(childComplexity int, limit *int, offset *int, sort []*model.EventSortArg) int
-		GetTracks    func(childComplexity int, limit *int, offset *int, sort []*model.TrackSortArg) int
-		SearchDriver func(childComplexity int, arg string) int
-		SearchTeam   func(childComplexity int, arg string) int
-		Track        func(childComplexity int, id int) int
-		Tracks       func(childComplexity int, ids []int) int
+		AdvancedSearchEvent func(childComplexity int, arg string, limit *int, offset *int, sort []*model.EventSortArg) int
+		Events              func(childComplexity int, ids []int) int
+		GetEvents           func(childComplexity int, limit *int, offset *int, sort []*model.EventSortArg) int
+		GetTracks           func(childComplexity int, limit *int, offset *int, sort []*model.TrackSortArg) int
+		SearchDriver        func(childComplexity int, arg string) int
+		SearchTeam          func(childComplexity int, arg string) int
+		SimpleSearchEvent   func(childComplexity int, arg string, limit *int, offset *int, sort []*model.EventSortArg) int
+		Track               func(childComplexity int, id int) int
+		Tracks              func(childComplexity int, ids []int) int
 	}
 
 	Team struct {
@@ -138,6 +140,8 @@ type QueryResolver interface {
 	Tracks(ctx context.Context, ids []int) ([]*model.Track, error)
 	SearchDriver(ctx context.Context, arg string) ([]*model.Driver, error)
 	SearchTeam(ctx context.Context, arg string) ([]*model.Team, error)
+	SimpleSearchEvent(ctx context.Context, arg string, limit *int, offset *int, sort []*model.EventSortArg) ([]*model.Event, error)
+	AdvancedSearchEvent(ctx context.Context, arg string, limit *int, offset *int, sort []*model.EventSortArg) ([]*model.Event, error)
 }
 type TeamResolver interface {
 	Drivers(ctx context.Context, obj *model.Team) ([]*model.Driver, error)
@@ -338,6 +342,18 @@ func (e *executableSchema) Complexity(typeName, field string, childComplexity in
 
 		return e.complexity.EventTeam.Name(childComplexity), true
 
+	case "Query.advancedSearchEvent":
+		if e.complexity.Query.AdvancedSearchEvent == nil {
+			break
+		}
+
+		args, err := ec.field_Query_advancedSearchEvent_args(context.TODO(), rawArgs)
+		if err != nil {
+			return 0, false
+		}
+
+		return e.complexity.Query.AdvancedSearchEvent(childComplexity, args["arg"].(string), args["limit"].(*int), args["offset"].(*int), args["sort"].([]*model.EventSortArg)), true
+
 	case "Query.events":
 		if e.complexity.Query.Events == nil {
 			break
@@ -397,6 +413,18 @@ func (e *executableSchema) Complexity(typeName, field string, childComplexity in
 		}
 
 		return e.complexity.Query.SearchTeam(childComplexity, args["arg"].(string)), true
+
+	case "Query.simpleSearchEvent":
+		if e.complexity.Query.SimpleSearchEvent == nil {
+			break
+		}
+
+		args, err := ec.field_Query_simpleSearchEvent_args(context.TODO(), rawArgs)
+		if err != nil {
+			return 0, false
+		}
+
+		return e.complexity.Query.SimpleSearchEvent(childComplexity, args["arg"].(string), args["limit"].(*int), args["offset"].(*int), args["sort"].([]*model.EventSortArg)), true
 
 	case "Query.track":
 		if e.complexity.Query.Track == nil {
@@ -681,6 +709,20 @@ type Query {
   searchDriver(arg: String!): [Driver!]
   "searches for teams in events. arg is a RegEx"
   searchTeam(arg: String!): [Team!]
+  "searches for events. arg is used case insensitive on event.name,event.description,track.name,car.name,driver.name,team.name"
+  simpleSearchEvent(
+    arg: String!
+    limit: Int = 10
+    offset: Int
+    sort: [EventSortArg!] = [{ field: RECORD_DATE, order: DESC }]
+  ): [Event!]!
+  "searches for events. arg may contain keys name,car,driver,team followed by colon to assign specific search args. Example: car:Merc track: Interlagos"
+  advancedSearchEvent(
+    arg: String!
+    limit: Int = 10
+    offset: Int
+    sort: [EventSortArg!] = [{ field: RECORD_DATE, order: DESC }]
+  ): [Event!]!
 }
 
 enum SortOrder {
@@ -733,6 +775,48 @@ func (ec *executionContext) field_Query___type_args(ctx context.Context, rawArgs
 		}
 	}
 	args["name"] = arg0
+	return args, nil
+}
+
+func (ec *executionContext) field_Query_advancedSearchEvent_args(ctx context.Context, rawArgs map[string]interface{}) (map[string]interface{}, error) {
+	var err error
+	args := map[string]interface{}{}
+	var arg0 string
+	if tmp, ok := rawArgs["arg"]; ok {
+		ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("arg"))
+		arg0, err = ec.unmarshalNString2string(ctx, tmp)
+		if err != nil {
+			return nil, err
+		}
+	}
+	args["arg"] = arg0
+	var arg1 *int
+	if tmp, ok := rawArgs["limit"]; ok {
+		ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("limit"))
+		arg1, err = ec.unmarshalOInt2ᚖint(ctx, tmp)
+		if err != nil {
+			return nil, err
+		}
+	}
+	args["limit"] = arg1
+	var arg2 *int
+	if tmp, ok := rawArgs["offset"]; ok {
+		ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("offset"))
+		arg2, err = ec.unmarshalOInt2ᚖint(ctx, tmp)
+		if err != nil {
+			return nil, err
+		}
+	}
+	args["offset"] = arg2
+	var arg3 []*model.EventSortArg
+	if tmp, ok := rawArgs["sort"]; ok {
+		ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("sort"))
+		arg3, err = ec.unmarshalOEventSortArg2ᚕᚖgithubᚗcomᚋmpapenbrᚋiracelogᚑgraphqlᚋgraphᚋmodelᚐEventSortArgᚄ(ctx, tmp)
+		if err != nil {
+			return nil, err
+		}
+	}
+	args["sort"] = arg3
 	return args, nil
 }
 
@@ -844,6 +928,48 @@ func (ec *executionContext) field_Query_searchTeam_args(ctx context.Context, raw
 		}
 	}
 	args["arg"] = arg0
+	return args, nil
+}
+
+func (ec *executionContext) field_Query_simpleSearchEvent_args(ctx context.Context, rawArgs map[string]interface{}) (map[string]interface{}, error) {
+	var err error
+	args := map[string]interface{}{}
+	var arg0 string
+	if tmp, ok := rawArgs["arg"]; ok {
+		ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("arg"))
+		arg0, err = ec.unmarshalNString2string(ctx, tmp)
+		if err != nil {
+			return nil, err
+		}
+	}
+	args["arg"] = arg0
+	var arg1 *int
+	if tmp, ok := rawArgs["limit"]; ok {
+		ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("limit"))
+		arg1, err = ec.unmarshalOInt2ᚖint(ctx, tmp)
+		if err != nil {
+			return nil, err
+		}
+	}
+	args["limit"] = arg1
+	var arg2 *int
+	if tmp, ok := rawArgs["offset"]; ok {
+		ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("offset"))
+		arg2, err = ec.unmarshalOInt2ᚖint(ctx, tmp)
+		if err != nil {
+			return nil, err
+		}
+	}
+	args["offset"] = arg2
+	var arg3 []*model.EventSortArg
+	if tmp, ok := rawArgs["sort"]; ok {
+		ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("sort"))
+		arg3, err = ec.unmarshalOEventSortArg2ᚕᚖgithubᚗcomᚋmpapenbrᚋiracelogᚑgraphqlᚋgraphᚋmodelᚐEventSortArgᚄ(ctx, tmp)
+		if err != nil {
+			return nil, err
+		}
+	}
+	args["sort"] = arg3
 	return args, nil
 }
 
@@ -2580,6 +2706,180 @@ func (ec *executionContext) fieldContext_Query_searchTeam(ctx context.Context, f
 	}()
 	ctx = graphql.WithFieldContext(ctx, fc)
 	if fc.Args, err = ec.field_Query_searchTeam_args(ctx, field.ArgumentMap(ec.Variables)); err != nil {
+		ec.Error(ctx, err)
+		return
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _Query_simpleSearchEvent(ctx context.Context, field graphql.CollectedField) (ret graphql.Marshaler) {
+	fc, err := ec.fieldContext_Query_simpleSearchEvent(ctx, field)
+	if err != nil {
+		return graphql.Null
+	}
+	ctx = graphql.WithFieldContext(ctx, fc)
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
+		ctx = rctx // use context from middleware stack in children
+		return ec.resolvers.Query().SimpleSearchEvent(rctx, fc.Args["arg"].(string), fc.Args["limit"].(*int), fc.Args["offset"].(*int), fc.Args["sort"].([]*model.EventSortArg))
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		if !graphql.HasFieldError(ctx, fc) {
+			ec.Errorf(ctx, "must not be null")
+		}
+		return graphql.Null
+	}
+	res := resTmp.([]*model.Event)
+	fc.Result = res
+	return ec.marshalNEvent2ᚕᚖgithubᚗcomᚋmpapenbrᚋiracelogᚑgraphqlᚋgraphᚋmodelᚐEventᚄ(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) fieldContext_Query_simpleSearchEvent(ctx context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "Query",
+		Field:      field,
+		IsMethod:   true,
+		IsResolver: true,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			switch field.Name {
+			case "id":
+				return ec.fieldContext_Event_id(ctx, field)
+			case "name":
+				return ec.fieldContext_Event_name(ctx, field)
+			case "description":
+				return ec.fieldContext_Event_description(ctx, field)
+			case "key":
+				return ec.fieldContext_Event_key(ctx, field)
+			case "recordDate":
+				return ec.fieldContext_Event_recordDate(ctx, field)
+			case "eventDate":
+				return ec.fieldContext_Event_eventDate(ctx, field)
+			case "teamRacing":
+				return ec.fieldContext_Event_teamRacing(ctx, field)
+			case "multiClass":
+				return ec.fieldContext_Event_multiClass(ctx, field)
+			case "numCarTypes":
+				return ec.fieldContext_Event_numCarTypes(ctx, field)
+			case "numCarClasses":
+				return ec.fieldContext_Event_numCarClasses(ctx, field)
+			case "raceloggerVersion":
+				return ec.fieldContext_Event_raceloggerVersion(ctx, field)
+			case "iRacingSessionId":
+				return ec.fieldContext_Event_iRacingSessionId(ctx, field)
+			case "track":
+				return ec.fieldContext_Event_track(ctx, field)
+			case "teams":
+				return ec.fieldContext_Event_teams(ctx, field)
+			case "drivers":
+				return ec.fieldContext_Event_drivers(ctx, field)
+			}
+			return nil, fmt.Errorf("no field named %q was found under type Event", field.Name)
+		},
+	}
+	defer func() {
+		if r := recover(); r != nil {
+			err = ec.Recover(ctx, r)
+			ec.Error(ctx, err)
+		}
+	}()
+	ctx = graphql.WithFieldContext(ctx, fc)
+	if fc.Args, err = ec.field_Query_simpleSearchEvent_args(ctx, field.ArgumentMap(ec.Variables)); err != nil {
+		ec.Error(ctx, err)
+		return
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _Query_advancedSearchEvent(ctx context.Context, field graphql.CollectedField) (ret graphql.Marshaler) {
+	fc, err := ec.fieldContext_Query_advancedSearchEvent(ctx, field)
+	if err != nil {
+		return graphql.Null
+	}
+	ctx = graphql.WithFieldContext(ctx, fc)
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
+		ctx = rctx // use context from middleware stack in children
+		return ec.resolvers.Query().AdvancedSearchEvent(rctx, fc.Args["arg"].(string), fc.Args["limit"].(*int), fc.Args["offset"].(*int), fc.Args["sort"].([]*model.EventSortArg))
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		if !graphql.HasFieldError(ctx, fc) {
+			ec.Errorf(ctx, "must not be null")
+		}
+		return graphql.Null
+	}
+	res := resTmp.([]*model.Event)
+	fc.Result = res
+	return ec.marshalNEvent2ᚕᚖgithubᚗcomᚋmpapenbrᚋiracelogᚑgraphqlᚋgraphᚋmodelᚐEventᚄ(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) fieldContext_Query_advancedSearchEvent(ctx context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "Query",
+		Field:      field,
+		IsMethod:   true,
+		IsResolver: true,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			switch field.Name {
+			case "id":
+				return ec.fieldContext_Event_id(ctx, field)
+			case "name":
+				return ec.fieldContext_Event_name(ctx, field)
+			case "description":
+				return ec.fieldContext_Event_description(ctx, field)
+			case "key":
+				return ec.fieldContext_Event_key(ctx, field)
+			case "recordDate":
+				return ec.fieldContext_Event_recordDate(ctx, field)
+			case "eventDate":
+				return ec.fieldContext_Event_eventDate(ctx, field)
+			case "teamRacing":
+				return ec.fieldContext_Event_teamRacing(ctx, field)
+			case "multiClass":
+				return ec.fieldContext_Event_multiClass(ctx, field)
+			case "numCarTypes":
+				return ec.fieldContext_Event_numCarTypes(ctx, field)
+			case "numCarClasses":
+				return ec.fieldContext_Event_numCarClasses(ctx, field)
+			case "raceloggerVersion":
+				return ec.fieldContext_Event_raceloggerVersion(ctx, field)
+			case "iRacingSessionId":
+				return ec.fieldContext_Event_iRacingSessionId(ctx, field)
+			case "track":
+				return ec.fieldContext_Event_track(ctx, field)
+			case "teams":
+				return ec.fieldContext_Event_teams(ctx, field)
+			case "drivers":
+				return ec.fieldContext_Event_drivers(ctx, field)
+			}
+			return nil, fmt.Errorf("no field named %q was found under type Event", field.Name)
+		},
+	}
+	defer func() {
+		if r := recover(); r != nil {
+			err = ec.Recover(ctx, r)
+			ec.Error(ctx, err)
+		}
+	}()
+	ctx = graphql.WithFieldContext(ctx, fc)
+	if fc.Args, err = ec.field_Query_advancedSearchEvent_args(ctx, field.ArgumentMap(ec.Variables)); err != nil {
 		ec.Error(ctx, err)
 		return
 	}
@@ -5799,6 +6099,52 @@ func (ec *executionContext) _Query(ctx context.Context, sel ast.SelectionSet) gr
 					}
 				}()
 				res = ec._Query_searchTeam(ctx, field)
+				return res
+			}
+
+			rrm := func(ctx context.Context) graphql.Marshaler {
+				return ec.OperationContext.RootResolverMiddleware(ctx, innerFunc)
+			}
+
+			out.Concurrently(i, func() graphql.Marshaler {
+				return rrm(innerCtx)
+			})
+		case "simpleSearchEvent":
+			field := field
+
+			innerFunc := func(ctx context.Context) (res graphql.Marshaler) {
+				defer func() {
+					if r := recover(); r != nil {
+						ec.Error(ctx, ec.Recover(ctx, r))
+					}
+				}()
+				res = ec._Query_simpleSearchEvent(ctx, field)
+				if res == graphql.Null {
+					atomic.AddUint32(&invalids, 1)
+				}
+				return res
+			}
+
+			rrm := func(ctx context.Context) graphql.Marshaler {
+				return ec.OperationContext.RootResolverMiddleware(ctx, innerFunc)
+			}
+
+			out.Concurrently(i, func() graphql.Marshaler {
+				return rrm(innerCtx)
+			})
+		case "advancedSearchEvent":
+			field := field
+
+			innerFunc := func(ctx context.Context) (res graphql.Marshaler) {
+				defer func() {
+					if r := recover(); r != nil {
+						ec.Error(ctx, ec.Recover(ctx, r))
+					}
+				}()
+				res = ec._Query_advancedSearchEvent(ctx, field)
+				if res == graphql.Null {
+					atomic.AddUint32(&invalids, 1)
+				}
 				return res
 			}
 

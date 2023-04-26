@@ -6,6 +6,7 @@ import (
 	"github.com/graph-gophers/dataloader"
 	"github.com/mpapenbr/iracelog-graphql/graph/model"
 	"github.com/mpapenbr/iracelog-graphql/internal/analysis"
+	"github.com/mpapenbr/iracelog-graphql/internal/events"
 )
 
 /*
@@ -13,7 +14,6 @@ This interface defines all available calls to storage.
 A rule of thumb: for functions containing dataloader.Keys as argument the resulting map key is built by Key.String()
 */
 type Storage interface {
-
 	// GetTracks expects keys of type IntKey. IntKey.String() is used as map key
 	GetTracksByKeys(ctx context.Context, keys dataloader.Keys) map[string]*model.Track
 	// GetEvents expects keys of type IntKey. IntKey.String() is used as map key
@@ -26,6 +26,11 @@ type Storage interface {
 	GetAllTracks(ctx context.Context, limit *int, offset *int, sort []*model.TrackSortArg) ([]*model.Track, error)
 	// GetAllEvents lists all Events in the database
 	GetAllEvents(ctx context.Context, limit *int, offset *int, sort []*model.EventSortArg) ([]*model.Event, error)
+
+	// simple search events by name,description,driver.name,team.name,car.name,track.name
+	SimpleSearchEvents(ctx context.Context, arg string, limit *int, offset *int, sort []*model.EventSortArg) ([]*model.Event, error)
+	// advanced search events. arg is examined for search keys (like name,track,driver,team,car)
+	AdvancedSearchEvents(ctx context.Context, arg *events.EventSearchKeys, limit *int, offset *int, sort []*model.EventSortArg) ([]*model.Event, error)
 
 	// search drivers by name
 	SearchDrivers(ctx context.Context, arg string) []*model.Driver

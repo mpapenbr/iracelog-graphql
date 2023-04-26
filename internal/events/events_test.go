@@ -56,15 +56,27 @@ func TestGetALl(t *testing.T) {
 		want    []checkData
 		wantErr bool
 	}{
-		{name: "2 results, eventName desc", args: args{pool: pool,
-			pageable: internal.DbPageable{Sort: []internal.DbSortArg{{Column: "name", Order: "desc"}}, Limit: intHelper(2)}},
-			want: []checkData{{id: 48, eventName: "Watkins Glen 2022-10-07-2255"}, {id: 63, eventName: "Suzuka 10h"}}, wantErr: false},
-		{name: "2 results, offset 1, eventName asc", args: args{pool: pool,
-			pageable: internal.DbPageable{Sort: []internal.DbSortArg{{Column: "name", Order: "asc"}}, Limit: intHelper(2), Offset: intHelper(1)}},
-			want: []checkData{{id: 98, eventName: "Mid-Ohio 2022-11-20-1617 "}, {id: 50, eventName: "Petite Lemans"}}, wantErr: false},
-		{name: "2 results, offset 1, eventInfo->name asc,id desc", args: args{pool: pool,
-			pageable: internal.DbPageable{Sort: []internal.DbSortArg{{Column: "data->'info'->>'name'", Order: "asc"}, {Column: "id", Order: "desc"}}, Limit: intHelper(2), Offset: intHelper(1)}},
-			want: []checkData{{id: 64, eventName: "Mid-Ohio 2022-11-20-1617"}, {id: 50, eventName: "Petite Lemans"}}, wantErr: false},
+		{
+			name: "2 results, eventName desc", args: args{
+				pool:     pool,
+				pageable: internal.DbPageable{Sort: []internal.DbSortArg{{Column: "name", Order: "desc"}}, Limit: intHelper(2)},
+			},
+			want: []checkData{{id: 48, eventName: "Watkins Glen 2022-10-07-2255"}, {id: 63, eventName: "Suzuka 10h"}}, wantErr: false,
+		},
+		{
+			name: "2 results, offset 1, eventName asc", args: args{
+				pool:     pool,
+				pageable: internal.DbPageable{Sort: []internal.DbSortArg{{Column: "name", Order: "asc"}}, Limit: intHelper(2), Offset: intHelper(1)},
+			},
+			want: []checkData{{id: 98, eventName: "Mid-Ohio 2022-11-20-1617 "}, {id: 50, eventName: "Petite Lemans"}}, wantErr: false,
+		},
+		{
+			name: "2 results, offset 1, eventInfo->name asc,id desc", args: args{
+				pool:     pool,
+				pageable: internal.DbPageable{Sort: []internal.DbSortArg{{Column: "data->'info'->>'name'", Order: "asc"}, {Column: "id", Order: "desc"}}, Limit: intHelper(2), Offset: intHelper(1)},
+			},
+			want: []checkData{{id: 64, eventName: "Mid-Ohio 2022-11-20-1617"}, {id: 50, eventName: "Petite Lemans"}}, wantErr: false,
+		},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
@@ -94,8 +106,10 @@ func TestGetByIds(t *testing.T) {
 		want    []checkData
 		wantErr bool
 	}{
-		{name: "Get events 50,63", args: args{pool: pool, ids: []int{50, 63}}, wantErr: false,
-			want: []checkData{{id: 50, eventName: "Petite Lemans"}, {id: 63, eventName: "Suzuka 10h"}}},
+		{
+			name: "Get events 50,63", args: args{pool: pool, ids: []int{50, 63}}, wantErr: false,
+			want: []checkData{{id: 50, eventName: "Petite Lemans"}, {id: 63, eventName: "Suzuka 10h"}},
+		},
 		{name: "empty request", args: args{pool: pool, ids: []int{}}, wantErr: false, want: []checkData{}},
 		{name: "unknown ids", args: args{pool: pool, ids: []int{999, 3333}}, wantErr: false, want: []checkData{}},
 	}
@@ -128,30 +142,38 @@ func TestGetEventsByTrackIds(t *testing.T) {
 		want    map[int][]checkData
 		wantErr bool
 	}{
-		{name: "Mid-Ohio,Barber", args: args{pool: pool, trackIds: []int{153, 46},
-			pageable: internal.DbPageable{Sort: []internal.DbSortArg{{Column: "id", Order: "asc"}}}},
+		{
+			name: "Mid-Ohio,Barber", args: args{
+				pool: pool, trackIds: []int{153, 46},
+				pageable: internal.DbPageable{Sort: []internal.DbSortArg{{Column: "id", Order: "asc"}}},
+			},
 
 			want: map[int][]checkData{
 				153: {{id: 64, eventName: "Mid-Ohio 2022-11-20-1617"}, {id: 98, eventName: "Mid-Ohio 2022-11-20-1617 "}},
 				// Note: tracks without event are not present in the map
 			},
 		},
-		{name: "Mid-Ohio, custom sort", args: args{pool: pool, trackIds: []int{153, 46},
-			pageable: internal.DbPageable{Sort: []internal.DbSortArg{{Column: "data->'info'->>'name'", Order: "asc"}, {Column: "id", Order: "desc"}}}},
+		{
+			name: "Mid-Ohio, custom sort", args: args{
+				pool: pool, trackIds: []int{153, 46},
+				pageable: internal.DbPageable{Sort: []internal.DbSortArg{{Column: "data->'info'->>'name'", Order: "asc"}, {Column: "id", Order: "desc"}}},
+			},
 
 			want: map[int][]checkData{
 				153: {{id: 98, eventName: "Mid-Ohio 2022-11-20-1617 "}, {id: 64, eventName: "Mid-Ohio 2022-11-20-1617"}},
 				// Note: tracks without event are not present in the map
 			},
 		},
-		{name: "Watkins Glen, Road Atlanta", args: args{pool: pool, trackIds: []int{434, 127}},
+		{
+			name: "Watkins Glen, Road Atlanta", args: args{pool: pool, trackIds: []int{434, 127}},
 
 			want: map[int][]checkData{
 				127: {{id: 50, eventName: "Petite Lemans"}},
 				434: {{id: 48, eventName: "Watkins Glen 2022-10-07-2255"}},
 			},
 		},
-		{name: "no results", args: args{pool: pool, trackIds: []int{999, 333}},
+		{
+			name: "no results", args: args{pool: pool, trackIds: []int{999, 333}},
 			want: map[int][]checkData{},
 		},
 	}
@@ -172,6 +194,139 @@ func TestGetEventsByTrackIds(t *testing.T) {
 			}
 			if !reflect.DeepEqual(check, tt.want) {
 				t.Errorf("GetEventsByTrackIds() = %v, want %v", check, tt.want)
+			}
+		})
+	}
+}
+
+func TestSimpleSearchEvents(t *testing.T) {
+	pool := tcpg.SetupTestDb()
+	type args struct {
+		searchArg string
+	}
+	tests := []struct {
+		name    string
+		args    args
+		want    []checkData
+		wantErr bool
+	}{
+		{
+			name: "Mid-Ohio (Track)", args: args{searchArg: "Mid-O"},
+			want: []checkData{
+				{id: 64, eventName: "Mid-Ohio 2022-11-20-1617"}, {id: 98, eventName: "Mid-Ohio 2022-11-20-1617 "},
+			},
+		},
+		{
+			name: "Petite (Name)", args: args{searchArg: "Petite"},
+			want: []checkData{
+				{id: 50, eventName: "Petite Lemans"},
+			},
+		},
+		{
+			name: "Dallara (Car)", args: args{searchArg: "Dallara"},
+			want: []checkData{
+				{id: 50, eventName: "Petite Lemans"},
+			},
+		},
+		{
+			name: "Biela (Team)", args: args{searchArg: "Biela"},
+			want: []checkData{
+				{id: 50, eventName: "Petite Lemans"}, {id: 63, eventName: "Suzuka 10h"},
+			},
+		},
+		{
+			name: "Sven (Driver)", args: args{searchArg: "Sven"},
+			want: []checkData{
+				{id: 50, eventName: "Petite Lemans"}, {id: 63, eventName: "Suzuka 10h"},
+			},
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			got, err := SimpleEventSearch(pool, tt.args.searchArg,
+				internal.DbPageable{Sort: []internal.DbSortArg{{Column: "id", Order: "asc"}}})
+			if (err != nil) != tt.wantErr {
+				t.Errorf("TestSimpleSearchEvents() error = %v, wantErr %v", err, tt.wantErr)
+				return
+			}
+			check := extractCheckData(got)
+			if !reflect.DeepEqual(check, tt.want) {
+				t.Errorf("TestSimpleSearchEvents() = %v, want %v", check, tt.want)
+			}
+		})
+	}
+}
+
+func TestAdvancedEventSearch(t *testing.T) {
+	pool := tcpg.SetupTestDb()
+	type args struct {
+		search EventSearchKeys
+	}
+	tests := []struct {
+		name    string
+		args    args
+		want    []checkData
+		wantErr bool
+	}{
+		{
+			name: "Name", args: args{search: EventSearchKeys{Name: "Petite"}},
+			want: []checkData{{id: 50, eventName: "Petite Lemans"}},
+		},
+		{
+			name: "Track", args: args{search: EventSearchKeys{Track: "Ohio"}},
+			want: []checkData{
+				{id: 64, eventName: "Mid-Ohio 2022-11-20-1617"}, {id: 98, eventName: "Mid-Ohio 2022-11-20-1617 "},
+			},
+		},
+		{
+			name: "Track+Name", args: args{search: EventSearchKeys{Track: "Suzuka", Name: "10h"}},
+			want: []checkData{
+				{id: 63, eventName: "Suzuka 10h"},
+			},
+		},
+		{
+			name: "Driver", args: args{search: EventSearchKeys{Driver: "Sven"}},
+			want: []checkData{
+				{id: 50, eventName: "Petite Lemans"},
+				{id: 63, eventName: "Suzuka 10h"},
+			},
+		},
+		{
+			name: "Car", args: args{search: EventSearchKeys{Car: "Dallara"}},
+			want: []checkData{
+				{id: 50, eventName: "Petite Lemans"},
+			},
+		},
+		{
+			name: "Team", args: args{search: EventSearchKeys{Team: "biela"}},
+			want: []checkData{
+				{id: 50, eventName: "Petite Lemans"},
+				{id: 63, eventName: "Suzuka 10h"},
+			},
+		},
+		{
+			name: "Team (double escaped regex $)", args: args{search: EventSearchKeys{Team: "pgz \\\\$114"}},
+			want: []checkData{
+				{id: 50, eventName: "Petite Lemans"},
+				{id: 63, eventName: "Suzuka 10h"},
+			},
+		},
+		{
+			name: "NonExisting Combo", args: args{search: EventSearchKeys{Team: "biela", Car: "Ferrari"}},
+			want: []checkData{},
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			got, err := AdvancedEventSearch(pool, &tt.args.search,
+				internal.DbPageable{Sort: []internal.DbSortArg{{Column: "id", Order: "asc"}}})
+			if (err != nil) != tt.wantErr {
+				t.Errorf("AdvancedEventSearch() error = %v, wantErr %v", err, tt.wantErr)
+				return
+			}
+			check := extractCheckData(got)
+			if !reflect.DeepEqual(check, tt.want) {
+				t.Errorf("AdvancedEventSearch() = %v, want %v", got, tt.want)
 			}
 		})
 	}
