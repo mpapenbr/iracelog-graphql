@@ -11,7 +11,7 @@ echo $FULL_TAG
 echo $NO_PREFIX_TAG
 
 # updating the version in graph/version.go
-go test ./... && \
+go test ./... -p 1 && \
 goreleaser --snapshot --skip-publish --clean && \
 sed -i -E "s/(Version\W+=\W*)\"(.*?)\"/\1\"$NO_PREFIX_TAG\"/" graph/version.go && \
 git add graph/version.go && git commit -m "chore: Release $FULL_TAG" && \
