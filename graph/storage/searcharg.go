@@ -25,11 +25,11 @@ func ExtractEventSearchKeys(arg string) (*events.EventSearchKeys, error) {
 			case "name":
 				ret.Name = m
 			case "car":
-				ret.Car = m
+				ret.Car = handleRegexSpecials(m)
 			case "driver":
-				ret.Driver = m
+				ret.Driver = handleRegexSpecials(m)
 			case "team":
-				ret.Team = m
+				ret.Team = handleRegexSpecials(m)
 			case "track":
 				ret.Track = m
 
@@ -41,4 +41,10 @@ func ExtractEventSearchKeys(arg string) (*events.EventSearchKeys, error) {
 		return ret, nil
 	}
 	return nil, ErrNoKeys
+}
+
+// need to "extra" escape the \ since this value is used in a string in SQL
+// see events.AdvancedEventSearch
+func handleRegexSpecials(s string) string {
+	return strings.ReplaceAll(regexp.QuoteMeta(s), "\\", "\\\\")
 }

@@ -305,6 +305,13 @@ func TestAdvancedEventSearch(t *testing.T) {
 			},
 		},
 		{
+			name: "Team (double escaped regex $)", args: args{search: EventSearchKeys{Team: "pgz \\\\$114"}},
+			want: []checkData{
+				{id: 50, eventName: "Petite Lemans"},
+				{id: 63, eventName: "Suzuka 10h"},
+			},
+		},
+		{
 			name: "NonExisting Combo", args: args{search: EventSearchKeys{Team: "biela", Car: "Ferrari"}},
 			want: []checkData{},
 		},

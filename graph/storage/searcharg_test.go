@@ -24,6 +24,7 @@ func TestExtractEventSearchKeys(t *testing.T) {
 		{name: "track", args: args{arg: "xx:yy  track:hallo "}, want: &events.EventSearchKeys{Track: "hallo"}},
 		{name: "track+driver", args: args{arg: "track:hallo driver:me"}, want: &events.EventSearchKeys{Track: "hallo", Driver: "me"}},
 		{name: "track (two words)", args: args{arg: "track:hallo track"}, want: &events.EventSearchKeys{Track: "hallo track"}},
+		{name: "regex special", args: args{arg: "team:pgz $114 name: (round)"}, want: &events.EventSearchKeys{Team: "pgz \\\\$114", Name: "(round)"}},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
