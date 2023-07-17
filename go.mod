@@ -13,7 +13,7 @@ require (
 	github.com/sirupsen/logrus v1.9.3
 	github.com/stretchr/testify v1.8.4
 	github.com/testcontainers/testcontainers-go v0.21.0
-	github.com/vektah/gqlparser/v2 v2.5.7
+	github.com/vektah/gqlparser/v2 v2.5.8
 	golang.org/x/exp v0.0.0-20230510235704-dd950f8aeaea
 )
 
