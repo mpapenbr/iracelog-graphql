@@ -9,7 +9,7 @@ require (
 	github.com/graph-gophers/dataloader v5.0.0+incompatible
 	github.com/jackc/pgtype v1.14.0
 	github.com/jackc/pgx/v4 v4.18.1
-	github.com/rs/cors v1.10.0
+	github.com/rs/cors v1.10.1
 	github.com/sirupsen/logrus v1.9.3
 	github.com/stretchr/testify v1.8.4
 	github.com/testcontainers/testcontainers-go v0.24.1
