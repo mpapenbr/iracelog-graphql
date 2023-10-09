@@ -3,7 +3,7 @@ module github.com/mpapenbr/iracelog-graphql
 go 1.20
 
 require (
-	github.com/99designs/gqlgen v0.17.38
+	github.com/99designs/gqlgen v0.17.39
 	github.com/docker/go-connections v0.4.0
 	github.com/gorilla/websocket v1.5.0
 	github.com/graph-gophers/dataloader v5.0.0+incompatible
@@ -50,6 +50,7 @@ require (
 	github.com/power-devops/perfstat v0.0.0-20210106213030-5aafc221ea8c // indirect
 	github.com/shirou/gopsutil/v3 v3.23.7 // indirect
 	github.com/shoenig/go-m1cpu v0.1.6 // indirect
+	github.com/sosodev/duration v1.1.0 // indirect
 	github.com/tklauser/go-sysconf v0.3.11 // indirect
 	github.com/tklauser/numcpus v0.6.0 // indirect
 	github.com/yusufpapurcu/wmi v1.2.3 // indirect
