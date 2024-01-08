@@ -4,7 +4,7 @@ go 1.20
 
 require (
 	github.com/99designs/gqlgen v0.17.42
-	github.com/docker/go-connections v0.4.0
+	github.com/docker/go-connections v0.5.0
 	github.com/gorilla/websocket v1.5.1
 	github.com/graph-gophers/dataloader v5.0.0+incompatible
 	github.com/jackc/pgtype v1.14.0
