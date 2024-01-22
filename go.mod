@@ -3,7 +3,7 @@ module github.com/mpapenbr/iracelog-graphql
 go 1.20
 
 require (
-	github.com/99designs/gqlgen v0.17.42
+	github.com/99designs/gqlgen v0.17.43
 	github.com/docker/go-connections v0.5.0
 	github.com/gorilla/websocket v1.5.1
 	github.com/graph-gophers/dataloader v5.0.0+incompatible
@@ -13,7 +13,7 @@ require (
 	github.com/sirupsen/logrus v1.9.3
 	github.com/stretchr/testify v1.8.4
 	github.com/testcontainers/testcontainers-go v0.27.0
-	github.com/vektah/gqlparser/v2 v2.5.10
+	github.com/vektah/gqlparser/v2 v2.5.11
 	golang.org/x/exp v0.0.0-20230510235704-dd950f8aeaea
 )
 
