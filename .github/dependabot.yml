@@ -6,9 +6,24 @@ updates:
       interval: "weekly"
     reviewers:
     - mpapenbr
-  - package-ecosystem: github-actions
-    directory: "/"
+    # Check for updates to dependencies once a week - Saturday
     schedule:
-      interval: weekly
-    reviewers:
-    - mpapenbr
+      interval: "weekly"
+      day: "saturday"
+    groups:
+      dependencies:
+        dependency-type: "production"
+
+  - package-ecosystem: github-actions
+    directory: /
+    labels:
+      - developer
+      - build
+    schedule:
+      interval: "weekly"
+    groups:
+      github-actions:
+        dependency-type: "production"
+    commit-message:
+      prefix: "gha"
+      include: "scope"
