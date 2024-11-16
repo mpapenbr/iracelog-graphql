@@ -1,8 +1,6 @@
 package storage
 
 import (
-	"time"
-
 	"github.com/mpapenbr/iracelog-graphql/graph/model"
 	"github.com/mpapenbr/iracelog-graphql/internal"
 	"github.com/mpapenbr/iracelog-graphql/internal/events"
@@ -25,7 +23,7 @@ func convertEventSortArgs(modelArgs []*model.EventSortArg) []internal.DbSortArg 
 		case model.EventSortFieldName:
 			item.Column = "name"
 		case model.EventSortFieldRecordDate:
-			item.Column = "record_stamp"
+			item.Column = "event_time"
 		case model.EventSortFieldTrack:
 			item.Column = "data->'info'->'trackDisplayName'"
 		}
@@ -78,25 +76,24 @@ func convertTrackSortArgs(modelArgs []*model.TrackSortArg) []internal.DbSortArg 
 	return ret
 }
 
-func convertDbEventToModel(dbEvent events.DbEvent) *model.Event {
-	eventTime, _ := time.Parse("2006-01-02T15:04:05", dbEvent.Info.EventTime)
+func convertDbEventToModel(dbEvent *events.DbEvent) *model.Event {
+	// eventTime, _ := time.Parse("2006-01-02T15:04:05", dbEvent.EventTime)
 
 	return &model.Event{
 		ID:                dbEvent.ID,
 		Name:              dbEvent.Name,
 		Description:       dbEvent.Description,
 		Key:               dbEvent.Key,
-		TrackId:           dbEvent.Info.TrackId,
-		RecordDate:        dbEvent.RecordStamp,
-		EventDate:         eventTime,
-		RaceloggerVersion: dbEvent.Info.RaceloggerVersion,
-		TeamRacing:        dbEvent.Info.TeamRacing == 1,
-		MultiClass:        dbEvent.Info.MultiClass,
-		IracingSessionId:  dbEvent.Info.IrSessionId,
-		NumCarClasses:     dbEvent.Info.NumCarClasses,
-		NumCarTypes:       dbEvent.Info.NumCarTypes,
+		TrackId:           dbEvent.TrackId,
+		RecordDate:        dbEvent.EventTime,
+		RaceloggerVersion: dbEvent.RaceloggerVersion,
+		TeamRacing:        dbEvent.TeamRacing,
+		MultiClass:        dbEvent.MultiClass,
+		IracingSessionId:  dbEvent.IrSessionId,
+		NumCarClasses:     dbEvent.NumCarClasses,
+		NumCarTypes:       dbEvent.NumCarTypes,
 		Track:             &model.Track{},
-		DbEvent:           &dbEvent,
+		DbEvent:           dbEvent,
 	}
 }
 

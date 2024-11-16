@@ -14,36 +14,31 @@ import (
 )
 
 type DbEvent struct {
-	ID          int    `json:"id"`
+	ID                   int    `json:"id"`
+	Name                 string `json:"name"`
+	Key                  string `json:"key"`
+	Description          string
+	EventTime            time.Time `json:"eventTime"`
+	RaceloggerVersion    string    `json:"raceloggerVersion"`
+	TeamRacing           bool      `json:"teamRacing"`
+	MultiClass           bool      `json:"multiClass"`
+	NumCarTypes          int       `json:"numCarTypes"`
+	NumCarClasses        int       `json:"numCarClasses"`
+	IrSessionId          int       `json:"irSessionId"`
+	TrackId              int       `json:"trackId"`
+	PitSpeed             float64   `json:"pitSpeed"`
+	ReplayMinTimestamp   time.Time `json:"replayMinTimestamp"`
+	ReplayMinSessionTime float64   `json:"replayMinSessionTime"`
+	ReplayMaxSessionTime float64   `json:"replayMaxSessionTime"`
+	Sessions             []Session `json:"sessions"`
+}
+
+type Session struct {
+	Num         int    `json:"num"`
 	Name        string `json:"name"`
-	Key         string `json:"key"`
-	Description string
-	RecordStamp time.Time `json:"recordStamp"`
-	Info        struct {
-		TrackId           int    `json:"trackId"`
-		EventTime         string `json:"eventTime"`
-		RaceloggerVersion string `json:"raceloggerVersion"`
-		TeamRacing        int    `json:"teamRacing"` // 0: false
-		MultiClass        bool   `json:"multiClass"`
-		NumCarTypes       int    `json:"numCarTypes"`
-		NumCarClasses     int    `json:"numCarClasses"`
-		IrSessionId       int    `json:"irSessionId"`
-		Sessions          []struct {
-			Num  int    `json:"num"`
-			Name string `json:"name"`
-		}
-	}
-	Manifests struct {
-		Car     []string `json:"car"`
-		Pit     []string `json:"pit"`
-		Message []string `json:"message"`
-		Session []string `json:"session"`
-	}
-	ReplayInfo struct {
-		MinTimestamp   float64 `json:"minTimestamp"`
-		MinSessionTime float64 `json:"minSessionTime"`
-		MaxSessionTime float64 `json:"maxSessionTime"`
-	}
+	Type        int    `json:"type"`
+	SessionTime int    `json:"session_time"`
+	Laps        int    `json:"laps"`
 }
 
 type EventSearchKeys struct {
@@ -54,16 +49,16 @@ type EventSearchKeys struct {
 	Team   string
 }
 
-func GetALl(pool *pgxpool.Pool, pageable internal.DbPageable) ([]DbEvent, error) {
+func GetALl(pool *pgxpool.Pool, pageable internal.DbPageable) ([]*DbEvent, error) {
 	query := internal.HandlePageableArgs(selector, pageable)
 
 	rows, err := pool.Query(context.Background(), query)
 	if err != nil {
 		log.Printf("error reading events: %v", err)
-		return []DbEvent{}, err
+		return []*DbEvent{}, err
 	}
 	defer rows.Close()
-	var ret []DbEvent
+	var ret []*DbEvent
 	for rows.Next() {
 		e := DbEvent{}
 		// log.Printf("%v\n", rows.RawValues())
@@ -74,7 +69,7 @@ func GetALl(pool *pgxpool.Pool, pageable internal.DbPageable) ([]DbEvent, error)
 		}
 
 		// log.Printf("%v\n", e)
-		ret = append(ret, e)
+		ret = append(ret, &e)
 	}
 	return ret, nil
 }
@@ -124,12 +119,12 @@ func GetEventsByTrackIds(pool *pgxpool.Pool, trackIds []int, pageable internal.D
 		if err != nil {
 			log.Printf("Error scaning Event: %v\n", err)
 		}
-		val, ok := ret[e.Info.TrackId]
+		val, ok := ret[e.TrackId]
 		if !ok {
 			val = []*DbEvent{}
 		}
 		val = append(val, &e)
-		ret[e.Info.TrackId] = val
+		ret[e.TrackId] = val
 	}
 
 	return ret, nil
@@ -243,8 +238,22 @@ func AdvancedEventSearch(pool *pgxpool.Pool, search *EventSearchKeys, pageable i
 }
 
 // little helper
-const selector = string("select id,name,event_key,coalesce(description,''),record_stamp, data->'info',data->'manifests', data->'replayInfo' from event ")
+const selector = string(`
+select id,name,event_key,description,event_time,
+racelogger_version,team_racing, multi_class, num_car_types,num_car_classes,
+ir_session_id, track_id, pit_speed,
+replay_min_timestamp, replay_min_session_time,replay_max_session_time, sessions
+from event 
+`)
 
 func scan(e *DbEvent, rows pgx.Rows) error {
-	return rows.Scan(&e.ID, &e.Name, &e.Key, &e.Description, &e.RecordStamp, &e.Info, &e.Manifests, &e.ReplayInfo)
+	// var eventTime, replayMinTimestamp time.Time
+	err := rows.Scan(&e.ID, &e.Name, &e.Key, &e.Description, &e.EventTime,
+		&e.RaceloggerVersion, &e.TeamRacing, &e.MultiClass, &e.NumCarTypes, &e.NumCarClasses,
+		&e.IrSessionId, &e.TrackId, &e.PitSpeed,
+		&e.ReplayMinTimestamp, &e.ReplayMinSessionTime, &e.ReplayMaxSessionTime,
+		&e.Sessions,
+	)
+	// e.EventTime = eventTime
+	return err
 }

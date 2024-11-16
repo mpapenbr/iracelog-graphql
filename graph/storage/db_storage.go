@@ -83,7 +83,7 @@ func (db *DbStorage) SimpleSearchEvents(ctx context.Context, arg string, limit *
 		for _, dbEvents := range events {
 			// this would cause assigning the last loop content to all result entries
 
-			result = append(result, convertDbEventToModel(dbEvents))
+			result = append(result, convertDbEventToModel(&dbEvents))
 		}
 	}
 	return result, err
@@ -98,7 +98,7 @@ func (db *DbStorage) AdvancedSearchEvents(ctx context.Context, arg *events.Event
 		for _, dbEvents := range events {
 			// this would cause assigning the last loop content to all result entries
 
-			result = append(result, convertDbEventToModel(dbEvents))
+			result = append(result, convertDbEventToModel(&dbEvents))
 		}
 	}
 	return result, err
@@ -114,7 +114,7 @@ func (db *DbStorage) GetEventsByKeys(ctx context.Context, ids dataloader.Keys) m
 	// convert the internal database Track to the GraphQL-Track
 	for _, dbEvents := range events {
 		// this would cause assigning the last loop content to all result entries
-		result[IntKey(dbEvents.ID).String()] = convertDbEventToModel(dbEvents)
+		result[IntKey(dbEvents.ID).String()] = convertDbEventToModel(&dbEvents)
 	}
 
 	return result
@@ -135,7 +135,7 @@ func (db *DbStorage) GetEventsForTrackIdsKeys(ctx context.Context, trackIds data
 		for k, event := range byTrackId {
 			convertedEvents := make([]*model.Event, len(event))
 			for i, dbEvent := range event {
-				convertedEvents[i] = convertDbEventToModel(*dbEvent)
+				convertedEvents[i] = convertDbEventToModel(dbEvent)
 			}
 			result[fmt.Sprintf("%d", k)] = convertedEvents
 		}
