@@ -39,6 +39,9 @@ type EventTeam struct {
 	Drivers []*EventDriver `json:"drivers"`
 }
 
+type Query struct {
+}
+
 // This models a more 'generic' driver with participation in events and teams.
 type Team struct {
 	Name     string       `json:"name"`

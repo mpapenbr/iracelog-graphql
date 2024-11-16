@@ -11,40 +11,39 @@ import (
 )
 
 type DbTrack struct {
-	ID   int `json:"id"`
-	Data struct {
-		Name      string  `json:"trackDisplayName"`
-		ShortName string  `json:"trackDisplayShortName"`
-		Config    string  `json:"trackConfigName"`
-		Length    float64 `json:"trackLength"`
-		Pit       struct {
-			Exit       float64 `json:"exit"`
-			Entry      float64 `json:"entry"`
-			LaneLength float64 `json:"laneLength"`
-		} `json:"pit"`
-		Sectors []struct {
-			SectorNum      int     `json:"sectorNum"`
-			SectorStartpct float64 `json:"sectorStartPct"`
-		} `json:"sectors"`
-	}
+	ID int `json:"id"`
+
+	Name          string   `json:"name"`
+	ShortName     string   `json:"shortName"`
+	Config        string   `json:"config"`
+	Length        float64  `json:"length"`
+	PitSpeed      float64  `json:"pitSpeed"`
+	PitExit       float64  `json:"pitExit"`
+	PitEntry      float64  `json:"pitEntry"`
+	PitLaneLength float64  `json:"pitLaneLength"`
+	Sectors       []Sector `json:"sectors"`
+}
+type Sector struct {
+	Num      int     `json:"num"`
+	StartPct float64 `json:"start_pct"`
 }
 
 // github.com/cweill/gotests/gotests@v1.6.0
-func GetALl(pool *pgxpool.Pool, pageable internal.DbPageable) ([]DbTrack, error) {
+func GetALl(pool *pgxpool.Pool, pageable internal.DbPageable) ([]*DbTrack, error) {
 	query := internal.HandlePageableArgs(selector, pageable)
 	rows, err := pool.Query(context.Background(), query)
 	if err != nil {
 		log.Printf("error reading tracks: %v", err)
-		return []DbTrack{}, err
+		return []*DbTrack{}, err
 	}
 	defer rows.Close()
-	ret := []DbTrack{}
+	ret := []*DbTrack{}
 	for rows.Next() {
-		t := DbTrack{}
+		// t := DbTrack{}
 		// v, _ := rows.Values()
 		// log.Printf("%v\n", v)
 
-		err = scan(&t, rows)
+		t, err := scanRow(rows)
 		if err != nil {
 			log.Printf("Error scaning Track: %v\n", err)
 		}
@@ -55,18 +54,16 @@ func GetALl(pool *pgxpool.Pool, pageable internal.DbPageable) ([]DbTrack, error)
 	return ret, nil
 }
 
-func GetByIds(pool *pgxpool.Pool, ids []int) ([]DbTrack, error) {
+func GetByIds(pool *pgxpool.Pool, ids []int) ([]*DbTrack, error) {
 	rows, err := pool.Query(context.Background(), fmt.Sprintf("%s where id=any($1)", selector), ids)
 	if err != nil {
 		log.Printf("error reading tracks: %v", err)
-		return []DbTrack{}, err
+		return []*DbTrack{}, err
 	}
 	defer rows.Close()
-	var ret []DbTrack
+	var ret []*DbTrack
 	for rows.Next() {
-		t := DbTrack{}
-
-		err = scan(&t, rows)
+		t, err := scanRow(rows)
 		if err != nil {
 			log.Printf("Error scaning Track: %v\n", err)
 		}
@@ -77,12 +74,21 @@ func GetByIds(pool *pgxpool.Pool, ids []int) ([]DbTrack, error) {
 }
 
 // little helper
-const selector = string("select id,data from track")
+const selector = string("select id,name,short_name,config,track_length,sectors,pit_speed,pit_entry,pit_exit,pit_lane_length from track")
 
-func scan(t *DbTrack, rows pgx.Rows) error {
-	return rows.Scan(&t.ID, &t.Data)
-}
+func scanRow(row pgx.Row) (*DbTrack, error) {
+	var sectors []Sector
+	var item DbTrack
 
-func scanRow(t *DbTrack, row pgx.Row) error {
-	return row.Scan(&t.ID, &t.Data)
+	if err := row.Scan(&item.ID, &item.Name, &item.ShortName, &item.Config,
+		&item.Length, &sectors, &item.PitSpeed,
+		&item.PitEntry, &item.PitExit, &item.PitLaneLength); err != nil {
+		return nil, err
+	}
+	item.Sectors = make([]Sector, len(sectors))
+	for i := range sectors {
+		item.Sectors[i] = sectors[i]
+	}
+
+	return &item, nil
 }

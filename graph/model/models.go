@@ -38,7 +38,8 @@ type Track struct {
 	ConfigName    string  `json:"configName"`
 	Length        float64 `json:"length"`
 	NumSectors    int     `json:"numSectors"`
-	PitlaneLength float64 `json:"pitlaneLength"`
+	PitLaneLength float64 `json:"pitLaneLength"`
+	PitSpeed      float64 `json:"pitSpeed"`
 }
 
 type Pageable struct {

@@ -39,13 +39,12 @@ func convertEventSortArgs(modelArgs []*model.EventSortArg) []internal.DbSortArg 
 	}
 
 	return ret
-
 }
 
 func convertTrackSortArgs(modelArgs []*model.TrackSortArg) []internal.DbSortArg {
 	if len(modelArgs) == 0 {
 		ret := []internal.DbSortArg{
-			{Column: "data->>'trackDisplayName'", Order: "asc"},
+			{Column: "name'", Order: "asc"},
 		}
 		return ret
 	}
@@ -55,17 +54,17 @@ func convertTrackSortArgs(modelArgs []*model.TrackSortArg) []internal.DbSortArg 
 		switch arg.Field {
 
 		case model.TrackSortFieldName:
-			item.Column = "data->>'trackDisplayName'"
+			item.Column = "name'"
 		case model.TrackSortFieldShortName:
-			item.Column = "data->>'trackDisplayShortName'"
+			item.Column = "short_name'"
 		case model.TrackSortFieldID:
 			item.Column = "id"
 		case model.TrackSortFieldLength:
-			item.Column = "data->'trackLength'"
+			item.Column = "track_length"
 		case model.TrackSortFieldPitlaneLength:
-			item.Column = "data->'pit'->'laneLength'" // TODO
+			item.Column = "pit_lane_length"
 		case model.TrackSortFieldNumSectors:
-			item.Column = "jsonb_array_length(data->'sectors')"
+			item.Column = "jsonb_array_length(sectors)"
 		}
 		if arg.Order != nil && *arg.Order == model.SortOrderDesc {
 			item.Order = "desc"
@@ -77,7 +76,6 @@ func convertTrackSortArgs(modelArgs []*model.TrackSortArg) []internal.DbSortArg 
 	}
 
 	return ret
-
 }
 
 func convertDbEventToModel(dbEvent events.DbEvent) *model.Event {
@@ -102,15 +100,15 @@ func convertDbEventToModel(dbEvent events.DbEvent) *model.Event {
 	}
 }
 
-func convertDbTrackToModel(dbTrack tracks.DbTrack) *model.Track {
-
+func convertDbTrackToModel(dbTrack *tracks.DbTrack) *model.Track {
 	return &model.Track{
 		ID:            dbTrack.ID,
-		Name:          dbTrack.Data.Name,
-		ShortName:     dbTrack.Data.ShortName,
-		ConfigName:    dbTrack.Data.Config,
-		Length:        dbTrack.Data.Length,
-		NumSectors:    len(dbTrack.Data.Sectors),
-		PitlaneLength: dbTrack.Data.Pit.LaneLength,
+		Name:          dbTrack.Name,
+		ShortName:     dbTrack.ShortName,
+		ConfigName:    dbTrack.Config,
+		Length:        dbTrack.Length,
+		NumSectors:    len(dbTrack.Sectors),
+		PitLaneLength: dbTrack.PitLaneLength,
+		PitSpeed:      dbTrack.PitSpeed,
 	}
 }

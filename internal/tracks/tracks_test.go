@@ -16,15 +16,15 @@ type checkData struct {
 	trackName string
 }
 
-func extractCheckData(dbData []DbTrack) []checkData {
+func extractCheckData(dbData []*DbTrack) []checkData {
 	ret := make([]checkData, len(dbData))
 	for i, item := range dbData {
-		ret[i] = checkData{id: item.ID, trackName: item.Data.ShortName}
+		ret[i] = checkData{id: item.ID, trackName: item.ShortName}
 	}
 	return ret
 }
 
-func extractAndSortCheckData(dbData []DbTrack) []checkData {
+func extractAndSortCheckData(dbData []*DbTrack) []checkData {
 	ret := extractCheckData(dbData)
 	slices.SortFunc(ret, func(a, b checkData) bool { return a.id < b.id })
 	return ret

@@ -31,7 +31,8 @@ type Track {
   shortName: String!
   configName: String
   numSectors: Int
-  pitlaneLength: Float!
+  pitLaneLength: Float!
+  pitSpeed: Float!
   length: Float!
   events: [Event!]
 }
