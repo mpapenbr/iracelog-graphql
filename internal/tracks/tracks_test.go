@@ -4,7 +4,7 @@ import (
 	"reflect"
 	"testing"
 
-	"github.com/jackc/pgx/v4/pgxpool"
+	"github.com/jackc/pgx/v5/pgxpool"
 	"github.com/mpapenbr/iracelog-graphql/internal"
 	tcpg "github.com/mpapenbr/iracelog-graphql/testsupport/tcpostgres"
 	"github.com/stretchr/testify/assert"
@@ -36,7 +36,6 @@ func intHelper(i int) *int {
 }
 
 func TestGetALl(t *testing.T) {
-
 	pool := tcpg.SetupTestDb()
 
 	// dbStorage := storage.NewDbStorageWithPool(pool)
@@ -53,12 +52,18 @@ func TestGetALl(t *testing.T) {
 	}{
 		// Testing only makes sense with predictable results (-> needs sorting). We pick two sort colums with different sortings.
 
-		{name: "2 results, displayShort asc", args: args{pool: pool, pageable: internal.DbPageable{Sort: []internal.DbSortArg{{Column: "data->>'trackDisplayShortName'", Order: "asc"}}, Limit: intHelper(2)}},
-			want: []checkData{{id: 46, trackName: "Barber"}, {id: 145, trackName: "Brands Hatch"}}, wantErr: false},
-		{name: "2 results, trackLength desc", args: args{pool: pool, pageable: internal.DbPageable{Sort: []internal.DbSortArg{{Column: "data->'trackLength'", Order: "desc"}}, Limit: intHelper(2)}},
-			want: []checkData{{id: 262, trackName: "Gesamtstrecke VLN"}, {id: 341, trackName: "Silverstone"}}, wantErr: false},
-		{name: "2 results, trackLength, default sorting (asc)", args: args{pool: pool, pageable: internal.DbPageable{Sort: []internal.DbSortArg{{Column: "data->'trackLength'"}}, Limit: intHelper(2)}},
-			want: []checkData{{id: 153, trackName: "Mid-Ohio"}, {id: 46, trackName: "Barber"}}, wantErr: false},
+		{
+			name: "2 results, displayShort asc", args: args{pool: pool, pageable: internal.DbPageable{Sort: []internal.DbSortArg{{Column: "data->>'trackDisplayShortName'", Order: "asc"}}, Limit: intHelper(2)}},
+			want: []checkData{{id: 46, trackName: "Barber"}, {id: 145, trackName: "Brands Hatch"}}, wantErr: false,
+		},
+		{
+			name: "2 results, trackLength desc", args: args{pool: pool, pageable: internal.DbPageable{Sort: []internal.DbSortArg{{Column: "data->'trackLength'", Order: "desc"}}, Limit: intHelper(2)}},
+			want: []checkData{{id: 262, trackName: "Gesamtstrecke VLN"}, {id: 341, trackName: "Silverstone"}}, wantErr: false,
+		},
+		{
+			name: "2 results, trackLength, default sorting (asc)", args: args{pool: pool, pageable: internal.DbPageable{Sort: []internal.DbSortArg{{Column: "data->'trackLength'"}}, Limit: intHelper(2)}},
+			want: []checkData{{id: 153, trackName: "Mid-Ohio"}, {id: 46, trackName: "Barber"}}, wantErr: false,
+		},
 	}
 
 	for _, tt := range tests {
@@ -74,7 +79,6 @@ func TestGetALl(t *testing.T) {
 			if !reflect.DeepEqual(check, tt.want) {
 				t.Errorf("GetAll() = %v, want %v", check, tt.want)
 			}
-
 		})
 	}
 }

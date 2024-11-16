@@ -7,7 +7,7 @@ import (
 	"sort"
 	"strings"
 
-	"github.com/jackc/pgx/v4/pgxpool"
+	"github.com/jackc/pgx/v5/pgxpool"
 	"golang.org/x/exp/slices"
 )
 
@@ -20,7 +20,6 @@ type DbDriverSummary struct {
 }
 
 func SearchDrivers(pool *pgxpool.Pool, arg string) ([]DbDriverSummary, error) {
-
 	rows, err := pool.Query(context.Background(), fmt.Sprintf(
 		`select s.event_id,dInfo->>'driverName' as driverName, tInfo from 
 	(select
@@ -179,7 +178,6 @@ func CollectEventIdsForDrivers(pool *pgxpool.Pool, driverNames []string) (map[st
 		`select a.event_id, args.arg from analysis a cross join (select * from (values %s) as b(arg)) args
 		where jsonb_path_exists(a.data, '$.carInfo[*] ?(@.drivers.driverName == $myArg)', jsonb_build_object('myArg', args.arg))
 		`, strings.Join(work, ",")))
-
 	if err != nil {
 		log.Printf("error reading analysis: %v", err)
 		return map[string][]int{}, err

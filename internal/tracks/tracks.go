@@ -5,8 +5,8 @@ import (
 	"fmt"
 	"log"
 
-	"github.com/jackc/pgx/v4"
-	"github.com/jackc/pgx/v4/pgxpool"
+	"github.com/jackc/pgx/v5"
+	"github.com/jackc/pgx/v5/pgxpool"
 	"github.com/mpapenbr/iracelog-graphql/internal"
 )
 
@@ -56,7 +56,6 @@ func GetALl(pool *pgxpool.Pool, pageable internal.DbPageable) ([]DbTrack, error)
 }
 
 func GetByIds(pool *pgxpool.Pool, ids []int) ([]DbTrack, error) {
-
 	rows, err := pool.Query(context.Background(), fmt.Sprintf("%s where id=any($1)", selector), ids)
 	if err != nil {
 		log.Printf("error reading tracks: %v", err)
@@ -83,6 +82,7 @@ const selector = string("select id,data from track")
 func scan(t *DbTrack, rows pgx.Rows) error {
 	return rows.Scan(&t.ID, &t.Data)
 }
+
 func scanRow(t *DbTrack, row pgx.Row) error {
 	return row.Scan(&t.ID, &t.Data)
 }
