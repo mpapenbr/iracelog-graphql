@@ -6,7 +6,7 @@ import (
 	"log"
 	"sort"
 
-	"github.com/jackc/pgx/v4/pgxpool"
+	"github.com/jackc/pgx/v5/pgxpool"
 )
 
 type CarInfo struct {
@@ -46,15 +46,12 @@ type DbTeamInEvent struct {
 }
 
 func GetAnalysisForEvent(pool *pgxpool.Pool, eventId int) (*DbAnalysis, error) {
-
 	var data DbAnalysis
 	pool.QueryRow(context.Background(), "select id,data from analysis where event_id=$1", eventId).Scan(&data.ID, &data)
 	return &data, nil
-
 }
 
 func GetAnalysisForEvents(pool *pgxpool.Pool, eventIds []int) ([]DbAnalysis, error) {
-
 	rows, err := pool.Query(context.Background(), "select id,event_id,data->'carInfo' from analysis where event_id=any($1)", eventIds)
 	if err != nil {
 		log.Printf("error reading analysis: %v", err)
@@ -69,11 +66,9 @@ func GetAnalysisForEvents(pool *pgxpool.Pool, eventIds []int) ([]DbAnalysis, err
 		ret = append(ret, dba)
 	}
 	return ret, err
-
 }
 
 func SearchTeams(pool *pgxpool.Pool, arg string) ([]DbTeamSummary, error) {
-
 	rows, err := pool.Query(context.Background(), fmt.Sprintf(
 		`select s.event_id,tInfo->>'name' as teamName, tInfo from 
 	(select

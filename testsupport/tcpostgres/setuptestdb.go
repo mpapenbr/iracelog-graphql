@@ -7,7 +7,7 @@ import (
 	"time"
 
 	"github.com/docker/go-connections/nat"
-	"github.com/jackc/pgx/v4/pgxpool"
+	"github.com/jackc/pgx/v5/pgxpool"
 	database "github.com/mpapenbr/iracelog-graphql/internal/pkg/db/postgres"
 	"github.com/testcontainers/testcontainers-go/wait"
 )

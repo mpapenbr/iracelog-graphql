@@ -7,7 +7,7 @@ import (
 	"sort"
 	"strings"
 
-	"github.com/jackc/pgx/v4/pgxpool"
+	"github.com/jackc/pgx/v5/pgxpool"
 	"golang.org/x/exp/slices"
 )
 
@@ -116,7 +116,6 @@ func CollectEventIdsForTeams(pool *pgxpool.Pool, teamNames []string) (map[string
 		`select a.event_id, args.arg from analysis a cross join (select * from (values %s) as b(arg)) args
 		where jsonb_path_exists(a.data, '$.carInfo[*] ?(@.name == $myArg)', jsonb_build_object('myArg', args.arg))
 		`, strings.Join(work, ",")))
-
 	if err != nil {
 		log.Printf("error reading analysis: %v", err)
 		return map[string][]int{}, err
