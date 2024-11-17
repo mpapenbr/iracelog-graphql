@@ -3,6 +3,8 @@ package storage
 import (
 	"github.com/mpapenbr/iracelog-graphql/graph/model"
 	"github.com/mpapenbr/iracelog-graphql/internal"
+	"github.com/mpapenbr/iracelog-graphql/internal/car/car"
+	"github.com/mpapenbr/iracelog-graphql/internal/car/entry"
 	"github.com/mpapenbr/iracelog-graphql/internal/events"
 	"github.com/mpapenbr/iracelog-graphql/internal/tracks"
 )
@@ -107,5 +109,26 @@ func convertDbTrackToModel(dbTrack *tracks.DbTrack) *model.Track {
 		NumSectors:    len(dbTrack.Sectors),
 		PitLaneLength: dbTrack.PitLaneLength,
 		PitSpeed:      dbTrack.PitSpeed,
+	}
+}
+
+func convertDbCarToModel(d *car.DbCar) *model.Car {
+	return &model.Car{
+		ID:            d.ID,
+		Name:          d.Name,
+		NameShort:     d.NameShort,
+		CarID:         d.CarId,
+		FuelPct:       d.FuelPct,
+		PowerAdjust:   d.PowerAdjust,
+		WeightPenalty: d.WeightPenalty,
+		DryTireSets:   d.DryTireSets,
+	}
+}
+
+func convertDbEventEntryToModel(d *entry.DbCarEntry) *model.EventEntry {
+	return &model.EventEntry{
+		ID:        d.ID,
+		CarNum:    &d.CarNum,
+		CarNumRaw: &d.CarNumRaw,
 	}
 }

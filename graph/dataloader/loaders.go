@@ -31,70 +31,6 @@ type DataLoader struct {
 	eventEntriesByEventLoader *dataloader.Loader
 	eventCarsLoader           *dataloader.Loader
 	eventEntryCarLoader       *dataloader.Loader
-
-	genericLoader *dataloader.Loader
-}
-
-// GetTrack wraps the Track dataloader for efficient retrieval by track ID
-func (i *DataLoader) GetTrack(ctx context.Context, trackID int) (*model.Track, error) {
-	thunk := i.trackLoader.Load(ctx, storage.IntKey(trackID))
-	result, err := thunk()
-	if err != nil {
-		return nil, err
-	}
-	return result.(*model.Track), nil
-}
-
-func (i *DataLoader) GetTracks(ctx context.Context, trackIds []int) ([]*model.Track, []error) {
-	trackKeys := storage.NewKeysFromInts(trackIds)
-	thunkMany := i.trackLoader.LoadMany(ctx, trackKeys)
-	result, err := thunkMany()
-	if err != nil {
-		return nil, err
-	}
-
-	// hmm, this copy bothers me, but my "wish-statement" return result.([]*model.Track) doesn't work
-	ret := make([]*model.Track, len(result))
-	for i, v := range result {
-		ret[i] = v.(*model.Track)
-	}
-	return ret, err
-}
-
-func (i *DataLoader) GetEvents(ctx context.Context, eventIDs []int) ([]*model.Event, []error) {
-	eventKeys := storage.NewKeysFromInts(eventIDs)
-	thunkMany := i.eventLoader.LoadMany(ctx, eventKeys)
-	result, err := thunkMany()
-	if err != nil {
-		return nil, err
-	}
-
-	// hmm, this copy bothers me, but my "wish-statement" return result.([]*model.Event) doesn't work
-	ret := make([]*model.Event, len(result))
-	for i, v := range result {
-		ret[i] = v.(*model.Event)
-	}
-	return ret, err
-}
-
-// GetEvent wraps the Event dataloader for efficient retrieval by event ID
-func (i *DataLoader) GetEvent(ctx context.Context, eventID int) (*model.Event, error) {
-	thunk := i.eventLoader.Load(ctx, storage.IntKey(eventID))
-	result, err := thunk()
-	if err != nil {
-		return nil, err
-	}
-	return result.(*model.Event), nil
-}
-
-func (i *DataLoader) GetEventsForTrack(ctx context.Context, trackId int) []*model.Event {
-	// thunk := i.eventsByTrackLoader.Load(ctx, gopher_dataloader.StringKey(fmt.Sprintf("%d", trackId)))
-	thunk := i.eventsByTrackLoader.Load(ctx, storage.IntKey(trackId))
-	result, err := thunk()
-	if err != nil {
-		return nil
-	}
-	return result.([]*model.Event)
 }
 
 // deprecated
@@ -171,55 +107,6 @@ func (i *DataLoader) GetEventDrivers(ctx context.Context, eventId int) ([]*model
 		return nil, nil
 	}
 	ret := result.([]*model.EventDriver)
-	return ret, nil
-}
-
-func (i *DataLoader) GetEventEntriesForIds(ctx context.Context, ids []int) ([]*model.EventEntry, []error) {
-	eventKeys := storage.NewKeysFromInts(ids)
-	thunkMany := i.eventEntriesByIdsLoader.LoadMany(ctx, eventKeys)
-	result, err := thunkMany()
-	if err != nil {
-		return nil, err
-	}
-
-	// hmm, this copy bothers me, but my "wish-statement" return result.([]*model.Event) doesn't work
-	ret := make([]*model.EventEntry, len(result))
-	for i, v := range result {
-		ret[i] = v.(*model.EventEntry)
-	}
-	return ret, err
-}
-
-func (i *DataLoader) GetEventEntries(ctx context.Context, eventId int) ([]*model.EventEntry, []error) {
-	thunk := i.eventEntriesByEventLoader.Load(ctx, storage.IntKey(eventId))
-	result, err := thunk()
-	if err != nil {
-		log.Printf("error loading analysis data: %v", err)
-		return nil, nil
-	}
-	ret := result.([]*model.EventEntry)
-	return ret, nil
-}
-
-func (i *DataLoader) GetEventCars(ctx context.Context, eventId int) ([]*model.Car, []error) {
-	thunk := i.eventCarsLoader.Load(ctx, storage.IntKey(eventId))
-	result, err := thunk()
-	if err != nil {
-		log.Printf("error loading analysis data: %v", err)
-		return nil, nil
-	}
-	ret := result.([]*model.Car)
-	return ret, nil
-}
-
-func (i *DataLoader) GetEventEntryCar(ctx context.Context, eventEntryId int) (*model.Car, []error) {
-	thunk := i.eventEntryCarLoader.Load(ctx, storage.IntKey(eventEntryId))
-	result, err := thunk()
-	if err != nil {
-		log.Printf("error loading event car data: %v", err)
-		return nil, nil
-	}
-	ret := result.(*model.Car)
 	return ret, nil
 }
 
