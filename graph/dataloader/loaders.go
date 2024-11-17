@@ -18,15 +18,21 @@ type ctxKey string
 const loadersKey = ctxKey("dataloader")
 
 type DataLoader struct {
-	trackLoader           *dataloader.Loader
-	eventLoader           *dataloader.Loader
-	driverLoader          *dataloader.Loader
-	teamLoader            *dataloader.Loader
-	analysisLoader        *dataloader.Loader
-	teamEventLinkLoader   *dataloader.Loader
-	driverEventLinkLoader *dataloader.Loader
-	eventsByTrackLoader   *dataloader.Loader
-	genericLoader         *dataloader.Loader
+	trackLoader               *dataloader.Loader
+	eventLoader               *dataloader.Loader
+	driverLoader              *dataloader.Loader
+	teamLoader                *dataloader.Loader
+	analysisLoader            *dataloader.Loader // deprecated
+	teamEventLinkLoader       *dataloader.Loader // deprecated
+	driverEventLinkLoader     *dataloader.Loader // deprecated
+	eventsByTrackLoader       *dataloader.Loader // deprecated
+	driversByEventLoader      *dataloader.Loader // deprecated
+	eventEntriesByIdsLoader   *dataloader.Loader
+	eventEntriesByEventLoader *dataloader.Loader
+	eventCarsLoader           *dataloader.Loader
+	eventEntryCarLoader       *dataloader.Loader
+
+	genericLoader *dataloader.Loader
 }
 
 // GetTrack wraps the Track dataloader for efficient retrieval by track ID
@@ -40,7 +46,6 @@ func (i *DataLoader) GetTrack(ctx context.Context, trackID int) (*model.Track, e
 }
 
 func (i *DataLoader) GetTracks(ctx context.Context, trackIds []int) ([]*model.Track, []error) {
-
 	trackKeys := storage.NewKeysFromInts(trackIds)
 	thunkMany := i.trackLoader.LoadMany(ctx, trackKeys)
 	result, err := thunkMany()
@@ -92,6 +97,7 @@ func (i *DataLoader) GetEventsForTrack(ctx context.Context, trackId int) []*mode
 	return result.([]*model.Event)
 }
 
+// deprecated
 func (i *DataLoader) GetTeamDrivers(ctx context.Context, team string) ([]*model.Driver, []error) {
 	thunk := i.driverLoader.Load(ctx, gopher_dataloader.StringKey(team))
 	result, err := thunk()
@@ -101,6 +107,7 @@ func (i *DataLoader) GetTeamDrivers(ctx context.Context, team string) ([]*model.
 	return result.([]*model.Driver), nil
 }
 
+// deprecated
 func (i *DataLoader) GetDriversTeams(ctx context.Context, driver string) ([]*model.Team, []error) {
 	thunk := i.teamLoader.Load(ctx, gopher_dataloader.StringKey(driver))
 	result, err := thunk()
@@ -110,6 +117,7 @@ func (i *DataLoader) GetDriversTeams(ctx context.Context, driver string) ([]*mod
 	return result.([]*model.Team), nil
 }
 
+// deprecated
 func (i *DataLoader) GetEventTeams(ctx context.Context, eventId int) ([]*model.EventTeam, []error) {
 	thunk := i.analysisLoader.Load(ctx, storage.IntKey(eventId))
 	result, err := thunk()
@@ -130,6 +138,7 @@ func (i *DataLoader) GetEventTeams(ctx context.Context, eventId int) ([]*model.E
 	return ret, nil
 }
 
+// deprecated
 func (i *DataLoader) GetEventIdsForTeam(ctx context.Context, team string) []int {
 	thunk := i.teamEventLinkLoader.Load(ctx, gopher_dataloader.StringKey(team))
 	result, err := thunk()
@@ -140,6 +149,7 @@ func (i *DataLoader) GetEventIdsForTeam(ctx context.Context, team string) []int 
 	return result.([]int)
 }
 
+// deprecated
 func (i *DataLoader) GetEventIdsForDriver(ctx context.Context, driver string) []int {
 	thunk := i.driverEventLinkLoader.Load(ctx, gopher_dataloader.StringKey(driver))
 	result, err := thunk()
@@ -150,22 +160,66 @@ func (i *DataLoader) GetEventIdsForDriver(ctx context.Context, driver string) []
 	return result.([]int)
 }
 
+// deprecated
 func (i *DataLoader) GetEventDrivers(ctx context.Context, eventId int) ([]*model.EventDriver, []error) {
 	// thunk := i.analysisLoader.Load(ctx, gopher_dataloader.StringKey(fmt.Sprintf("%d", eventId)))
-	thunk := i.analysisLoader.Load(ctx, storage.IntKey(eventId))
+
+	thunk := i.driversByEventLoader.Load(ctx, storage.IntKey(eventId))
 	result, err := thunk()
 	if err != nil {
 		log.Printf("error loading analysis data: %v", err)
 		return nil, nil
 	}
-	ret := []*model.EventDriver{}
+	ret := result.([]*model.EventDriver)
+	return ret, nil
+}
 
-	dbData := result.(analysis.DbAnalysis)
-	for _, ci := range dbData.CarInfo {
-		for _, driver := range ci.Drivers {
-			ret = append(ret, &model.EventDriver{Name: driver.DriverName})
-		}
+func (i *DataLoader) GetEventEntriesForIds(ctx context.Context, ids []int) ([]*model.EventEntry, []error) {
+	eventKeys := storage.NewKeysFromInts(ids)
+	thunkMany := i.eventEntriesByIdsLoader.LoadMany(ctx, eventKeys)
+	result, err := thunkMany()
+	if err != nil {
+		return nil, err
 	}
+
+	// hmm, this copy bothers me, but my "wish-statement" return result.([]*model.Event) doesn't work
+	ret := make([]*model.EventEntry, len(result))
+	for i, v := range result {
+		ret[i] = v.(*model.EventEntry)
+	}
+	return ret, err
+}
+
+func (i *DataLoader) GetEventEntries(ctx context.Context, eventId int) ([]*model.EventEntry, []error) {
+	thunk := i.eventEntriesByEventLoader.Load(ctx, storage.IntKey(eventId))
+	result, err := thunk()
+	if err != nil {
+		log.Printf("error loading analysis data: %v", err)
+		return nil, nil
+	}
+	ret := result.([]*model.EventEntry)
+	return ret, nil
+}
+
+func (i *DataLoader) GetEventCars(ctx context.Context, eventId int) ([]*model.Car, []error) {
+	thunk := i.eventCarsLoader.Load(ctx, storage.IntKey(eventId))
+	result, err := thunk()
+	if err != nil {
+		log.Printf("error loading analysis data: %v", err)
+		return nil, nil
+	}
+	ret := result.([]*model.Car)
+	return ret, nil
+}
+
+func (i *DataLoader) GetEventEntryCar(ctx context.Context, eventEntryId int) (*model.Car, []error) {
+	thunk := i.eventEntryCarLoader.Load(ctx, storage.IntKey(eventEntryId))
+	result, err := thunk()
+	if err != nil {
+		log.Printf("error loading event car data: %v", err)
+		return nil, nil
+	}
+	ret := result.(*model.Car)
 	return ret, nil
 }
 
@@ -201,16 +255,28 @@ func NewDataLoader(db storage.Storage) *DataLoader {
 	teamEventLink := &genericMapBatcher[[]int]{collector: db.CollectEventIdsForTeams}
 
 	eventsByTrack := &genericMapBatcher[[]*model.Event]{collector: db.GetEventsForTrackIdsKeys}
+	driversByEvent := &genericMapBatcher[[]*model.EventDriver]{collector: db.CollectEventDriver}
+
+	// new collectors start here
+	eventEntriesByIds := &genericMapBatcher[*model.EventEntry]{collector: db.CollectEventEntriesById}
+	eventEntriesByEvent := &genericMapBatcher[[]*model.EventEntry]{collector: db.CollectEventEntries}
+	eventEntryCars := &genericMapBatcher[*model.Car]{collector: db.CollectEventEntryCar}
+	eventCars := &genericMapBatcher[[]*model.Car]{collector: db.CollectEventCars}
 
 	loaders := &DataLoader{
-		trackLoader:           dataloader.NewBatchedLoader(tracks.get),
-		eventLoader:           dataloader.NewBatchedLoader(events.get),
-		driverLoader:          dataloader.NewBatchedLoader(drivers.get),
-		teamLoader:            dataloader.NewBatchedLoader(teams.get),
-		analysisLoader:        dataloader.NewBatchedLoader(analysis.get),
-		teamEventLinkLoader:   dataloader.NewBatchedLoader(teamEventLink.get),
-		driverEventLinkLoader: dataloader.NewBatchedLoader(driverEventLink.get),
-		eventsByTrackLoader:   dataloader.NewBatchedLoader(eventsByTrack.get),
+		trackLoader:               dataloader.NewBatchedLoader(tracks.get),
+		eventLoader:               dataloader.NewBatchedLoader(events.get),
+		driverLoader:              dataloader.NewBatchedLoader(drivers.get),
+		teamLoader:                dataloader.NewBatchedLoader(teams.get),
+		analysisLoader:            dataloader.NewBatchedLoader(analysis.get),
+		teamEventLinkLoader:       dataloader.NewBatchedLoader(teamEventLink.get),
+		driverEventLinkLoader:     dataloader.NewBatchedLoader(driverEventLink.get),
+		eventsByTrackLoader:       dataloader.NewBatchedLoader(eventsByTrack.get),
+		driversByEventLoader:      dataloader.NewBatchedLoader(driversByEvent.get),
+		eventEntriesByIdsLoader:   dataloader.NewBatchedLoader(eventEntriesByIds.get),
+		eventEntriesByEventLoader: dataloader.NewBatchedLoader(eventEntriesByEvent.get),
+		eventCarsLoader:           dataloader.NewBatchedLoader(eventCars.get),
+		eventEntryCarLoader:       dataloader.NewBatchedLoader(eventEntryCars.get),
 	}
 	return loaders
 }

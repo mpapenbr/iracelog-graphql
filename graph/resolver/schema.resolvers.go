@@ -6,6 +6,7 @@ package resolver
 
 import (
 	"context"
+	"fmt"
 
 	"github.com/mpapenbr/iracelog-graphql/graph/dataloader"
 	"github.com/mpapenbr/iracelog-graphql/graph/generated"
@@ -45,6 +46,40 @@ func (r *eventResolver) Teams(ctx context.Context, obj *model.Event) ([]*model.E
 // Drivers is the resolver for the drivers field.
 func (r *eventResolver) Drivers(ctx context.Context, obj *model.Event) ([]*model.EventDriver, error) {
 	ret, _ := dataloader.For(ctx).GetEventDrivers(ctx, obj.ID)
+	return ret, nil
+}
+
+// Entries is the resolver for the entries field.
+func (r *eventResolver) Entries(ctx context.Context, obj *model.Event) ([]*model.EventEntry, error) {
+	ret, _ := dataloader.For(ctx).GetEventEntries(ctx, obj.ID)
+	return ret, nil
+}
+
+// Cars is the resolver for the cars field.
+func (r *eventResolver) Cars(ctx context.Context, obj *model.Event) ([]*model.Car, error) {
+	ret, _ := dataloader.For(ctx).GetEventCars(ctx, obj.ID)
+	return ret, nil
+}
+
+// Car is the resolver for the car field.
+func (r *eventEntryResolver) Car(ctx context.Context, obj *model.EventEntry) (*model.Car, error) {
+	ret, _ := dataloader.For(ctx).GetEventEntryCar(ctx, obj.ID)
+	return ret, nil
+}
+
+// Team is the resolver for the team field.
+func (r *eventEntryResolver) Team(ctx context.Context, obj *model.EventEntry) (*model.EventTeam, error) {
+	panic(fmt.Errorf("not implemented: Team - team"))
+}
+
+// Drivers is the resolver for the drivers field.
+func (r *eventEntryResolver) Drivers(ctx context.Context, obj *model.EventEntry) ([]*model.Driver, error) {
+	panic(fmt.Errorf("not implemented: Drivers - drivers"))
+}
+
+// EventEntry is the resolver for the eventEntry field.
+func (r *queryResolver) EventEntry(ctx context.Context, ids []int) ([]*model.EventEntry, error) {
+	ret, _ := dataloader.For(ctx).GetEventEntriesForIds(ctx, ids)
 	return ret, nil
 }
 
@@ -132,6 +167,9 @@ func (r *Resolver) Driver() generated.DriverResolver { return &driverResolver{r}
 // Event returns generated.EventResolver implementation.
 func (r *Resolver) Event() generated.EventResolver { return &eventResolver{r} }
 
+// EventEntry returns generated.EventEntryResolver implementation.
+func (r *Resolver) EventEntry() generated.EventEntryResolver { return &eventEntryResolver{r} }
+
 // Query returns generated.QueryResolver implementation.
 func (r *Resolver) Query() generated.QueryResolver { return &queryResolver{r} }
 
@@ -141,8 +179,11 @@ func (r *Resolver) Team() generated.TeamResolver { return &teamResolver{r} }
 // Track returns generated.TrackResolver implementation.
 func (r *Resolver) Track() generated.TrackResolver { return &trackResolver{r} }
 
-type driverResolver struct{ *Resolver }
-type eventResolver struct{ *Resolver }
-type queryResolver struct{ *Resolver }
-type teamResolver struct{ *Resolver }
-type trackResolver struct{ *Resolver }
+type (
+	driverResolver     struct{ *Resolver }
+	eventResolver      struct{ *Resolver }
+	eventEntryResolver struct{ *Resolver }
+	queryResolver      struct{ *Resolver }
+	teamResolver       struct{ *Resolver }
+	trackResolver      struct{ *Resolver }
+)

@@ -10,6 +10,9 @@ import (
 	"github.com/mpapenbr/iracelog-graphql/graph/model"
 	"github.com/mpapenbr/iracelog-graphql/internal"
 	"github.com/mpapenbr/iracelog-graphql/internal/analysis"
+	"github.com/mpapenbr/iracelog-graphql/internal/car/car"
+	"github.com/mpapenbr/iracelog-graphql/internal/car/driver"
+	"github.com/mpapenbr/iracelog-graphql/internal/car/entry"
 	"github.com/mpapenbr/iracelog-graphql/internal/events"
 	database "github.com/mpapenbr/iracelog-graphql/internal/pkg/db/postgres"
 	"github.com/mpapenbr/iracelog-graphql/internal/tracks"
@@ -198,6 +201,98 @@ func (db *DbStorage) CollectEventIdsForTeams(ctx context.Context, teams dataload
 
 func (db *DbStorage) CollectEventIdsForDrivers(ctx context.Context, drivers dataloader.Keys) map[string][]int {
 	ret, _ := analysis.CollectEventIdsForDrivers(db.pool, drivers.Keys())
+	return ret
+}
+
+func (db *DbStorage) CollectEventDriver(ctx context.Context, eventIds dataloader.Keys) map[string][]*model.EventDriver {
+	res, _ := driver.GetEventDrivers(db.pool, IntKeysToSlice(eventIds))
+	ret := map[string][]*model.EventDriver{}
+	for k, v := range res {
+		key := IntKey(k).String()
+		ed := make([]*model.EventDriver, len(v))
+		for i, d := range v {
+			ed[i] = &model.EventDriver{Name: d.Name}
+		}
+		ret[key] = ed
+	}
+	return ret
+}
+
+func (db *DbStorage) CollectEventEntries(ctx context.Context, eventIds dataloader.Keys) map[string][]*model.EventEntry {
+	res, _ := entry.GetEventEntriesByEventId(db.pool, IntKeysToSlice(eventIds))
+	ret := map[string][]*model.EventEntry{}
+	for k, v := range res {
+		key := IntKey(k).String()
+		ed := make([]*model.EventEntry, len(v))
+		for i, d := range v {
+			ed[i] = &model.EventEntry{
+				ID:        d.ID,
+				CarNum:    &d.CarNum,
+				CarNumRaw: &d.CarNumRaw,
+			}
+		}
+		ret[key] = ed
+	}
+	return ret
+}
+
+func (db *DbStorage) CollectEventEntriesById(ctx context.Context, ids dataloader.Keys) map[string]*model.EventEntry {
+	res, _ := entry.GetEventEntriesByIds(db.pool, IntKeysToSlice(ids))
+	ret := map[string]*model.EventEntry{}
+	for k, d := range res {
+		key := IntKey(k).String()
+
+		ed := &model.EventEntry{
+			ID:        d.ID,
+			CarNum:    &d.CarNum,
+			CarNumRaw: &d.CarNumRaw,
+		}
+
+		ret[key] = ed
+	}
+	return ret
+}
+
+func (db *DbStorage) CollectEventCars(ctx context.Context, eventIds dataloader.Keys) map[string][]*model.Car {
+	res, _ := car.GetEventCars(db.pool, IntKeysToSlice(eventIds))
+	ret := map[string][]*model.Car{}
+	for k, v := range res {
+		key := IntKey(k).String()
+		ed := make([]*model.Car, len(v))
+		for i, d := range v {
+			ed[i] = &model.Car{
+				ID:            d.ID,
+				Name:          d.Name,
+				NameShort:     d.NameShort,
+				CarID:         d.CarId,
+				FuelPct:       d.FuelPct,
+				PowerAdjust:   d.PowerAdjust,
+				WeightPenalty: d.WeightPenalty,
+				DryTireSets:   d.DryTireSets,
+			}
+		}
+		ret[key] = ed
+	}
+	return ret
+}
+
+func (db *DbStorage) CollectEventEntryCar(ctx context.Context, eventEntryIds dataloader.Keys) map[string]*model.Car {
+	res, _ := car.GetEventEntryCars(db.pool, IntKeysToSlice(eventEntryIds))
+	ret := map[string]*model.Car{}
+	for k, d := range res {
+		key := IntKey(k).String()
+		ed := &model.Car{
+			ID:            d.ID,
+			Name:          d.Name,
+			NameShort:     d.NameShort,
+			CarID:         d.CarId,
+			FuelPct:       d.FuelPct,
+			PowerAdjust:   d.PowerAdjust,
+			WeightPenalty: d.WeightPenalty,
+			DryTireSets:   d.DryTireSets,
+		}
+		ret[key] = ed
+	}
 	return ret
 }
 

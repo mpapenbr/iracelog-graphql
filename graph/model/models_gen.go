@@ -8,6 +8,21 @@ import (
 	"strconv"
 )
 
+type Car struct {
+	ID        int    `json:"id"`
+	Name      string `json:"name"`
+	NameShort string `json:"nameShort"`
+	CarID     int    `json:"carId"`
+	// fuel capacity in percent
+	FuelPct float64 `json:"fuelPct"`
+	// engine power adjustment percent
+	PowerAdjust float64 `json:"powerAdjust"`
+	// weigth penalty in kg
+	WeightPenalty float64 `json:"weightPenalty"`
+	// number of dry tire sets
+	DryTireSets int `json:"dryTireSets"`
+}
+
 // This models a more 'generic' driver with participation in events and teams.
 type Driver struct {
 	// The driver name used
@@ -26,6 +41,21 @@ type Driver struct {
 type EventDriver struct {
 	Name   string `json:"name"`
 	CarNum string `json:"carNum"`
+}
+
+// describes an entry in a specific event.
+type EventEntry struct {
+	ID int `json:"id"`
+	// The car data with optional specific restrictions
+	Car *Car `json:"car"`
+	// The car number for this car
+	CarNum *string `json:"carNum,omitempty"`
+	// The car number in iRacing raw format
+	CarNumRaw *int `json:"carNumRaw,omitempty"`
+	// the team running this car
+	Team *EventTeam `json:"team,omitempty"`
+	// the drivers of this car
+	Drivers []*Driver `json:"drivers"`
 }
 
 type EventSortArg struct {
