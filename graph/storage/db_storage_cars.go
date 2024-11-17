@@ -27,7 +27,7 @@ func (db *DbStorage) CollectEventCars(
 	return ret
 }
 
-func (db *DbStorage) CollectEventEntryCar(
+func (db *DbStorage) CollectCarsByEventEntry(
 	ctx context.Context,
 	eventEntryIds dataloader.Keys,
 ) map[string]*model.Car {

@@ -38,9 +38,7 @@ func (r *eventResolver) Track(ctx context.Context, obj *model.Event) (*model.Tra
 
 // Teams is the resolver for the teams field.
 func (r *eventResolver) Teams(ctx context.Context, obj *model.Event) ([]*model.EventTeam, error) {
-	ret, _ := dataloader.For(ctx).GetEventTeams(ctx, obj.ID)
-	return ret, nil
-	// Old single version: return r.db.GetTeamsForEvent(ctx, obj), nil
+	panic(fmt.Errorf("not implemented: Teams - teams"))
 }
 
 // Drivers is the resolver for the drivers field.
@@ -69,12 +67,20 @@ func (r *eventEntryResolver) Car(ctx context.Context, obj *model.EventEntry) (*m
 
 // Team is the resolver for the team field.
 func (r *eventEntryResolver) Team(ctx context.Context, obj *model.EventEntry) (*model.EventTeam, error) {
-	panic(fmt.Errorf("not implemented: Team - team"))
+	ret, _ := dataloader.For(ctx).GetTeamByEventEntry(ctx, obj.ID)
+	return ret, nil
 }
 
 // Drivers is the resolver for the drivers field.
-func (r *eventEntryResolver) Drivers(ctx context.Context, obj *model.EventEntry) ([]*model.Driver, error) {
-	panic(fmt.Errorf("not implemented: Drivers - drivers"))
+func (r *eventEntryResolver) Drivers(ctx context.Context, obj *model.EventEntry) ([]*model.EventDriver, error) {
+	ret, _ := dataloader.For(ctx).CollectDriversByEventEntry(ctx, obj.ID)
+	return ret, nil
+}
+
+// Drivers is the resolver for the drivers field.
+func (r *eventTeamResolver) Drivers(ctx context.Context, obj *model.EventTeam) ([]*model.EventDriver, error) {
+	ret, _ := dataloader.For(ctx).CollectDriversByTeam(ctx, obj.ID)
+	return ret, nil
 }
 
 // EventEntry is the resolver for the eventEntry field.
@@ -170,6 +176,9 @@ func (r *Resolver) Event() generated.EventResolver { return &eventResolver{r} }
 // EventEntry returns generated.EventEntryResolver implementation.
 func (r *Resolver) EventEntry() generated.EventEntryResolver { return &eventEntryResolver{r} }
 
+// EventTeam returns generated.EventTeamResolver implementation.
+func (r *Resolver) EventTeam() generated.EventTeamResolver { return &eventTeamResolver{r} }
+
 // Query returns generated.QueryResolver implementation.
 func (r *Resolver) Query() generated.QueryResolver { return &queryResolver{r} }
 
@@ -183,6 +192,7 @@ type (
 	driverResolver     struct{ *Resolver }
 	eventResolver      struct{ *Resolver }
 	eventEntryResolver struct{ *Resolver }
+	eventTeamResolver  struct{ *Resolver }
 	queryResolver      struct{ *Resolver }
 	teamResolver       struct{ *Resolver }
 	trackResolver      struct{ *Resolver }

@@ -50,7 +50,7 @@ type EventEntry {
   "the team running this car"
   team: EventTeam
   "the drivers of this car"
-  drivers: [Driver!]!
+  drivers: [EventDriver!]!
 }
 
 type Car {
@@ -69,15 +69,24 @@ type Car {
 }
 
 type EventTeam {
+  id: ID!
   name: String!
-  carNum: String!
+  teamId: Int!
   drivers: [EventDriver]!
 }
 
 "This models a driver in a concrete event"
 type EventDriver {
+  id: ID!
   name: String!
-  carNum: String!
+  driverId: Int!
+
+  initials: String
+  abbrevName: String
+  iRating: Int
+  licenseLevel: Int
+  licenseSubLevel: Int
+  licenseString: String
 }
 
 "This models a more 'generic' driver with participation in events and teams."

@@ -39,8 +39,15 @@ type Driver struct {
 
 // This models a driver in a concrete event
 type EventDriver struct {
-	Name   string `json:"name"`
-	CarNum string `json:"carNum"`
+	ID              int     `json:"id"`
+	Name            string  `json:"name"`
+	DriverID        int     `json:"driverId"`
+	Initials        *string `json:"initials,omitempty"`
+	AbbrevName      *string `json:"abbrevName,omitempty"`
+	IRating         *int    `json:"iRating,omitempty"`
+	LicenseLevel    *int    `json:"licenseLevel,omitempty"`
+	LicenseSubLevel *int    `json:"licenseSubLevel,omitempty"`
+	LicenseString   *string `json:"licenseString,omitempty"`
 }
 
 // describes an entry in a specific event.
@@ -55,7 +62,7 @@ type EventEntry struct {
 	// the team running this car
 	Team *EventTeam `json:"team,omitempty"`
 	// the drivers of this car
-	Drivers []*Driver `json:"drivers"`
+	Drivers []*EventDriver `json:"drivers"`
 }
 
 type EventSortArg struct {
@@ -64,8 +71,9 @@ type EventSortArg struct {
 }
 
 type EventTeam struct {
+	ID      int            `json:"id"`
 	Name    string         `json:"name"`
-	CarNum  string         `json:"carNum"`
+	TeamID  int            `json:"teamId"`
 	Drivers []*EventDriver `json:"drivers"`
 }
 

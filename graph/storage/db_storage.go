@@ -9,7 +9,6 @@ import (
 	"github.com/mpapenbr/iracelog-graphql/graph/model"
 	"github.com/mpapenbr/iracelog-graphql/internal"
 	"github.com/mpapenbr/iracelog-graphql/internal/analysis"
-	"github.com/mpapenbr/iracelog-graphql/internal/car/driver"
 	"github.com/mpapenbr/iracelog-graphql/internal/events"
 	database "github.com/mpapenbr/iracelog-graphql/internal/pkg/db/postgres"
 )
@@ -116,20 +115,6 @@ func (db *DbStorage) CollectEventIdsForTeams(ctx context.Context, teams dataload
 
 func (db *DbStorage) CollectEventIdsForDrivers(ctx context.Context, drivers dataloader.Keys) map[string][]int {
 	ret, _ := analysis.CollectEventIdsForDrivers(db.pool, drivers.Keys())
-	return ret
-}
-
-func (db *DbStorage) CollectEventDriver(ctx context.Context, eventIds dataloader.Keys) map[string][]*model.EventDriver {
-	res, _ := driver.GetEventDrivers(db.pool, IntKeysToSlice(eventIds))
-	ret := map[string][]*model.EventDriver{}
-	for k, v := range res {
-		key := IntKey(k).String()
-		ed := make([]*model.EventDriver, len(v))
-		for i, d := range v {
-			ed[i] = &model.EventDriver{Name: d.Name}
-		}
-		ret[key] = ed
-	}
 	return ret
 }
 

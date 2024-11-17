@@ -42,6 +42,7 @@ type ResolverRoot interface {
 	Driver() DriverResolver
 	Event() EventResolver
 	EventEntry() EventEntryResolver
+	EventTeam() EventTeamResolver
 	Query() QueryResolver
 	Team() TeamResolver
 	Track() TrackResolver
@@ -91,8 +92,15 @@ type ComplexityRoot struct {
 	}
 
 	EventDriver struct {
-		CarNum func(childComplexity int) int
-		Name   func(childComplexity int) int
+		AbbrevName      func(childComplexity int) int
+		DriverID        func(childComplexity int) int
+		ID              func(childComplexity int) int
+		IRating         func(childComplexity int) int
+		Initials        func(childComplexity int) int
+		LicenseLevel    func(childComplexity int) int
+		LicenseString   func(childComplexity int) int
+		LicenseSubLevel func(childComplexity int) int
+		Name            func(childComplexity int) int
 	}
 
 	EventEntry struct {
@@ -105,9 +113,10 @@ type ComplexityRoot struct {
 	}
 
 	EventTeam struct {
-		CarNum  func(childComplexity int) int
 		Drivers func(childComplexity int) int
+		ID      func(childComplexity int) int
 		Name    func(childComplexity int) int
+		TeamID  func(childComplexity int) int
 	}
 
 	Query struct {
@@ -165,7 +174,10 @@ type EventEntryResolver interface {
 	Car(ctx context.Context, obj *model.EventEntry) (*model.Car, error)
 
 	Team(ctx context.Context, obj *model.EventEntry) (*model.EventTeam, error)
-	Drivers(ctx context.Context, obj *model.EventEntry) ([]*model.Driver, error)
+	Drivers(ctx context.Context, obj *model.EventEntry) ([]*model.EventDriver, error)
+}
+type EventTeamResolver interface {
+	Drivers(ctx context.Context, obj *model.EventTeam) ([]*model.EventDriver, error)
 }
 type QueryResolver interface {
 	EventEntry(ctx context.Context, ids []int) ([]*model.EventEntry, error)
@@ -417,12 +429,61 @@ func (e *executableSchema) Complexity(typeName, field string, childComplexity in
 
 		return e.complexity.Event.Track(childComplexity), true
 
-	case "EventDriver.carNum":
-		if e.complexity.EventDriver.CarNum == nil {
+	case "EventDriver.abbrevName":
+		if e.complexity.EventDriver.AbbrevName == nil {
 			break
 		}
 
-		return e.complexity.EventDriver.CarNum(childComplexity), true
+		return e.complexity.EventDriver.AbbrevName(childComplexity), true
+
+	case "EventDriver.driverId":
+		if e.complexity.EventDriver.DriverID == nil {
+			break
+		}
+
+		return e.complexity.EventDriver.DriverID(childComplexity), true
+
+	case "EventDriver.id":
+		if e.complexity.EventDriver.ID == nil {
+			break
+		}
+
+		return e.complexity.EventDriver.ID(childComplexity), true
+
+	case "EventDriver.iRating":
+		if e.complexity.EventDriver.IRating == nil {
+			break
+		}
+
+		return e.complexity.EventDriver.IRating(childComplexity), true
+
+	case "EventDriver.initials":
+		if e.complexity.EventDriver.Initials == nil {
+			break
+		}
+
+		return e.complexity.EventDriver.Initials(childComplexity), true
+
+	case "EventDriver.licenseLevel":
+		if e.complexity.EventDriver.LicenseLevel == nil {
+			break
+		}
+
+		return e.complexity.EventDriver.LicenseLevel(childComplexity), true
+
+	case "EventDriver.licenseString":
+		if e.complexity.EventDriver.LicenseString == nil {
+			break
+		}
+
+		return e.complexity.EventDriver.LicenseString(childComplexity), true
+
+	case "EventDriver.licenseSubLevel":
+		if e.complexity.EventDriver.LicenseSubLevel == nil {
+			break
+		}
+
+		return e.complexity.EventDriver.LicenseSubLevel(childComplexity), true
 
 	case "EventDriver.name":
 		if e.complexity.EventDriver.Name == nil {
@@ -473,13 +534,6 @@ func (e *executableSchema) Complexity(typeName, field string, childComplexity in
 
 		return e.complexity.EventEntry.Team(childComplexity), true
 
-	case "EventTeam.carNum":
-		if e.complexity.EventTeam.CarNum == nil {
-			break
-		}
-
-		return e.complexity.EventTeam.CarNum(childComplexity), true
-
 	case "EventTeam.drivers":
 		if e.complexity.EventTeam.Drivers == nil {
 			break
@@ -487,12 +541,26 @@ func (e *executableSchema) Complexity(typeName, field string, childComplexity in
 
 		return e.complexity.EventTeam.Drivers(childComplexity), true
 
+	case "EventTeam.id":
+		if e.complexity.EventTeam.ID == nil {
+			break
+		}
+
+		return e.complexity.EventTeam.ID(childComplexity), true
+
 	case "EventTeam.name":
 		if e.complexity.EventTeam.Name == nil {
 			break
 		}
 
 		return e.complexity.EventTeam.Name(childComplexity), true
+
+	case "EventTeam.teamId":
+		if e.complexity.EventTeam.TeamID == nil {
+			break
+		}
+
+		return e.complexity.EventTeam.TeamID(childComplexity), true
 
 	case "Query.advancedSearchEvent":
 		if e.complexity.Query.AdvancedSearchEvent == nil {
@@ -877,7 +945,7 @@ type EventEntry {
   "the team running this car"
   team: EventTeam
   "the drivers of this car"
-  drivers: [Driver!]!
+  drivers: [EventDriver!]!
 }
 
 type Car {
@@ -896,15 +964,24 @@ type Car {
 }
 
 type EventTeam {
+  id: ID!
   name: String!
-  carNum: String!
+  teamId: Int!
   drivers: [EventDriver]!
 }
 
 "This models a driver in a concrete event"
 type EventDriver {
+  id: ID!
   name: String!
-  carNum: String!
+  driverId: Int!
+
+  initials: String
+  abbrevName: String
+  iRating: Int
+  licenseLevel: Int
+  licenseSubLevel: Int
+  licenseString: String
 }
 
 "This models a more 'generic' driver with participation in events and teams."
@@ -2922,10 +2999,12 @@ func (ec *executionContext) fieldContext_Event_teams(_ context.Context, field gr
 		IsResolver: true,
 		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
 			switch field.Name {
+			case "id":
+				return ec.fieldContext_EventTeam_id(ctx, field)
 			case "name":
 				return ec.fieldContext_EventTeam_name(ctx, field)
-			case "carNum":
-				return ec.fieldContext_EventTeam_carNum(ctx, field)
+			case "teamId":
+				return ec.fieldContext_EventTeam_teamId(ctx, field)
 			case "drivers":
 				return ec.fieldContext_EventTeam_drivers(ctx, field)
 			}
@@ -2974,10 +3053,24 @@ func (ec *executionContext) fieldContext_Event_drivers(_ context.Context, field 
 		IsResolver: true,
 		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
 			switch field.Name {
+			case "id":
+				return ec.fieldContext_EventDriver_id(ctx, field)
 			case "name":
 				return ec.fieldContext_EventDriver_name(ctx, field)
-			case "carNum":
-				return ec.fieldContext_EventDriver_carNum(ctx, field)
+			case "driverId":
+				return ec.fieldContext_EventDriver_driverId(ctx, field)
+			case "initials":
+				return ec.fieldContext_EventDriver_initials(ctx, field)
+			case "abbrevName":
+				return ec.fieldContext_EventDriver_abbrevName(ctx, field)
+			case "iRating":
+				return ec.fieldContext_EventDriver_iRating(ctx, field)
+			case "licenseLevel":
+				return ec.fieldContext_EventDriver_licenseLevel(ctx, field)
+			case "licenseSubLevel":
+				return ec.fieldContext_EventDriver_licenseSubLevel(ctx, field)
+			case "licenseString":
+				return ec.fieldContext_EventDriver_licenseString(ctx, field)
 			}
 			return nil, fmt.Errorf("no field named %q was found under type EventDriver", field.Name)
 		},
@@ -3105,6 +3198,50 @@ func (ec *executionContext) fieldContext_Event_cars(_ context.Context, field gra
 	return fc, nil
 }
 
+func (ec *executionContext) _EventDriver_id(ctx context.Context, field graphql.CollectedField, obj *model.EventDriver) (ret graphql.Marshaler) {
+	fc, err := ec.fieldContext_EventDriver_id(ctx, field)
+	if err != nil {
+		return graphql.Null
+	}
+	ctx = graphql.WithFieldContext(ctx, fc)
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
+		ctx = rctx // use context from middleware stack in children
+		return obj.ID, nil
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		if !graphql.HasFieldError(ctx, fc) {
+			ec.Errorf(ctx, "must not be null")
+		}
+		return graphql.Null
+	}
+	res := resTmp.(int)
+	fc.Result = res
+	return ec.marshalNID2int(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) fieldContext_EventDriver_id(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "EventDriver",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type ID does not have child fields")
+		},
+	}
+	return fc, nil
+}
+
 func (ec *executionContext) _EventDriver_name(ctx context.Context, field graphql.CollectedField, obj *model.EventDriver) (ret graphql.Marshaler) {
 	fc, err := ec.fieldContext_EventDriver_name(ctx, field)
 	if err != nil {
@@ -3149,8 +3286,8 @@ func (ec *executionContext) fieldContext_EventDriver_name(_ context.Context, fie
 	return fc, nil
 }
 
-func (ec *executionContext) _EventDriver_carNum(ctx context.Context, field graphql.CollectedField, obj *model.EventDriver) (ret graphql.Marshaler) {
-	fc, err := ec.fieldContext_EventDriver_carNum(ctx, field)
+func (ec *executionContext) _EventDriver_driverId(ctx context.Context, field graphql.CollectedField, obj *model.EventDriver) (ret graphql.Marshaler) {
+	fc, err := ec.fieldContext_EventDriver_driverId(ctx, field)
 	if err != nil {
 		return graphql.Null
 	}
@@ -3163,7 +3300,7 @@ func (ec *executionContext) _EventDriver_carNum(ctx context.Context, field graph
 	}()
 	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
 		ctx = rctx // use context from middleware stack in children
-		return obj.CarNum, nil
+		return obj.DriverID, nil
 	})
 	if err != nil {
 		ec.Error(ctx, err)
@@ -3175,12 +3312,258 @@ func (ec *executionContext) _EventDriver_carNum(ctx context.Context, field graph
 		}
 		return graphql.Null
 	}
-	res := resTmp.(string)
+	res := resTmp.(int)
 	fc.Result = res
-	return ec.marshalNString2string(ctx, field.Selections, res)
+	return ec.marshalNInt2int(ctx, field.Selections, res)
 }
 
-func (ec *executionContext) fieldContext_EventDriver_carNum(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+func (ec *executionContext) fieldContext_EventDriver_driverId(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "EventDriver",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type Int does not have child fields")
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _EventDriver_initials(ctx context.Context, field graphql.CollectedField, obj *model.EventDriver) (ret graphql.Marshaler) {
+	fc, err := ec.fieldContext_EventDriver_initials(ctx, field)
+	if err != nil {
+		return graphql.Null
+	}
+	ctx = graphql.WithFieldContext(ctx, fc)
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
+		ctx = rctx // use context from middleware stack in children
+		return obj.Initials, nil
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		return graphql.Null
+	}
+	res := resTmp.(*string)
+	fc.Result = res
+	return ec.marshalOString2ᚖstring(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) fieldContext_EventDriver_initials(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "EventDriver",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type String does not have child fields")
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _EventDriver_abbrevName(ctx context.Context, field graphql.CollectedField, obj *model.EventDriver) (ret graphql.Marshaler) {
+	fc, err := ec.fieldContext_EventDriver_abbrevName(ctx, field)
+	if err != nil {
+		return graphql.Null
+	}
+	ctx = graphql.WithFieldContext(ctx, fc)
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
+		ctx = rctx // use context from middleware stack in children
+		return obj.AbbrevName, nil
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		return graphql.Null
+	}
+	res := resTmp.(*string)
+	fc.Result = res
+	return ec.marshalOString2ᚖstring(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) fieldContext_EventDriver_abbrevName(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "EventDriver",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type String does not have child fields")
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _EventDriver_iRating(ctx context.Context, field graphql.CollectedField, obj *model.EventDriver) (ret graphql.Marshaler) {
+	fc, err := ec.fieldContext_EventDriver_iRating(ctx, field)
+	if err != nil {
+		return graphql.Null
+	}
+	ctx = graphql.WithFieldContext(ctx, fc)
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
+		ctx = rctx // use context from middleware stack in children
+		return obj.IRating, nil
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		return graphql.Null
+	}
+	res := resTmp.(*int)
+	fc.Result = res
+	return ec.marshalOInt2ᚖint(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) fieldContext_EventDriver_iRating(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "EventDriver",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type Int does not have child fields")
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _EventDriver_licenseLevel(ctx context.Context, field graphql.CollectedField, obj *model.EventDriver) (ret graphql.Marshaler) {
+	fc, err := ec.fieldContext_EventDriver_licenseLevel(ctx, field)
+	if err != nil {
+		return graphql.Null
+	}
+	ctx = graphql.WithFieldContext(ctx, fc)
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
+		ctx = rctx // use context from middleware stack in children
+		return obj.LicenseLevel, nil
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		return graphql.Null
+	}
+	res := resTmp.(*int)
+	fc.Result = res
+	return ec.marshalOInt2ᚖint(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) fieldContext_EventDriver_licenseLevel(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "EventDriver",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type Int does not have child fields")
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _EventDriver_licenseSubLevel(ctx context.Context, field graphql.CollectedField, obj *model.EventDriver) (ret graphql.Marshaler) {
+	fc, err := ec.fieldContext_EventDriver_licenseSubLevel(ctx, field)
+	if err != nil {
+		return graphql.Null
+	}
+	ctx = graphql.WithFieldContext(ctx, fc)
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
+		ctx = rctx // use context from middleware stack in children
+		return obj.LicenseSubLevel, nil
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		return graphql.Null
+	}
+	res := resTmp.(*int)
+	fc.Result = res
+	return ec.marshalOInt2ᚖint(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) fieldContext_EventDriver_licenseSubLevel(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "EventDriver",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type Int does not have child fields")
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _EventDriver_licenseString(ctx context.Context, field graphql.CollectedField, obj *model.EventDriver) (ret graphql.Marshaler) {
+	fc, err := ec.fieldContext_EventDriver_licenseString(ctx, field)
+	if err != nil {
+		return graphql.Null
+	}
+	ctx = graphql.WithFieldContext(ctx, fc)
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
+		ctx = rctx // use context from middleware stack in children
+		return obj.LicenseString, nil
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		return graphql.Null
+	}
+	res := resTmp.(*string)
+	fc.Result = res
+	return ec.marshalOString2ᚖstring(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) fieldContext_EventDriver_licenseString(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
 	fc = &graphql.FieldContext{
 		Object:     "EventDriver",
 		Field:      field,
@@ -3417,10 +3800,12 @@ func (ec *executionContext) fieldContext_EventEntry_team(_ context.Context, fiel
 		IsResolver: true,
 		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
 			switch field.Name {
+			case "id":
+				return ec.fieldContext_EventTeam_id(ctx, field)
 			case "name":
 				return ec.fieldContext_EventTeam_name(ctx, field)
-			case "carNum":
-				return ec.fieldContext_EventTeam_carNum(ctx, field)
+			case "teamId":
+				return ec.fieldContext_EventTeam_teamId(ctx, field)
 			case "drivers":
 				return ec.fieldContext_EventTeam_drivers(ctx, field)
 			}
@@ -3456,9 +3841,9 @@ func (ec *executionContext) _EventEntry_drivers(ctx context.Context, field graph
 		}
 		return graphql.Null
 	}
-	res := resTmp.([]*model.Driver)
+	res := resTmp.([]*model.EventDriver)
 	fc.Result = res
-	return ec.marshalNDriver2ᚕᚖgithubᚗcomᚋmpapenbrᚋiracelogᚑgraphqlᚋgraphᚋmodelᚐDriverᚄ(ctx, field.Selections, res)
+	return ec.marshalNEventDriver2ᚕᚖgithubᚗcomᚋmpapenbrᚋiracelogᚑgraphqlᚋgraphᚋmodelᚐEventDriverᚄ(ctx, field.Selections, res)
 }
 
 func (ec *executionContext) fieldContext_EventEntry_drivers(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
@@ -3469,18 +3854,70 @@ func (ec *executionContext) fieldContext_EventEntry_drivers(_ context.Context, f
 		IsResolver: true,
 		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
 			switch field.Name {
+			case "id":
+				return ec.fieldContext_EventDriver_id(ctx, field)
 			case "name":
-				return ec.fieldContext_Driver_name(ctx, field)
-			case "teams":
-				return ec.fieldContext_Driver_teams(ctx, field)
-			case "events":
-				return ec.fieldContext_Driver_events(ctx, field)
-			case "carNum":
-				return ec.fieldContext_Driver_carNum(ctx, field)
-			case "carClass":
-				return ec.fieldContext_Driver_carClass(ctx, field)
+				return ec.fieldContext_EventDriver_name(ctx, field)
+			case "driverId":
+				return ec.fieldContext_EventDriver_driverId(ctx, field)
+			case "initials":
+				return ec.fieldContext_EventDriver_initials(ctx, field)
+			case "abbrevName":
+				return ec.fieldContext_EventDriver_abbrevName(ctx, field)
+			case "iRating":
+				return ec.fieldContext_EventDriver_iRating(ctx, field)
+			case "licenseLevel":
+				return ec.fieldContext_EventDriver_licenseLevel(ctx, field)
+			case "licenseSubLevel":
+				return ec.fieldContext_EventDriver_licenseSubLevel(ctx, field)
+			case "licenseString":
+				return ec.fieldContext_EventDriver_licenseString(ctx, field)
 			}
-			return nil, fmt.Errorf("no field named %q was found under type Driver", field.Name)
+			return nil, fmt.Errorf("no field named %q was found under type EventDriver", field.Name)
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _EventTeam_id(ctx context.Context, field graphql.CollectedField, obj *model.EventTeam) (ret graphql.Marshaler) {
+	fc, err := ec.fieldContext_EventTeam_id(ctx, field)
+	if err != nil {
+		return graphql.Null
+	}
+	ctx = graphql.WithFieldContext(ctx, fc)
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
+		ctx = rctx // use context from middleware stack in children
+		return obj.ID, nil
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		if !graphql.HasFieldError(ctx, fc) {
+			ec.Errorf(ctx, "must not be null")
+		}
+		return graphql.Null
+	}
+	res := resTmp.(int)
+	fc.Result = res
+	return ec.marshalNID2int(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) fieldContext_EventTeam_id(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "EventTeam",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type ID does not have child fields")
 		},
 	}
 	return fc, nil
@@ -3530,8 +3967,8 @@ func (ec *executionContext) fieldContext_EventTeam_name(_ context.Context, field
 	return fc, nil
 }
 
-func (ec *executionContext) _EventTeam_carNum(ctx context.Context, field graphql.CollectedField, obj *model.EventTeam) (ret graphql.Marshaler) {
-	fc, err := ec.fieldContext_EventTeam_carNum(ctx, field)
+func (ec *executionContext) _EventTeam_teamId(ctx context.Context, field graphql.CollectedField, obj *model.EventTeam) (ret graphql.Marshaler) {
+	fc, err := ec.fieldContext_EventTeam_teamId(ctx, field)
 	if err != nil {
 		return graphql.Null
 	}
@@ -3544,7 +3981,7 @@ func (ec *executionContext) _EventTeam_carNum(ctx context.Context, field graphql
 	}()
 	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
 		ctx = rctx // use context from middleware stack in children
-		return obj.CarNum, nil
+		return obj.TeamID, nil
 	})
 	if err != nil {
 		ec.Error(ctx, err)
@@ -3556,19 +3993,19 @@ func (ec *executionContext) _EventTeam_carNum(ctx context.Context, field graphql
 		}
 		return graphql.Null
 	}
-	res := resTmp.(string)
+	res := resTmp.(int)
 	fc.Result = res
-	return ec.marshalNString2string(ctx, field.Selections, res)
+	return ec.marshalNInt2int(ctx, field.Selections, res)
 }
 
-func (ec *executionContext) fieldContext_EventTeam_carNum(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+func (ec *executionContext) fieldContext_EventTeam_teamId(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
 	fc = &graphql.FieldContext{
 		Object:     "EventTeam",
 		Field:      field,
 		IsMethod:   false,
 		IsResolver: false,
 		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
-			return nil, errors.New("field of type String does not have child fields")
+			return nil, errors.New("field of type Int does not have child fields")
 		},
 	}
 	return fc, nil
@@ -3588,7 +4025,7 @@ func (ec *executionContext) _EventTeam_drivers(ctx context.Context, field graphq
 	}()
 	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
 		ctx = rctx // use context from middleware stack in children
-		return obj.Drivers, nil
+		return ec.resolvers.EventTeam().Drivers(rctx, obj)
 	})
 	if err != nil {
 		ec.Error(ctx, err)
@@ -3609,14 +4046,28 @@ func (ec *executionContext) fieldContext_EventTeam_drivers(_ context.Context, fi
 	fc = &graphql.FieldContext{
 		Object:     "EventTeam",
 		Field:      field,
-		IsMethod:   false,
-		IsResolver: false,
+		IsMethod:   true,
+		IsResolver: true,
 		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
 			switch field.Name {
+			case "id":
+				return ec.fieldContext_EventDriver_id(ctx, field)
 			case "name":
 				return ec.fieldContext_EventDriver_name(ctx, field)
-			case "carNum":
-				return ec.fieldContext_EventDriver_carNum(ctx, field)
+			case "driverId":
+				return ec.fieldContext_EventDriver_driverId(ctx, field)
+			case "initials":
+				return ec.fieldContext_EventDriver_initials(ctx, field)
+			case "abbrevName":
+				return ec.fieldContext_EventDriver_abbrevName(ctx, field)
+			case "iRating":
+				return ec.fieldContext_EventDriver_iRating(ctx, field)
+			case "licenseLevel":
+				return ec.fieldContext_EventDriver_licenseLevel(ctx, field)
+			case "licenseSubLevel":
+				return ec.fieldContext_EventDriver_licenseSubLevel(ctx, field)
+			case "licenseString":
+				return ec.fieldContext_EventDriver_licenseString(ctx, field)
 			}
 			return nil, fmt.Errorf("no field named %q was found under type EventDriver", field.Name)
 		},
@@ -4765,10 +5216,12 @@ func (ec *executionContext) fieldContext_Team_teams(_ context.Context, field gra
 		IsResolver: false,
 		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
 			switch field.Name {
+			case "id":
+				return ec.fieldContext_EventTeam_id(ctx, field)
 			case "name":
 				return ec.fieldContext_EventTeam_name(ctx, field)
-			case "carNum":
-				return ec.fieldContext_EventTeam_carNum(ctx, field)
+			case "teamId":
+				return ec.fieldContext_EventTeam_teamId(ctx, field)
 			case "drivers":
 				return ec.fieldContext_EventTeam_drivers(ctx, field)
 			}
@@ -7668,16 +8121,33 @@ func (ec *executionContext) _EventDriver(ctx context.Context, sel ast.SelectionS
 		switch field.Name {
 		case "__typename":
 			out.Values[i] = graphql.MarshalString("EventDriver")
+		case "id":
+			out.Values[i] = ec._EventDriver_id(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				out.Invalids++
+			}
 		case "name":
 			out.Values[i] = ec._EventDriver_name(ctx, field, obj)
 			if out.Values[i] == graphql.Null {
 				out.Invalids++
 			}
-		case "carNum":
-			out.Values[i] = ec._EventDriver_carNum(ctx, field, obj)
+		case "driverId":
+			out.Values[i] = ec._EventDriver_driverId(ctx, field, obj)
 			if out.Values[i] == graphql.Null {
 				out.Invalids++
 			}
+		case "initials":
+			out.Values[i] = ec._EventDriver_initials(ctx, field, obj)
+		case "abbrevName":
+			out.Values[i] = ec._EventDriver_abbrevName(ctx, field, obj)
+		case "iRating":
+			out.Values[i] = ec._EventDriver_iRating(ctx, field, obj)
+		case "licenseLevel":
+			out.Values[i] = ec._EventDriver_licenseLevel(ctx, field, obj)
+		case "licenseSubLevel":
+			out.Values[i] = ec._EventDriver_licenseSubLevel(ctx, field, obj)
+		case "licenseString":
+			out.Values[i] = ec._EventDriver_licenseString(ctx, field, obj)
 		default:
 			panic("unknown field " + strconv.Quote(field.Name))
 		}
@@ -7860,21 +8330,57 @@ func (ec *executionContext) _EventTeam(ctx context.Context, sel ast.SelectionSet
 		switch field.Name {
 		case "__typename":
 			out.Values[i] = graphql.MarshalString("EventTeam")
+		case "id":
+			out.Values[i] = ec._EventTeam_id(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				atomic.AddUint32(&out.Invalids, 1)
+			}
 		case "name":
 			out.Values[i] = ec._EventTeam_name(ctx, field, obj)
 			if out.Values[i] == graphql.Null {
-				out.Invalids++
+				atomic.AddUint32(&out.Invalids, 1)
 			}
-		case "carNum":
-			out.Values[i] = ec._EventTeam_carNum(ctx, field, obj)
+		case "teamId":
+			out.Values[i] = ec._EventTeam_teamId(ctx, field, obj)
 			if out.Values[i] == graphql.Null {
-				out.Invalids++
+				atomic.AddUint32(&out.Invalids, 1)
 			}
 		case "drivers":
-			out.Values[i] = ec._EventTeam_drivers(ctx, field, obj)
-			if out.Values[i] == graphql.Null {
-				out.Invalids++
+			field := field
+
+			innerFunc := func(ctx context.Context, fs *graphql.FieldSet) (res graphql.Marshaler) {
+				defer func() {
+					if r := recover(); r != nil {
+						ec.Error(ctx, ec.Recover(ctx, r))
+					}
+				}()
+				res = ec._EventTeam_drivers(ctx, field, obj)
+				if res == graphql.Null {
+					atomic.AddUint32(&fs.Invalids, 1)
+				}
+				return res
 			}
+
+			if field.Deferrable != nil {
+				dfs, ok := deferred[field.Deferrable.Label]
+				di := 0
+				if ok {
+					dfs.AddField(field)
+					di = len(dfs.Values) - 1
+				} else {
+					dfs = graphql.NewFieldSet([]graphql.CollectedField{field})
+					deferred[field.Deferrable.Label] = dfs
+				}
+				dfs.Concurrently(di, func(ctx context.Context) graphql.Marshaler {
+					return innerFunc(ctx, dfs)
+				})
+
+				// don't run the out.Concurrently() call below
+				out.Values[i] = graphql.Null
+				continue
+			}
+
+			out.Concurrently(i, func(ctx context.Context) graphql.Marshaler { return innerFunc(ctx, out) })
 		default:
 			panic("unknown field " + strconv.Quote(field.Name))
 		}

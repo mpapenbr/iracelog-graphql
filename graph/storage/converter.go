@@ -4,7 +4,9 @@ import (
 	"github.com/mpapenbr/iracelog-graphql/graph/model"
 	"github.com/mpapenbr/iracelog-graphql/internal"
 	"github.com/mpapenbr/iracelog-graphql/internal/car/car"
+	"github.com/mpapenbr/iracelog-graphql/internal/car/driver"
 	"github.com/mpapenbr/iracelog-graphql/internal/car/entry"
+	"github.com/mpapenbr/iracelog-graphql/internal/car/team"
 	"github.com/mpapenbr/iracelog-graphql/internal/events"
 	"github.com/mpapenbr/iracelog-graphql/internal/tracks"
 )
@@ -130,5 +132,27 @@ func convertDbEventEntryToModel(d *entry.DbCarEntry) *model.EventEntry {
 		ID:        d.ID,
 		CarNum:    &d.CarNum,
 		CarNumRaw: &d.CarNumRaw,
+	}
+}
+
+func convertDbCarTeamToModel(d *team.DbCarTeam) *model.EventTeam {
+	return &model.EventTeam{
+		ID:     d.ID,
+		Name:   d.Name,
+		TeamID: d.TeamId,
+	}
+}
+
+func convertDbCarDriverToModel(d *driver.DbCarDriver) *model.EventDriver {
+	return &model.EventDriver{
+		ID:              d.ID,
+		Name:            d.Name,
+		DriverID:        d.DriverId,
+		Initials:        &d.Initials,
+		AbbrevName:      &d.AbbrevName,
+		IRating:         &d.IRating,
+		LicenseLevel:    &d.LicenseLevel,
+		LicenseSubLevel: &d.LicenseSubLevel,
+		LicenseString:   &d.LicenseString,
 	}
 }
