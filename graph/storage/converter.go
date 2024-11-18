@@ -16,7 +16,7 @@ import (
 func convertEventSortArgs(modelArgs []*model.EventSortArg) []internal.DbSortArg {
 	if len(modelArgs) == 0 {
 		ret := []internal.DbSortArg{
-			{Column: "record_stamp", Order: "desc"},
+			{Column: "event_time", Order: "desc"},
 		}
 		return ret
 	}

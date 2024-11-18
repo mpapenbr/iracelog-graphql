@@ -104,7 +104,7 @@ should offset apply only for those tracks having more than offset events?
 consider a track with 2 and another with 10 events and a query with offset 5
 */
 func GetEventsByTrackIds(pool *pgxpool.Pool, trackIds []int, pageable internal.DbPageable) (map[int][]*DbEvent, error) {
-	query := internal.HandlePageableArgs(fmt.Sprintf("%s where (data->'info'->'trackId')::integer=any($1)", selector), pageable)
+	query := internal.HandlePageableArgs(fmt.Sprintf("%s where track_id=any($1)", selector), pageable)
 	rows, err := pool.Query(context.Background(), query, trackIds)
 	if err != nil {
 		log.Printf("error reading ids for trackId: %v", err)
@@ -133,23 +133,15 @@ func GetEventsByTrackIds(pool *pgxpool.Pool, trackIds []int, pageable internal.D
 /*
  */
 func SimpleEventSearch(pool *pgxpool.Pool, searchArg string, pageable internal.DbPageable) ([]DbEvent, error) {
-	// we cannot use $2 in (single?) quoted args. No variant worked
-	// the wanted part would be: '$.carInfo[*]? (@.name like_regex $2 flag "i") or even "$2"
-	// but it doesn't get replaced.
 	query := internal.HandlePageableArgs(fmt.Sprintf(
 		`%s
 WHERE name ilike $1
 OR    description ilike $1
-OR    data -> 'info' ->> 'trackDisplayName' ilike $1
-OR    id IN (SELECT a.event_id
-               FROM analysis a
-               WHERE a.data  @? '$.carInfo[*].drivers ? (@.driverName like_regex "%s" flag "i" )'
-               OR    a.data  @? '$.carInfo[*]? (@.name like_regex "%s" flag "i")')
-OR    id IN (SELECT c.event_id
-                FROM car c
-                WHERE c.data  @? '$.payload.cars[*] ? (@.name like_regex "%s" flag "i")')
-
-		`, selector, searchArg, searchArg, searchArg), pageable)
+OR    track_id in (select id from track where name ilike $1)
+OR id in (select event_id from c_car where name ilike $1)
+OR id in (select e.event_id from c_car_entry e join c_car_team t on t.c_car_entry_id=e.id and t.name ilike $1)
+OR id in (select e.event_id from c_car_entry e join c_car_driver d on d.c_car_entry_id=e.id and d.name ilike $1)
+		`, selector), pageable)
 
 	rows, err := pool.Query(context.Background(), query, fmt.Sprintf("%%%s%%", searchArg))
 	if err != nil {
@@ -193,21 +185,22 @@ func AdvancedEventSearch(pool *pgxpool.Pool, search *EventSearchKeys, pageable i
 	WHERE
 	{{if .Param.Name }} name ilike '%{{ .Param.Name }}%' {{ else }} true {{ end }}
 	
-	{{if .Param.Track }} AND data -> 'info' ->> 'trackDisplayName' ilike '%{{ .Param.Track }}%' {{ end }}
-	{{if or .Param.Driver .Param.Team }}
-	and id in (select a.event_id FROM analysis a
-		where
-		{{if .Param.Driver }} 
-		a.data  @? '$.carInfo[*].drivers ? (@.driverName like_regex "{{ .Param.Driver }}" flag "i" )'
-		{{ else }} true {{ end }}
-		{{if .Param.Team }} 
-		AND a.data  @? '$.carInfo[*] ? (@.name like_regex "{{ .Param.Team }}" flag "i")'
-		{{ end }}
-	)
+	{{- if .Param.Track }} 
+	AND track_id in (select id from track where name ilike '%{{ .Param.Track }}%') 
 	{{ end }}
-	{{if .Param.Car }}
-	and id in (select c.event_id FROM car c WHERE c.data  @? '$.payload.cars[*] ? (@.name like_regex "{{ .Param.Car }}" flag "i")')
+	 
+	{{- if .Param.Car }}
+	AND id in (select event_id from c_car where name ilike '%{{ .Param.Car }}%') 
 	{{ end }}
+
+	{{- if .Param.Team }}
+	AND id in (select e.event_id from c_car_entry e join c_car_team t on t.c_car_entry_id=e.id and t.name ilike '%{{ .Param.Team }}%')
+	{{ end }}
+	
+	{{- if .Param.Driver }}
+	AND id in (select e.event_id from c_car_entry e join c_car_driver d on d.c_car_entry_id=e.id and d.name ilike '%{{ .Param.Driver }}%')
+	{{ end }}
+	
 	`)
 	if err != nil {
 		return nil, err
