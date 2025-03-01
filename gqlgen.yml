@@ -64,7 +64,7 @@ models:
   Event:
     fields:
       track:
-        resolver: true
+        resolver: true            
   Team:
     fields:
       events:
@@ -78,5 +78,19 @@ models:
         resolver: true
       teams:
         resolver: true
+  
+  EventEntry:
+    fields:
+      car:
+        resolver: true
+      drivers:
+        resolver: true
+      team:
+        resolver: true
+  EventTeam:
+    fields:      
+      drivers:
+        resolver: true
+      
       
       

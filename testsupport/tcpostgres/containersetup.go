@@ -44,7 +44,7 @@ func WithInitialDatabase(user string, password string, dbName string) func(req *
 // setupPostgres creates an instance of the postgres container type
 func SetupPostgres(ctx context.Context, opts ...PostgresContainerOption) (*PostgresContainer, error) {
 	req := testcontainers.ContainerRequest{
-		Image:        "ghcr.io/mpapenbr/iracelog-testdb:v0.1.0",
+		Image:        "ghcr.io/mpapenbr/iracelog-testdb:v0.2.0",
 		Env:          map[string]string{},
 		ExposedPorts: []string{},
 		Cmd:          []string{"postgres", "-c", "fsync=off"},

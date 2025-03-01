@@ -34,7 +34,4 @@ jobs:
         run: |
           go build -v
           go test ./... -p 1
-      - name: Run GoReleaser
-        uses: goreleaser/goreleaser-action@v6
-        with:
-          args: release --snapshot  --clean
+      
