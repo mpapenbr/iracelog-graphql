@@ -15,9 +15,11 @@ type Event {
   numCarClasses: Int
   raceloggerVersion: String
   iRacingSessionId: Int
-  track: Track # will be changed to non-null. For event 23 (NEC Race) the track 262 is not in the DB
+  track: Track!
   teams: [EventTeam!]
   drivers: [EventDriver!]!
+  entries: [EventEntry!]!
+  cars: [Car!]!
 }
 
 type User {
@@ -31,21 +33,60 @@ type Track {
   shortName: String!
   configName: String
   numSectors: Int
-  pitlaneLength: Float!
+  pitLaneLength: Float!
+  pitSpeed: Float!
   length: Float!
   events: [Event!]
 }
+"describes an entry in a specific event."
+type EventEntry {
+  id: ID!
+  "The car data with optional specific restrictions"
+  car: Car!
+  "The car number for this car"
+  carNum: String
+  "The car number in iRacing raw format"
+  carNumRaw: Int
+  "the team running this car"
+  team: EventTeam
+  "the drivers of this car"
+  drivers: [EventDriver!]!
+}
+
+type Car {
+  id: ID!
+  name: String!
+  nameShort: String!
+  carId: Int!
+  "fuel capacity in percent"
+  fuelPct: Float!
+  "engine power adjustment percent"
+  powerAdjust: Float!
+  "weigth penalty in kg"
+  weightPenalty: Float!
+  "number of dry tire sets"
+  dryTireSets: Int!
+}
 
 type EventTeam {
+  id: ID!
   name: String!
-  carNum: String!
+  teamId: Int!
   drivers: [EventDriver]!
 }
 
 "This models a driver in a concrete event"
 type EventDriver {
+  id: ID!
   name: String!
-  carNum: String!
+  driverId: Int!
+
+  initials: String
+  abbrevName: String
+  iRating: Int
+  licenseLevel: Int
+  licenseSubLevel: Int
+  licenseString: String
 }
 
 "This models a more 'generic' driver with participation in events and teams."
@@ -73,6 +114,8 @@ type Team {
 }
 
 type Query {
+  eventEntry(ids: [ID!]): [EventEntry!]!
+
   getEvents(
     limit: Int = 10
     offset: Int

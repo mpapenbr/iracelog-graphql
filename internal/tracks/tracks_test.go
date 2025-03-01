@@ -16,15 +16,15 @@ type checkData struct {
 	trackName string
 }
 
-func extractCheckData(dbData []DbTrack) []checkData {
+func extractCheckData(dbData []*DbTrack) []checkData {
 	ret := make([]checkData, len(dbData))
 	for i, item := range dbData {
-		ret[i] = checkData{id: item.ID, trackName: item.Data.ShortName}
+		ret[i] = checkData{id: item.ID, trackName: item.ShortName}
 	}
 	return ret
 }
 
-func extractAndSortCheckData(dbData []DbTrack) []checkData {
+func extractAndSortCheckData(dbData []*DbTrack) []checkData {
 	ret := extractCheckData(dbData)
 	slices.SortFunc(ret, func(a, b checkData) bool { return a.id < b.id })
 	return ret
@@ -53,16 +53,16 @@ func TestGetALl(t *testing.T) {
 		// Testing only makes sense with predictable results (-> needs sorting). We pick two sort colums with different sortings.
 
 		{
-			name: "2 results, displayShort asc", args: args{pool: pool, pageable: internal.DbPageable{Sort: []internal.DbSortArg{{Column: "data->>'trackDisplayShortName'", Order: "asc"}}, Limit: intHelper(2)}},
-			want: []checkData{{id: 46, trackName: "Barber"}, {id: 145, trackName: "Brands Hatch"}}, wantErr: false,
+			name: "2 results, displayShort asc", args: args{pool: pool, pageable: internal.DbPageable{Sort: []internal.DbSortArg{{Column: "short_name", Order: "asc"}}, Limit: intHelper(2)}},
+			want: []checkData{{id: 268, trackName: "24 Heures"}, {id: 345, trackName: "Barcelona"}}, wantErr: false,
 		},
 		{
-			name: "2 results, trackLength desc", args: args{pool: pool, pageable: internal.DbPageable{Sort: []internal.DbSortArg{{Column: "data->'trackLength'", Order: "desc"}}, Limit: intHelper(2)}},
-			want: []checkData{{id: 262, trackName: "Gesamtstrecke VLN"}, {id: 341, trackName: "Silverstone"}}, wantErr: false,
+			name: "2 results, trackLength desc", args: args{pool: pool, pageable: internal.DbPageable{Sort: []internal.DbSortArg{{Column: "track_length", Order: "desc"}}, Limit: intHelper(2)}},
+			want: []checkData{{id: 268, trackName: "24 Heures"}, {id: 165, trackName: "Spa"}}, wantErr: false,
 		},
 		{
-			name: "2 results, trackLength, default sorting (asc)", args: args{pool: pool, pageable: internal.DbPageable{Sort: []internal.DbSortArg{{Column: "data->'trackLength'"}}, Limit: intHelper(2)}},
-			want: []checkData{{id: 153, trackName: "Mid-Ohio"}, {id: 46, trackName: "Barber"}}, wantErr: false,
+			name: "2 results, trackLength, default sorting (asc)", args: args{pool: pool, pageable: internal.DbPageable{Sort: []internal.DbSortArg{{Column: "track_length"}}, Limit: intHelper(2)}},
+			want: []checkData{{id: 106, trackName: "Watkins"}, {id: 233, trackName: "Donington"}}, wantErr: false,
 		},
 	}
 
@@ -95,7 +95,7 @@ func TestGetByIds(t *testing.T) {
 		want    []checkData
 		wantErr bool
 	}{
-		{name: "Get tracks 46,153", args: args{pool: pool, ids: []int{46, 153}}, wantErr: false, want: []checkData{{id: 46, trackName: "Barber"}, {id: 153, trackName: "Mid-Ohio"}}},
+		{name: "Get tracks 18,106", args: args{pool: pool, ids: []int{18, 106}}, wantErr: false, want: []checkData{{id: 18, trackName: "Road America"}, {id: 106, trackName: "Watkins"}}},
 		{name: "empty request", args: args{pool: pool, ids: []int{}}, wantErr: false, want: []checkData{}},
 		{name: "unknown ids", args: args{pool: pool, ids: []int{999, 3333}}, wantErr: false, want: []checkData{}},
 	}

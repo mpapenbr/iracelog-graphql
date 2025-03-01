@@ -2,7 +2,6 @@ package storage
 
 import (
 	"context"
-	"fmt"
 
 	"github.com/graph-gophers/dataloader"
 	"github.com/jackc/pgx/v5/pgxpool"
@@ -12,9 +11,10 @@ import (
 	"github.com/mpapenbr/iracelog-graphql/internal/analysis"
 	"github.com/mpapenbr/iracelog-graphql/internal/events"
 	database "github.com/mpapenbr/iracelog-graphql/internal/pkg/db/postgres"
-	"github.com/mpapenbr/iracelog-graphql/internal/tracks"
 )
 
+// for implementation of the storage interface see db_storage_xxx.go
+// depending on the type of data to be returned
 type DbStorage struct {
 	// Storage
 	pool *pgxpool.Pool
@@ -28,51 +28,7 @@ func NewDbStorageWithPool(pool *pgxpool.Pool) *DbStorage {
 	return &DbStorage{pool: pool}
 }
 
-// tracks
-func (db *DbStorage) GetAllTracks(ctx context.Context, limit *int, offset *int, sort []*model.TrackSortArg) ([]*model.Track, error) {
-	var result []*model.Track
-
-	dbTrackSortArg := convertTrackSortArgs(sort)
-	tracks, err := tracks.GetALl(db.pool, internal.DbPageable{Limit: limit, Offset: offset, Sort: dbTrackSortArg})
-	if err == nil {
-		// convert the internal database Track to the GraphQL-Track
-		for _, track := range tracks {
-			result = append(result, convertDbTrackToModel(track))
-		}
-	}
-	return result, err
-}
-
-func (db *DbStorage) GetTracksByKeys(ctx context.Context, ids dataloader.Keys) map[string]*model.Track {
-	intIds := IntKeysToSlice(ids)
-	result := map[string]*model.Track{}
-
-	tracks, _ := tracks.GetByIds(db.pool, intIds)
-	// log.Printf("Tracks: %v\n", tracks)
-
-	// convert the internal database Track to the GraphQL-Track
-	for _, track := range tracks {
-		result[IntKey(track.ID).String()] = convertDbTrackToModel(track)
-	}
-
-	return result
-}
-
 // events
-func (db *DbStorage) GetAllEvents(ctx context.Context, limit *int, offset *int, sort []*model.EventSortArg) ([]*model.Event, error) {
-	var result []*model.Event
-	dbEventSortArg := convertEventSortArgs(sort)
-	events, err := events.GetALl(db.pool, internal.DbPageable{Limit: limit, Offset: offset, Sort: dbEventSortArg})
-	if err == nil {
-		// convert the internal database Track to the GraphQL-Track
-		for _, dbEvents := range events {
-			// this would cause assigning the last loop content to all result entries
-
-			result = append(result, convertDbEventToModel(dbEvents))
-		}
-	}
-	return result, err
-}
 
 func (db *DbStorage) SimpleSearchEvents(ctx context.Context, arg string, limit *int, offset *int, sort []*model.EventSortArg) ([]*model.Event, error) {
 	var result []*model.Event
@@ -102,45 +58,6 @@ func (db *DbStorage) AdvancedSearchEvents(ctx context.Context, arg *events.Event
 		}
 	}
 	return result, err
-}
-
-func (db *DbStorage) GetEventsByKeys(ctx context.Context, ids dataloader.Keys) map[string]*model.Event {
-	intIds := IntKeysToSlice(ids)
-	result := map[string]*model.Event{}
-
-	events, _ := events.GetByIds(db.pool, intIds)
-	// log.Printf("Tracks: %v\n", tracks)
-
-	// convert the internal database Track to the GraphQL-Track
-	for _, dbEvents := range events {
-		// this would cause assigning the last loop content to all result entries
-		result[IntKey(dbEvents.ID).String()] = convertDbEventToModel(dbEvents)
-	}
-
-	return result
-}
-
-// Note: we use (temporary) a string as key (to reuse existing batcher mechanics)
-func (db *DbStorage) GetEventsForTrackIdsKeys(ctx context.Context, trackIds dataloader.Keys) map[string][]*model.Event {
-	result := map[string][]*model.Event{}
-
-	intTrackIds := make([]int, len(trackIds))
-	for i, id := range trackIds {
-		intTrackIds[i] = id.Raw().(int)
-	}
-	byTrackId, err := events.GetEventsByTrackIds(db.pool, intTrackIds, internal.DbPageable{Sort: convertEventSortArgs([]*model.EventSortArg{})})
-	// log.Printf("Events: %v\n", events)
-	if err == nil {
-		// convert the internal database Event to the GraphQL-Event
-		for k, event := range byTrackId {
-			convertedEvents := make([]*model.Event, len(event))
-			for i, dbEvent := range event {
-				convertedEvents[i] = convertDbEventToModel(*dbEvent)
-			}
-			result[fmt.Sprintf("%d", k)] = convertedEvents
-		}
-	}
-	return result
 }
 
 func (db *DbStorage) CollectAnalysisData(ctx context.Context, eventIds dataloader.Keys) map[string]analysis.DbAnalysis {

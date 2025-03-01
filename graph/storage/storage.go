@@ -45,6 +45,26 @@ type Storage interface {
 	CollectEventIdsForTeams(ctx context.Context, teams dataloader.Keys) map[string][]int
 	CollectEventIdsForDrivers(ctx context.Context, drivers dataloader.Keys) map[string][]int
 
+	// collect the drivers for a number of eventIds
+	CollectEventDrivers(ctx context.Context, eventIds dataloader.Keys) map[string][]*model.EventDriver
+
 	// search team by name
 	SearchTeams(ctx context.Context, arg string) []*model.Team
+
+	// new collectors start here
+	// collect the event entries for a number of eventIds
+	CollectEventEntries(ctx context.Context, eventIds dataloader.Keys) map[string][]*model.EventEntry
+	// collect the event entries for selected ids
+	CollectEventEntriesById(ctx context.Context, ids dataloader.Keys) map[string]*model.EventEntry
+	// collect the cars for a number of eventIds
+	CollectEventCars(ctx context.Context, eventIds dataloader.Keys) map[string][]*model.Car
+
+	// collect the cars for a number of eventEntryIds
+	CollectCarsByEventEntry(ctx context.Context, eventEntryIds dataloader.Keys) map[string]*model.Car
+	// collect the teams for a number of eventEntryIds
+	CollectTeamByEventEntry(ctx context.Context, eventEntryIds dataloader.Keys) map[string]*model.EventTeam
+	// collect the event drivers for a number of eventEntryIds
+	CollectDriversByEventEntry(ctx context.Context, eventEntryIds dataloader.Keys) map[string][]*model.EventDriver
+	// collect the event drivers for a number of eventEntryIds
+	CollectDriversByTeam(ctx context.Context, teamIds dataloader.Keys) map[string][]*model.EventDriver
 }
