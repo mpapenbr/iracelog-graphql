@@ -29,6 +29,7 @@
         "github.vscode-pull-request-github",
         "EditorConfig.EditorConfig",
         "cschleiden.vscode-github-actions",
+        "redhat.vscode-yaml",
         "GitHub.copilot"
       ]
     }
@@ -48,7 +49,7 @@
   "features": {
     "ghcr.io/devcontainers/features/docker-in-docker": "latest",
     "ghcr.io/devcontainers/features/go": {
-      "version": "1.23"
+      "version": "1.24"
     }
   }
 }
