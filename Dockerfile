@@ -1,7 +1,8 @@
-FROM alpine:3.17
-RUN apk update && apk add ca-certificates && rm -rf /var/cache/apk/*
+FROM scratch
+ARG ARCH
 ENTRYPOINT ["/iracelog-graphql"]
+HEALTHCHECK --interval=2s --timeout=2s --start-period=5s --retries=3 CMD [ "/grpc_health_probe", "-addr", "localhost:8080" ]
 COPY iracelog-graphql /
-COPY scripts/wait-for-it.sh /wait-for-it.sh
+COPY ext/healthcheck/grpc_health_probe.$ARCH /grpc_health_probe
 
 EXPOSE 8080

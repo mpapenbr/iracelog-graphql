@@ -1,3 +1,4 @@
+version: 2
 # This is an example .goreleaser.yml file with some sensible defaults.
 # Make sure to check the documentation at https://goreleaser.com
 before:
@@ -10,32 +11,60 @@ builds:
   - env:
       - CGO_ENABLED=0
     goos:
-      - linux
-    goarch:
-      - amd64
+      - linux    
     ldflags:
       - -s -w -X github.com/mpapenbr/iracelog-graphql/graph.Version={{.Version}}
 
 dockers:
-  - image_templates:
-      - "ghcr.io/mpapenbr/{{ .ProjectName }}:{{ .Tag }}"
+  - id: graphql-amd64
+    image_templates:
+      - "ghcr.io/mpapenbr/{{ .ProjectName }}:{{ .Tag }}-amd64"
     build_flag_templates:
       - "--pull"
       - "--label=org.opencontainers.image.created={{.Date}}"
       - "--label=org.opencontainers.image.title={{.ProjectName}}"
       - "--label=org.opencontainers.image.revision={{.FullCommit}}"
       - "--label=org.opencontainers.image.version={{.Version}}"
+      - "--label=org.opencontainers.image.source=https://{{.ModulePath}}"
+      - "--label=org.opencontainers.image.url=https://{{.ModulePath}}"
+      - "--label=org.opencontainers.image.description=GraphQL for iRacelog"
+      - "--label=org.opencontainers.image.licenses=MIT license"
+      - "--build-arg=ARCH=amd64"
       - "--platform=linux/amd64"
     extra_files:
-      - scripts/wait-for-it.sh
+      - ext/healthcheck/grpc_health_probe.amd64
+    use: buildx
+    goarch: amd64
+
+  - id: graphql-arm64
+    image_templates:
+      - "ghcr.io/mpapenbr/{{ .ProjectName }}:{{ .Tag }}-arm64"
+    build_flag_templates:
+      - "--pull"
+      - "--label=org.opencontainers.image.created={{.Date}}"
+      - "--label=org.opencontainers.image.title={{.ProjectName}}"
+      - "--label=org.opencontainers.image.revision={{.FullCommit}}"
+      - "--label=org.opencontainers.image.version={{.Version}}"
+      - "--label=org.opencontainers.image.source=https://{{.ModulePath}}"
+      - "--label=org.opencontainers.image.url=https://{{.ModulePath}}"
+      - "--label=org.opencontainers.image.description=GraphQL for iRacelog"
+      - "--label=org.opencontainers.image.licenses=MIT license"
+      - "--build-arg=ARCH=arm64"
+      - "--platform=linux/arm64"
+    extra_files:
+      - ext/healthcheck/grpc_health_probe.arm64
+    use: buildx
+    goarch: arm64
 
 docker_manifests:
   - name_template: "ghcr.io/mpapenbr/{{ .ProjectName }}:{{ .Tag }}"
     image_templates:
-      - "ghcr.io/mpapenbr/{{ .ProjectName }}:{{ .Tag }}"
+      - "ghcr.io/mpapenbr/{{ .ProjectName }}:{{ .Tag }}-amd64"
+      - "ghcr.io/mpapenbr/{{ .ProjectName }}:{{ .Tag }}-arm64"
+
 
 snapshot:
-  name_template: "{{ incpatch .Version }}-next"
+  version_template: "{{ incpatch .Version }}-next"
 changelog:
   sort: asc
   use: github
