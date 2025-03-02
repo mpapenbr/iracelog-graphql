@@ -13,13 +13,16 @@
         "go.toolsManagement.checkForUpdates": "local",
         "go.useLanguageServer": true,
         "go.gopath": "/go",
-        // "go.lintTool": "golangci-lint",
+        "go.lintTool": "golangci-lint",
+        "go.testEnvFile": "${workspaceFolder}/.env",
         "gopls": {
           "formatting.gofumpt": true
         },
         "[go]": {
           "editor.rulers": [90]
-        }
+        },
+        "editor.defaultFormatter": "golang.go",
+        "editor.formatOnSave": true
       },
       // Add the IDs of extensions you want installed when the container is created.
       "extensions": [

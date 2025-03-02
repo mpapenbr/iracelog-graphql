@@ -1,14 +1,16 @@
+//nolint:funlen // ok for test
 package tracks
 
 import (
 	"reflect"
+	"slices"
 	"testing"
 
 	"github.com/jackc/pgx/v5/pgxpool"
+	"github.com/stretchr/testify/assert"
+
 	"github.com/mpapenbr/iracelog-graphql/internal"
 	tcpg "github.com/mpapenbr/iracelog-graphql/testsupport/tcpostgres"
-	"github.com/stretchr/testify/assert"
-	"golang.org/x/exp/slices"
 )
 
 type checkData struct {
@@ -26,7 +28,7 @@ func extractCheckData(dbData []*DbTrack) []checkData {
 
 func extractAndSortCheckData(dbData []*DbTrack) []checkData {
 	ret := extractCheckData(dbData)
-	slices.SortFunc(ret, func(a, b checkData) bool { return a.id < b.id })
+	slices.SortFunc(ret, func(a, b checkData) int { return a.id - b.id })
 	return ret
 }
 
@@ -38,7 +40,6 @@ func intHelper(i int) *int {
 func TestGetALl(t *testing.T) {
 	pool := tcpg.SetupTestDb()
 
-	// dbStorage := storage.NewDbStorageWithPool(pool)
 	type args struct {
 		pool     *pgxpool.Pool
 		pageable internal.DbPageable
@@ -50,19 +51,44 @@ func TestGetALl(t *testing.T) {
 		want    []checkData
 		wantErr bool
 	}{
-		// Testing only makes sense with predictable results (-> needs sorting). We pick two sort colums with different sortings.
+		// Testing only makes sense with predictable results (-> needs sorting).
+		// We pick two sort colums with different sortings.
 
 		{
-			name: "2 results, displayShort asc", args: args{pool: pool, pageable: internal.DbPageable{Sort: []internal.DbSortArg{{Column: "short_name", Order: "asc"}}, Limit: intHelper(2)}},
-			want: []checkData{{id: 268, trackName: "24 Heures"}, {id: 345, trackName: "Barcelona"}}, wantErr: false,
+			name: "2 results, displayShort asc",
+			args: args{pool: pool, pageable: internal.DbPageable{
+				Sort:  []internal.DbSortArg{{Column: "short_name", Order: "asc"}},
+				Limit: intHelper(2),
+			}},
+			want: []checkData{
+				{id: 268, trackName: "24 Heures"},
+				{id: 345, trackName: "Barcelona"},
+			},
+			wantErr: false,
 		},
 		{
-			name: "2 results, trackLength desc", args: args{pool: pool, pageable: internal.DbPageable{Sort: []internal.DbSortArg{{Column: "track_length", Order: "desc"}}, Limit: intHelper(2)}},
-			want: []checkData{{id: 268, trackName: "24 Heures"}, {id: 165, trackName: "Spa"}}, wantErr: false,
+			name: "2 results, trackLength desc",
+			args: args{pool: pool, pageable: internal.DbPageable{
+				Sort:  []internal.DbSortArg{{Column: "track_length", Order: "desc"}},
+				Limit: intHelper(2),
+			}},
+			want: []checkData{
+				{id: 268, trackName: "24 Heures"},
+				{id: 165, trackName: "Spa"},
+			},
+			wantErr: false,
 		},
 		{
-			name: "2 results, trackLength, default sorting (asc)", args: args{pool: pool, pageable: internal.DbPageable{Sort: []internal.DbSortArg{{Column: "track_length"}}, Limit: intHelper(2)}},
-			want: []checkData{{id: 106, trackName: "Watkins"}, {id: 233, trackName: "Donington"}}, wantErr: false,
+			name: "2 results, trackLength, default sorting (asc)",
+			args: args{pool: pool, pageable: internal.DbPageable{
+				Sort:  []internal.DbSortArg{{Column: "track_length"}},
+				Limit: intHelper(2),
+			}},
+			want: []checkData{
+				{id: 106, trackName: "Watkins"},
+				{id: 233, trackName: "Donington"},
+			},
+			wantErr: false,
 		},
 	}
 
@@ -95,9 +121,26 @@ func TestGetByIds(t *testing.T) {
 		want    []checkData
 		wantErr bool
 	}{
-		{name: "Get tracks 18,106", args: args{pool: pool, ids: []int{18, 106}}, wantErr: false, want: []checkData{{id: 18, trackName: "Road America"}, {id: 106, trackName: "Watkins"}}},
-		{name: "empty request", args: args{pool: pool, ids: []int{}}, wantErr: false, want: []checkData{}},
-		{name: "unknown ids", args: args{pool: pool, ids: []int{999, 3333}}, wantErr: false, want: []checkData{}},
+		{
+			name:    "Get tracks 18,106",
+			args:    args{pool: pool, ids: []int{18, 106}},
+			wantErr: false,
+			want: []checkData{
+				{id: 18, trackName: "Road America"}, {id: 106, trackName: "Watkins"},
+			},
+		},
+		{
+			name:    "empty request",
+			args:    args{pool: pool, ids: []int{}},
+			wantErr: false,
+			want:    []checkData{},
+		},
+		{
+			name:    "unknown ids",
+			args:    args{pool: pool, ids: []int{999, 3333}},
+			wantErr: false,
+			want:    []checkData{},
+		},
 	}
 
 	for _, tt := range tests {

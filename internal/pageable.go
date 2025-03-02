@@ -18,6 +18,7 @@ type DbSortArg struct {
 
 func convertSortArg(args []DbSortArg) string {
 	var ret []string
+	//nolint:gocritic // by design
 	for _, val := range args {
 		ret = append(ret, fmt.Sprintf("%s %s", val.Column, val.Order))
 	}

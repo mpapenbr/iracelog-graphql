@@ -7,6 +7,7 @@ import (
 
 	"github.com/jackc/pgx/v5"
 	"github.com/jackc/pgx/v5/pgxpool"
+
 	"github.com/mpapenbr/iracelog-graphql/internal"
 )
 
@@ -23,6 +24,8 @@ type DbTrack struct {
 	PitLaneLength float64  `json:"pitLaneLength"`
 	Sectors       []Sector `json:"sectors"`
 }
+
+//nolint:tagliatelle // json is that way
 type Sector struct {
 	Num      int     `json:"num"`
 	StartPct float64 `json:"start_pct"`
@@ -39,23 +42,18 @@ func GetALl(pool *pgxpool.Pool, pageable internal.DbPageable) ([]*DbTrack, error
 	defer rows.Close()
 	ret := []*DbTrack{}
 	for rows.Next() {
-		// t := DbTrack{}
-		// v, _ := rows.Values()
-		// log.Printf("%v\n", v)
-
 		t, err := scanRow(rows)
 		if err != nil {
 			log.Printf("Error scaning Track: %v\n", err)
 		}
-
-		// log.Printf("%v\n", t)
 		ret = append(ret, t)
 	}
 	return ret, nil
 }
 
 func GetByIds(pool *pgxpool.Pool, ids []int) ([]*DbTrack, error) {
-	rows, err := pool.Query(context.Background(), fmt.Sprintf("%s where id=any($1)", selector), ids)
+	rows, err := pool.Query(context.Background(),
+		fmt.Sprintf("%s where id=any($1)", selector), ids)
 	if err != nil {
 		log.Printf("error reading tracks: %v", err)
 		return []*DbTrack{}, err
@@ -67,14 +65,17 @@ func GetByIds(pool *pgxpool.Pool, ids []int) ([]*DbTrack, error) {
 		if err != nil {
 			log.Printf("Error scaning Track: %v\n", err)
 		}
-
 		ret = append(ret, t)
 	}
 	return ret, nil
 }
 
 // little helper
-const selector = string("select id,name,short_name,config,track_length,sectors,pit_speed,pit_entry,pit_exit,pit_lane_length from track")
+const selector = string(`
+select id,name,short_name,config,
+track_length,sectors,pit_speed,
+pit_entry,pit_exit,pit_lane_length 
+from track`)
 
 func scanRow(row pgx.Row) (*DbTrack, error) {
 	var sectors []Sector
@@ -86,9 +87,7 @@ func scanRow(row pgx.Row) (*DbTrack, error) {
 		return nil, err
 	}
 	item.Sectors = make([]Sector, len(sectors))
-	for i := range sectors {
-		item.Sectors[i] = sectors[i]
-	}
+	copy(item.Sectors, sectors)
 
 	return &item, nil
 }

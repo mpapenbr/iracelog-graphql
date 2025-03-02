@@ -13,7 +13,11 @@ type DbCarTeam struct {
 	Name   string `json:"name"`
 }
 
-func GetTeamsByEventEntry(pool *pgxpool.Pool, eventEntryIDs []int) (map[int]*DbCarTeam, error) {
+//nolint:whitespace // editor/linter issue
+func GetTeamsByEventEntry(
+	pool *pgxpool.Pool,
+	eventEntryIDs []int,
+) (map[int]*DbCarTeam, error) {
 	rows, err := pool.Query(context.Background(), `
 	select 
 	t.id,	
@@ -35,9 +39,7 @@ func GetTeamsByEventEntry(pool *pgxpool.Pool, eventEntryIDs []int) (map[int]*DbC
 		if err != nil {
 			log.Printf("Error scanning c_car_team: %v\n", err)
 		}
-
 		ret[ceId] = &d
-
 	}
 	return ret, nil
 }

@@ -21,7 +21,8 @@ type DbCar struct {
 
 func GetEventCars(pool *pgxpool.Pool, eventIDs []int) (map[int][]*DbCar, error) {
 	rows, err := pool.Query(context.Background(), `
-	select id,event_id, car_id, name, name_short, fuel_pct, power_adjust, weight_penalty, dry_tire_sets
+	select id,event_id, car_id, name, name_short, 
+	  fuel_pct, power_adjust, weight_penalty, dry_tire_sets
 	from c_car
 	where event_id = any($1) order by name asc`, eventIDs)
 	if err != nil {
@@ -37,17 +38,19 @@ func GetEventCars(pool *pgxpool.Pool, eventIDs []int) (map[int][]*DbCar, error) 
 		if err != nil {
 			log.Printf("Error scanning c_car: %v\n", err)
 		}
-
 		if _, ok := ret[d.EventId]; !ok {
 			ret[d.EventId] = []*DbCar{}
 		}
 		ret[d.EventId] = append(ret[d.EventId], &d)
-
 	}
 	return ret, nil
 }
 
-func GetEventEntryCars(pool *pgxpool.Pool, eventEntryIDs []int) (map[int]*DbCar, error) {
+//nolint:whitespace // editor/linter issue
+func GetEventEntryCars(
+	pool *pgxpool.Pool,
+	eventEntryIDs []int,
+) (map[int]*DbCar, error) {
 	rows, err := pool.Query(context.Background(), `
 	select 
 	c.id,
@@ -76,9 +79,7 @@ func GetEventEntryCars(pool *pgxpool.Pool, eventEntryIDs []int) (map[int]*DbCar,
 		if err != nil {
 			log.Printf("Error scanning c_car: %v\n", err)
 		}
-
 		ret[ceId] = &d
-
 	}
 	return ret, nil
 }

@@ -32,10 +32,8 @@ func ExtractEventSearchKeys(arg string) (*events.EventSearchKeys, error) {
 				ret.Team = handleRegexSpecials(m)
 			case "track":
 				ret.Track = m
-
 			}
 		}
-
 	}
 	if foundKeys {
 		return ret, nil

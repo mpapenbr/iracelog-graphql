@@ -6,7 +6,7 @@ import (
 	"github.com/graph-gophers/dataloader"
 )
 
-// the IntKey is analogue to the StringKey
+// the IntKey is analog to the StringKey
 type IntKey int
 
 func (k IntKey) String() string   { return fmt.Sprintf("%d", k) }
@@ -19,9 +19,11 @@ func NewKeysFromInts(ints []int) dataloader.Keys {
 	}
 	return list
 }
+
 func IntKeysToSlice(keys dataloader.Keys) []int {
 	intIds := make([]int, len(keys))
 	for i, id := range keys {
+		//nolint:errcheck // by design
 		intIds[i] = id.Raw().(int)
 	}
 	return intIds

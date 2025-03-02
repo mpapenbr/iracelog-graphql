@@ -8,8 +8,9 @@ import (
 
 	"github.com/docker/go-connections/nat"
 	"github.com/jackc/pgx/v5/pgxpool"
-	database "github.com/mpapenbr/iracelog-graphql/internal/pkg/db/postgres"
 	"github.com/testcontainers/testcontainers-go/wait"
+
+	database "github.com/mpapenbr/iracelog-graphql/internal/pkg/db/postgres"
 )
 
 // create a pg connection pool for the iracelog testdatabase
@@ -22,16 +23,19 @@ func SetupTestDb() *pgxpool.Pool {
 	container, err := SetupPostgres(ctx,
 		WithPort(port.Port()),
 		WithInitialDatabase("postgres", "password", "postgres"),
-		WithWaitStrategy(wait.ForLog("database system is ready to accept connections").WithOccurrence(1).WithStartupTimeout(5*time.Second)),
+		WithWaitStrategy(wait.
+			ForLog("database system is ready to accept connections").
+			WithOccurrence(1).
+			WithStartupTimeout(5*time.Second)),
 		WithName("iracelog-graphql-test"),
 	)
 	if err != nil {
 		log.Fatal(err)
 	}
-	// fmt.Printf("%+v\n", container)
 	containerPort, _ := container.MappedPort(ctx, port)
 	host, _ := container.Host(ctx)
-	dbUrl := fmt.Sprintf("postgresql://postgres:password@%s:%s/postgres", host, containerPort.Port())
+	dbUrl := fmt.Sprintf("postgresql://postgres:password@%s:%s/postgres",
+		host, containerPort.Port())
 	pool := database.InitWithUrl(dbUrl)
 	return pool
 }

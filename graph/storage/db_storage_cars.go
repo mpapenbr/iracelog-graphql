@@ -1,15 +1,18 @@
+//nolint:dupl // false positive
 package storage
 
 import (
 	"context"
 
 	"github.com/graph-gophers/dataloader"
+
 	"github.com/mpapenbr/iracelog-graphql/graph/model"
 	"github.com/mpapenbr/iracelog-graphql/internal/car/car"
 )
 
 // contains implementations of storage interface that return a model.Car items
-
+//
+//nolint:whitespace // editor/linter issue
 func (db *DbStorage) CollectEventCars(
 	ctx context.Context,
 	eventIds dataloader.Keys,
@@ -27,6 +30,7 @@ func (db *DbStorage) CollectEventCars(
 	return ret
 }
 
+//nolint:whitespace // editor/linter issue
 func (db *DbStorage) CollectCarsByEventEntry(
 	ctx context.Context,
 	eventEntryIds dataloader.Keys,

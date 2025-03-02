@@ -4,12 +4,14 @@ import (
 	"context"
 
 	"github.com/graph-gophers/dataloader"
+
 	"github.com/mpapenbr/iracelog-graphql/graph/model"
 	"github.com/mpapenbr/iracelog-graphql/internal/car/team"
 )
 
 // contains implementations of storage interface that return a model.EventTeam items
-
+//
+//nolint:whitespace // editor/linter issue
 func (db *DbStorage) CollectTeamByEventEntry(
 	ctx context.Context,
 	eventEntryIds dataloader.Keys,

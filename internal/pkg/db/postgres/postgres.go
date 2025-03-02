@@ -1,48 +1,54 @@
-package database
+package postgres
 
 import (
 	"context"
-	"log"
-	"os"
 
+	"github.com/exaring/otelpgx"
 	pgxuuid "github.com/jackc/pgx-gofrs-uuid"
 	"github.com/jackc/pgx/v5"
-
 	"github.com/jackc/pgx/v5/pgxpool"
-	"github.com/sirupsen/logrus"
+
+	"github.com/mpapenbr/iracelog-graphql/log"
 )
 
 var DbPool *pgxpool.Pool
 
-func InitDB() *pgxpool.Pool {
-	return InitWithUrl(os.Getenv("DATABASE_URL"))
+type PoolConfigOption func(cfg *pgxpool.Config)
+
+func WithTracer(t pgx.QueryTracer) PoolConfigOption {
+	return func(cfg *pgxpool.Config) {
+		cfg.ConnConfig.Tracer = t
+	}
 }
 
-func InitWithUrl(url string) *pgxpool.Pool {
+func NewOtlpTracer() pgx.QueryTracer {
+	return otelpgx.NewTracer()
+}
+
+func NewMyTracer(logger *log.Logger, level log.Level) pgx.QueryTracer {
+	return &myQueryTracer{log: logger, level: level}
+}
+
+func InitWithUrl(url string, opts ...PoolConfigOption) *pgxpool.Pool {
 	dbConfig, err := pgxpool.ParseConfig(url)
 	if err != nil {
-		log.Fatalf("Unable to parse database config %v\n", err)
+		log.Fatal("Unable to parse database config", log.ErrorField(err))
 	}
-
-	logger := &logrus.Logger{
-		Out:          os.Stderr,
-		Formatter:    new(logrus.TextFormatter),
-		Hooks:        make(logrus.LevelHooks),
-		Level:        logrus.TraceLevel,
-		ExitFunc:     os.Exit,
-		ReportCaller: false,
-	}
-
-	dbConfig.ConnConfig.Tracer = &myQueryTracer{logger, logrus.TraceLevel}
 
 	dbConfig.AfterConnect = func(ctx context.Context, conn *pgx.Conn) error {
 		pgxuuid.Register(conn.TypeMap())
 		return nil
 	}
+	for _, opt := range opts {
+		opt(dbConfig)
+	}
 
 	DbPool, err = pgxpool.NewWithConfig(context.Background(), dbConfig)
 	if err != nil {
-		log.Fatalf("Unable to connect to database %v\n", err)
+		log.Fatal("Unable to create the database pool", log.ErrorField(err))
+	}
+	if err := DbPool.Ping(context.Background()); err != nil {
+		log.Fatal("Unable to get a valid database connection", log.ErrorField(err))
 	}
 	return DbPool
 }
@@ -52,8 +58,8 @@ func CloseDb() {
 }
 
 type myQueryTracer struct {
-	log   logrus.FieldLogger
-	level logrus.Level
+	log   *log.Logger
+	level log.Level
 }
 
 func (tracer *myQueryTracer) TraceQueryStart(
@@ -62,7 +68,10 @@ func (tracer *myQueryTracer) TraceQueryStart(
 	data pgx.TraceQueryStartData,
 ) context.Context {
 	// do the logging
-	tracer.log.WithField("sql", data.SQL).WithField("args", data.Args).Log(tracer.level, "Query started")
+	tracer.log.Log(tracer.level, "Executing",
+		log.String("sql", data.SQL),
+		log.Any("args", data.Args))
+
 	return ctx
 }
 

@@ -15,7 +15,10 @@ type PostgresContainer struct {
 
 type PostgresContainerOption func(req *testcontainers.ContainerRequest)
 
-func WithWaitStrategy(strategies ...wait.Strategy) func(req *testcontainers.ContainerRequest) {
+//nolint:whitespace // editor/linter issue
+func WithWaitStrategy(
+	strategies ...wait.Strategy,
+) func(req *testcontainers.ContainerRequest) {
 	return func(req *testcontainers.ContainerRequest) {
 		req.WaitingFor = wait.ForAll(strategies...).WithDeadline(1 * time.Minute)
 	}
@@ -33,7 +36,10 @@ func WithName(containerName string) func(req *testcontainers.ContainerRequest) {
 	}
 }
 
-func WithInitialDatabase(user string, password string, dbName string) func(req *testcontainers.ContainerRequest) {
+//nolint:whitespace // editor/linter issue
+func WithInitialDatabase(
+	user, password, dbName string,
+) func(req *testcontainers.ContainerRequest) {
 	return func(req *testcontainers.ContainerRequest) {
 		req.Env["POSTGRES_USER"] = user
 		req.Env["POSTGRES_PASSWORD"] = password
@@ -42,7 +48,11 @@ func WithInitialDatabase(user string, password string, dbName string) func(req *
 }
 
 // setupPostgres creates an instance of the postgres container type
-func SetupPostgres(ctx context.Context, opts ...PostgresContainerOption) (*PostgresContainer, error) {
+//
+//nolint:whitespace // editor/linter issue
+func SetupPostgres(
+	ctx context.Context, opts ...PostgresContainerOption,
+) (*PostgresContainer, error) {
 	req := testcontainers.ContainerRequest{
 		Image:        "ghcr.io/mpapenbr/iracelog-testdb:v0.2.0",
 		Env:          map[string]string{},
@@ -54,14 +64,14 @@ func SetupPostgres(ctx context.Context, opts ...PostgresContainerOption) (*Postg
 		opt(&req)
 	}
 
-	container, err := testcontainers.GenericContainer(ctx, testcontainers.GenericContainerRequest{
-		ContainerRequest: req,
-		Started:          true,
-		Reuse:            true,
-	})
+	container, err := testcontainers.GenericContainer(
+		ctx, testcontainers.GenericContainerRequest{
+			ContainerRequest: req,
+			Started:          true,
+			Reuse:            true,
+		})
 	if err != nil {
 		return nil, err
 	}
-
 	return &PostgresContainer{Container: container}, nil
 }
