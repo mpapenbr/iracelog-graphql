@@ -9,7 +9,8 @@ import (
 )
 
 // contains implementations of DataLoader struct that return a model.EventDriver items
-
+//
+//nolint:whitespace // editor/linter issue
 func (i *DataLoader) GetEventDrivers(
 	ctx context.Context,
 	eventId int,
@@ -20,10 +21,12 @@ func (i *DataLoader) GetEventDrivers(
 		log.Printf("error loading event driver data: %v", err)
 		return nil, nil
 	}
+	//nolint:errcheck // we are sure that the type is correct
 	ret := result.([]*model.EventDriver)
 	return ret, nil
 }
 
+//nolint:whitespace // editor/linter issue
 func (i *DataLoader) CollectDriversByEventEntry(
 	ctx context.Context,
 	eventId int,
@@ -34,10 +37,12 @@ func (i *DataLoader) CollectDriversByEventEntry(
 		log.Printf("error loading event driver data: %v", err)
 		return nil, nil
 	}
+	//nolint:errcheck // we are sure that the type is correct
 	ret := result.([]*model.EventDriver)
 	return ret, nil
 }
 
+//nolint:whitespace // editor/linter issue
 func (i *DataLoader) CollectDriversByTeam(
 	ctx context.Context,
 	teamId int,
@@ -48,6 +53,7 @@ func (i *DataLoader) CollectDriversByTeam(
 		log.Printf("error loading event driver data: %v", err)
 		return nil, nil
 	}
+	//nolint:errcheck // we are sure that the type is correct
 	ret := result.([]*model.EventDriver)
 	return ret, nil
 }

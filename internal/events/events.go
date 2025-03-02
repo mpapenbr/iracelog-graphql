@@ -10,6 +10,7 @@ import (
 
 	"github.com/jackc/pgx/v5"
 	"github.com/jackc/pgx/v5/pgxpool"
+
 	"github.com/mpapenbr/iracelog-graphql/internal"
 )
 
@@ -33,6 +34,7 @@ type DbEvent struct {
 	Sessions             []Session `json:"sessions"`
 }
 
+//nolint:tagliatelle // json is that way
 type Session struct {
 	Num         int    `json:"num"`
 	Name        string `json:"name"`
@@ -61,21 +63,18 @@ func GetALl(pool *pgxpool.Pool, pageable internal.DbPageable) ([]*DbEvent, error
 	var ret []*DbEvent
 	for rows.Next() {
 		e := DbEvent{}
-		// log.Printf("%v\n", rows.RawValues())
-
 		err = scan(&e, rows)
 		if err != nil {
 			log.Printf("Error scaning Event: %v\n", err)
 		}
-
-		// log.Printf("%v\n", e)
 		ret = append(ret, &e)
 	}
 	return ret, nil
 }
 
 func GetByIds(pool *pgxpool.Pool, ids []int) ([]*DbEvent, error) {
-	rows, err := pool.Query(context.Background(), fmt.Sprintf("%s where id=any($1)", selector), ids)
+	rows, err := pool.Query(context.Background(),
+		fmt.Sprintf("%s where id=any($1)", selector), ids)
 	if err != nil {
 		log.Printf("error reading tracks: %v", err)
 		return []*DbEvent{}, err
@@ -84,12 +83,10 @@ func GetByIds(pool *pgxpool.Pool, ids []int) ([]*DbEvent, error) {
 	var ret []*DbEvent
 	for rows.Next() {
 		e := DbEvent{}
-
 		err = scan(&e, rows)
 		if err != nil {
 			log.Printf("Error scaning Event: %v\n", err)
 		}
-
 		ret = append(ret, &e)
 	}
 	return ret, nil
@@ -103,8 +100,14 @@ So we have to process it "manually" for each event, which yields the next questi
 should offset apply only for those tracks having more than offset events?
 consider a track with 2 and another with 10 events and a query with offset 5
 */
-func GetEventsByTrackIds(pool *pgxpool.Pool, trackIds []int, pageable internal.DbPageable) (map[int][]*DbEvent, error) {
-	query := internal.HandlePageableArgs(fmt.Sprintf("%s where track_id=any($1)", selector), pageable)
+//nolint:whitespace // editor/linter issue
+func GetEventsByTrackIds(
+	pool *pgxpool.Pool,
+	trackIds []int,
+	pageable internal.DbPageable,
+) (map[int][]*DbEvent, error) {
+	query := internal.HandlePageableArgs(
+		fmt.Sprintf("%s where track_id=any($1)", selector), pageable)
 	rows, err := pool.Query(context.Background(), query, trackIds)
 	if err != nil {
 		log.Printf("error reading ids for trackId: %v", err)
@@ -113,7 +116,6 @@ func GetEventsByTrackIds(pool *pgxpool.Pool, trackIds []int, pageable internal.D
 	defer rows.Close()
 	ret := map[int][]*DbEvent{}
 	for rows.Next() {
-
 		var e DbEvent
 		err = scan(&e, rows)
 		if err != nil {
@@ -130,8 +132,7 @@ func GetEventsByTrackIds(pool *pgxpool.Pool, trackIds []int, pageable internal.D
 	return ret, nil
 }
 
-/*
- */
+//nolint:lll,whitespace // sql redability
 func SimpleEventSearch(
 	pool *pgxpool.Pool,
 	searchArg string,
@@ -156,38 +157,27 @@ OR id in (select e.event_id from c_car_entry e join c_car_driver d on d.c_car_en
 	var ret []*DbEvent
 	for rows.Next() {
 		e := DbEvent{}
-
 		err = scan(&e, rows)
 		if err != nil {
 			log.Printf("Error scaning Event: %v\n", err)
 		}
-
 		ret = append(ret, &e)
 	}
 	return ret, nil
 }
 
-/*
- */
+//nolint:lll,funlen,whitespace // sql redability
 func AdvancedEventSearch(
 	pool *pgxpool.Pool,
 	search *EventSearchKeys,
 	pageable internal.DbPageable,
 ) ([]*DbEvent, error) {
-	// we cannot use $2 in (single?) quoted args. No variant worked
-	// the wanted part would be: '$.carInfo[*]? (@.name like_regex $2 flag "i") or even "$2"
-	// but it doesn't get replaced.
-	// namePart := "true"
-	// carPart := "true"
-	// trackPart := "true"
-	// driverPart := "true"
-	// teamPart := "true"
-
 	type paramType struct {
 		Selector string
 		Param    *EventSearchKeys
 	}
 	param := paramType{Selector: selector, Param: search}
+	//nolint:lll // sql redability
 	tmpl, err := template.New("sql").Parse(`
 	{{ .Selector }}
 	WHERE
@@ -214,7 +204,10 @@ func AdvancedEventSearch(
 		return nil, err
 	}
 	var tpl bytes.Buffer
-	tmpl.Execute(&tpl, param)
+	err = tmpl.Execute(&tpl, param)
+	if err != nil {
+		return nil, err
+	}
 	qString := tpl.String()
 	query := internal.HandlePageableArgs(qString, pageable)
 
@@ -227,12 +220,10 @@ func AdvancedEventSearch(
 	var ret []*DbEvent
 	for rows.Next() {
 		e := DbEvent{}
-
 		err = scan(&e, rows)
 		if err != nil {
 			log.Printf("Error scaning Event: %v\n", err)
 		}
-
 		ret = append(ret, &e)
 	}
 	return ret, nil
@@ -241,20 +232,19 @@ func AdvancedEventSearch(
 // little helper
 const selector = string(`
 select id,name,event_key,description,event_time,
-racelogger_version,team_racing, multi_class, num_car_types,num_car_classes,
-ir_session_id, track_id, pit_speed,
+racelogger_version,team_racing, multi_class, num_car_types,
+num_car_classes,ir_session_id, track_id, pit_speed,
 replay_min_timestamp, replay_min_session_time,replay_max_session_time, sessions
 from event 
 `)
 
 func scan(e *DbEvent, rows pgx.Rows) error {
-	// var eventTime, replayMinTimestamp time.Time
 	err := rows.Scan(&e.ID, &e.Name, &e.Key, &e.Description, &e.EventTime,
-		&e.RaceloggerVersion, &e.TeamRacing, &e.MultiClass, &e.NumCarTypes, &e.NumCarClasses,
-		&e.IrSessionId, &e.TrackId, &e.PitSpeed,
+		&e.RaceloggerVersion, &e.TeamRacing, &e.MultiClass, &e.NumCarTypes,
+		&e.NumCarClasses, &e.IrSessionId, &e.TrackId, &e.PitSpeed,
 		&e.ReplayMinTimestamp, &e.ReplayMinSessionTime, &e.ReplayMaxSessionTime,
 		&e.Sessions,
 	)
-	// e.EventTime = eventTime
+
 	return err
 }

@@ -9,7 +9,8 @@ import (
 )
 
 // contains implementations of DataLoader struct that return a model.EventEntry items
-
+//
+//nolint:whitespace // editor/linter issue
 func (i *DataLoader) GetEventEntriesForIds(
 	ctx context.Context,
 	ids []int,
@@ -21,14 +22,17 @@ func (i *DataLoader) GetEventEntriesForIds(
 		return nil, err
 	}
 
-	// hmm, this copy bothers me, but my "wish-statement" return result.([]*model.Event) doesn't work
+	// hmm, this copy bothers me, but my "wish-statement"
+
 	ret := make([]*model.EventEntry, len(result))
 	for i, v := range result {
+		//nolint:errcheck // we are sure that the type is correct
 		ret[i] = v.(*model.EventEntry)
 	}
 	return ret, err
 }
 
+//nolint:whitespace // editor/linter issue
 func (i *DataLoader) GetEventEntries(
 	ctx context.Context,
 	eventId int,
@@ -39,6 +43,7 @@ func (i *DataLoader) GetEventEntries(
 		log.Printf("error loading event entry data: %v", err)
 		return nil, nil
 	}
+	//nolint:errcheck // we are sure that the type is correct
 	ret := result.([]*model.EventEntry)
 	return ret, nil
 }

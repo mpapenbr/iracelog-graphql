@@ -5,13 +5,15 @@ import (
 	"fmt"
 
 	"github.com/graph-gophers/dataloader"
+
 	"github.com/mpapenbr/iracelog-graphql/graph/model"
 	"github.com/mpapenbr/iracelog-graphql/internal"
 	"github.com/mpapenbr/iracelog-graphql/internal/events"
 )
 
 // contains implementations of storage interface that return a model.Event items
-
+//
+//nolint:whitespace // editor/linter issue
 func (db *DbStorage) GetAllEvents(
 	ctx context.Context,
 	limit *int,
@@ -20,7 +22,11 @@ func (db *DbStorage) GetAllEvents(
 ) ([]*model.Event, error) {
 	var result []*model.Event
 	dbEventSortArg := convertEventSortArgs(sort)
-	events, err := events.GetALl(db.pool, internal.DbPageable{Limit: limit, Offset: offset, Sort: dbEventSortArg})
+	events, err := events.GetALl(db.pool, internal.DbPageable{
+		Limit:  limit,
+		Offset: offset,
+		Sort:   dbEventSortArg,
+	})
 	if err == nil {
 		// convert the internal database Track to the GraphQL-Track
 		for _, dbEvents := range events {
@@ -32,16 +38,14 @@ func (db *DbStorage) GetAllEvents(
 	return result, err
 }
 
+//nolint:whitespace // editor/linter issue
 func (db *DbStorage) GetEventsByKeys(
 	ctx context.Context,
 	ids dataloader.Keys,
 ) map[string]*model.Event {
 	intIds := IntKeysToSlice(ids)
 	result := map[string]*model.Event{}
-
 	events, _ := events.GetByIds(db.pool, intIds)
-	// log.Printf("Tracks: %v\n", tracks)
-
 	// convert the internal database Track to the GraphQL-Track
 	for _, dbEvents := range events {
 		// this would cause assigning the last loop content to all result entries
@@ -52,6 +56,8 @@ func (db *DbStorage) GetEventsByKeys(
 }
 
 // Note: we use (temporary) a string as key (to reuse existing batcher mechanics)
+//
+//nolint:whitespace // editor/linter issue
 func (db *DbStorage) GetEventsForTrackIdsKeys(
 	ctx context.Context,
 	trackIds dataloader.Keys,
@@ -60,13 +66,13 @@ func (db *DbStorage) GetEventsForTrackIdsKeys(
 
 	intTrackIds := make([]int, len(trackIds))
 	for i, id := range trackIds {
+		//nolint:errcheck // we know that the conversion works
 		intTrackIds[i] = id.Raw().(int)
 	}
 	byTrackId, err := events.GetEventsByTrackIds(
 		db.pool,
 		intTrackIds,
 		internal.DbPageable{Sort: convertEventSortArgs([]*model.EventSortArg{})})
-	// log.Printf("Events: %v\n", events)
 	if err == nil {
 		// convert the internal database Event to the GraphQL-Event
 		for k, event := range byTrackId {

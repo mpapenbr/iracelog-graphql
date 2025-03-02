@@ -4,13 +4,15 @@ import (
 	"context"
 
 	"github.com/graph-gophers/dataloader"
+
 	"github.com/mpapenbr/iracelog-graphql/graph/model"
 	"github.com/mpapenbr/iracelog-graphql/internal"
 	"github.com/mpapenbr/iracelog-graphql/internal/tracks"
 )
 
 // contains implementations of storage interface that return a model.Track items
-
+//
+//nolint:whitespace // editor/linter issue
 func (db *DbStorage) GetAllTracks(
 	ctx context.Context,
 	limit *int,
@@ -32,6 +34,7 @@ func (db *DbStorage) GetAllTracks(
 	return result, err
 }
 
+//nolint:whitespace // editor/linter issue
 func (db *DbStorage) GetTracksByKeys(
 	ctx context.Context,
 	ids dataloader.Keys,
@@ -40,12 +43,10 @@ func (db *DbStorage) GetTracksByKeys(
 	result := map[string]*model.Track{}
 
 	tracks, _ := tracks.GetByIds(db.pool, intIds)
-	// log.Printf("Tracks: %v\n", tracks)
 
 	// convert the internal database Track to the GraphQL-Track
 	for _, track := range tracks {
 		result[IntKey(track.ID).String()] = convertDbTrackToModel(track)
 	}
-
 	return result
 }

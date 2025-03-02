@@ -6,7 +6,8 @@ import "github.com/mpapenbr/iracelog-graphql/graph/storage"
 
 // This file will not be regenerated automatically.
 //
-// It serves as dependency injection for your app, add any dependencies you require here.
+// It serves as dependency injection for your app,
+// add any dependencies you require here.
 
 type Resolver struct {
 	// db is an interface for reading/writing to the datastore

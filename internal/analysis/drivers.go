@@ -1,3 +1,4 @@
+//nolint:all // code currently not used
 package analysis
 
 import (

@@ -4,17 +4,19 @@ import (
 	"context"
 
 	"github.com/graph-gophers/dataloader"
+
 	"github.com/mpapenbr/iracelog-graphql/graph/model"
 	"github.com/mpapenbr/iracelog-graphql/internal/car/driver"
 )
 
 // contains implementations of storage interface that return a model.EventDriver items
-
+//
+//nolint:dupl,whitespace // false positive
 func (db *DbStorage) CollectEventDrivers(
 	ctx context.Context,
 	eventIds dataloader.Keys,
 ) map[string][]*model.EventDriver {
-	res, _ := driver.GetEventDrivers(db.pool, IntKeysToSlice(eventIds))
+	res, _ := driver.GetEventDrivers(ctx, db.pool, IntKeysToSlice(eventIds))
 	ret := map[string][]*model.EventDriver{}
 	for k, v := range res {
 		key := IntKey(k).String()
@@ -27,11 +29,12 @@ func (db *DbStorage) CollectEventDrivers(
 	return ret
 }
 
+//nolint:dupl,whitespace // false positive
 func (db *DbStorage) CollectDriversByEventEntry(
 	ctx context.Context,
 	eventEntryIds dataloader.Keys,
 ) map[string][]*model.EventDriver {
-	res, _ := driver.GetDriversByEventEntry(db.pool, IntKeysToSlice(eventEntryIds))
+	res, _ := driver.GetDriversByEventEntry(ctx, db.pool, IntKeysToSlice(eventEntryIds))
 	ret := map[string][]*model.EventDriver{}
 	for k, v := range res {
 		key := IntKey(k).String()
@@ -44,11 +47,12 @@ func (db *DbStorage) CollectDriversByEventEntry(
 	return ret
 }
 
+//nolint:dupl,whitespace // false positive
 func (db *DbStorage) CollectDriversByTeam(
 	ctx context.Context,
 	teamIds dataloader.Keys,
 ) map[string][]*model.EventDriver {
-	res, _ := driver.GetDriversByTeam(db.pool, IntKeysToSlice(teamIds))
+	res, _ := driver.GetDriversByTeam(ctx, db.pool, IntKeysToSlice(teamIds))
 	ret := map[string][]*model.EventDriver{}
 	for k, v := range res {
 		key := IntKey(k).String()

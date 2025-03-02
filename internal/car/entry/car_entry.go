@@ -16,7 +16,11 @@ type DbCarEntry struct {
 	CarNumRaw int    `json:"carNumRaw"`
 }
 
-func GetEventEntriesByEventId(pool *pgxpool.Pool, eventIDs []int) (map[int][]*DbCarEntry, error) {
+//nolint:whitespace // editor/linter issue
+func GetEventEntriesByEventId(
+	pool *pgxpool.Pool,
+	eventIDs []int,
+) (map[int][]*DbCarEntry, error) {
 	rows, err := pool.Query(context.Background(), `
 	select id,event_id, c_car_id, car_idx, car_number, car_number_raw
 	from c_car_entry
@@ -33,12 +37,10 @@ func GetEventEntriesByEventId(pool *pgxpool.Pool, eventIDs []int) (map[int][]*Db
 		if err != nil {
 			log.Printf("Error scanning c_car_entry: %v\n", err)
 		}
-
 		if _, ok := ret[d.EventId]; !ok {
 			ret[d.EventId] = []*DbCarEntry{}
 		}
 		ret[d.EventId] = append(ret[d.EventId], &d)
-
 	}
 	return ret, nil
 }
@@ -60,9 +62,7 @@ func GetEventEntriesByIds(pool *pgxpool.Pool, ids []int) (map[int]*DbCarEntry, e
 		if err != nil {
 			log.Printf("Error scanning c_car_entry: %v\n", err)
 		}
-
 		ret[d.ID] = &d
-
 	}
 	return ret, nil
 }

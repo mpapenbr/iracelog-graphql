@@ -36,10 +36,8 @@ func convertEventSortArgs(modelArgs []*model.EventSortArg) []internal.DbSortArg 
 		} else {
 			item.Order = "asc"
 		}
-
 		ret = append(ret, item)
 	}
-
 	return ret
 }
 
@@ -54,7 +52,6 @@ func convertTrackSortArgs(modelArgs []*model.TrackSortArg) []internal.DbSortArg 
 	for _, arg := range modelArgs {
 		var item internal.DbSortArg
 		switch arg.Field {
-
 		case model.TrackSortFieldName:
 			item.Column = "name'"
 		case model.TrackSortFieldShortName:
@@ -73,16 +70,12 @@ func convertTrackSortArgs(modelArgs []*model.TrackSortArg) []internal.DbSortArg 
 		} else {
 			item.Order = "asc"
 		}
-
 		ret = append(ret, item)
 	}
-
 	return ret
 }
 
 func convertDbEventToModel(dbEvent *events.DbEvent) *model.Event {
-	// eventTime, _ := time.Parse("2006-01-02T15:04:05", dbEvent.EventTime)
-
 	return &model.Event{
 		ID:                dbEvent.ID,
 		Name:              dbEvent.Name,
