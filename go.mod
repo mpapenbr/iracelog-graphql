@@ -5,13 +5,13 @@ go 1.24
 require (
 	github.com/99designs/gqlgen v0.17.66
 	github.com/docker/go-connections v0.5.0
-	github.com/gorilla/websocket v1.5.3
+	github.com/gorilla/websocket v1.5.3 // indirect
 	github.com/graph-gophers/dataloader v5.0.0+incompatible
 	github.com/rs/cors v1.11.1
 	github.com/sirupsen/logrus v1.9.3 // indirect
 	github.com/stretchr/testify v1.10.0
 	github.com/testcontainers/testcontainers-go v0.35.0
-	github.com/vektah/gqlparser/v2 v2.5.22
+	github.com/vektah/gqlparser/v2 v2.5.23
 	golang.org/x/exp v0.0.0-20230905200255-921286631fa9
 )
 
@@ -95,7 +95,7 @@ require (
 )
 
 require (
-	github.com/agnivade/levenshtein v1.2.0 // indirect
+	github.com/agnivade/levenshtein v1.2.1 // indirect
 	github.com/cpuguy83/go-md2man/v2 v2.0.6 // indirect
 	github.com/go-chi/chi/v5 v5.2.1
 	github.com/jackc/pgpassfile v1.0.0 // indirect
