@@ -22,7 +22,7 @@ func (db *DbStorage) GetAllEvents(
 ) ([]*model.Event, error) {
 	var result []*model.Event
 	dbEventSortArg := convertEventSortArgs(sort)
-	events, err := events.GetALl(db.pool, internal.DbPageable{
+	events, err := events.GetALl(db.executor, internal.DbPageable{
 		Limit:  limit,
 		Offset: offset,
 		Sort:   dbEventSortArg,
@@ -45,7 +45,7 @@ func (db *DbStorage) GetEventsByKeys(
 ) map[string]*model.Event {
 	intIds := IntKeysToSlice(ids)
 	result := map[string]*model.Event{}
-	events, _ := events.GetByIds(db.pool, intIds)
+	events, _ := events.GetByIds(db.executor, intIds)
 	// convert the internal database Track to the GraphQL-Track
 	for _, dbEvents := range events {
 		// this would cause assigning the last loop content to all result entries
@@ -70,7 +70,7 @@ func (db *DbStorage) GetEventsForTrackIdsKeys(
 		intTrackIds[i] = id.Raw().(int)
 	}
 	byTrackId, err := events.GetEventsByTrackIds(
-		db.pool,
+		db.executor,
 		intTrackIds,
 		internal.DbPageable{Sort: convertEventSortArgs([]*model.EventSortArg{})})
 	if err == nil {

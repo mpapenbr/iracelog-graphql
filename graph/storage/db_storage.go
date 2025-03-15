@@ -3,9 +3,12 @@ package storage
 
 import (
 	"context"
+	"database/sql"
 
 	"github.com/graph-gophers/dataloader"
 	"github.com/jackc/pgx/v5/pgxpool"
+	"github.com/jackc/pgx/v5/stdlib"
+	"github.com/stephenafamo/bob"
 
 	"github.com/mpapenbr/iracelog-graphql/graph/model"
 	"github.com/mpapenbr/iracelog-graphql/internal"
@@ -17,11 +20,25 @@ import (
 // depending on the type of data to be returned
 type DbStorage struct {
 	// Storage
-	pool *pgxpool.Pool
+	pool     *pgxpool.Pool // @deprecated
+	db       *sql.DB
+	executor bob.Executor
 }
 
 func NewDbStorageWithPool(pool *pgxpool.Pool) Storage {
-	return &DbStorage{pool: pool}
+	db := stdlib.OpenDBFromPool(pool)
+
+	return &DbStorage{
+		pool:     pool,
+		db:       db,
+		executor: bob.New(db),
+	}
+}
+
+func NewDbStorageWithDb(db *sql.DB) Storage {
+	return &DbStorage{
+		db: db,
+	}
 }
 
 // events
@@ -37,7 +54,7 @@ func (db *DbStorage) SimpleSearchEvents(
 	var result []*model.Event
 	dbEventSortArg := convertEventSortArgs(sort)
 	events, err := events.SimpleEventSearch(
-		db.pool,
+		db.executor,
 		arg,
 		internal.DbPageable{Limit: limit, Offset: offset, Sort: dbEventSortArg})
 	if err == nil {
@@ -62,7 +79,7 @@ func (db *DbStorage) AdvancedSearchEvents(
 	var result []*model.Event
 	dbEventSortArg := convertEventSortArgs(sort)
 	events, err := events.AdvancedEventSearch(
-		db.pool,
+		db.executor,
 		arg,
 		internal.DbPageable{Limit: limit, Offset: offset, Sort: dbEventSortArg})
 	if err == nil {

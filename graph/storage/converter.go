@@ -1,109 +1,117 @@
 package storage
 
 import (
+	"github.com/stephenafamo/bob/clause"
+	"github.com/stephenafamo/bob/dialect/psql"
+	"github.com/stephenafamo/bob/dialect/psql/dialect"
+
 	"github.com/mpapenbr/iracelog-graphql/graph/model"
-	"github.com/mpapenbr/iracelog-graphql/internal"
 	"github.com/mpapenbr/iracelog-graphql/internal/car/car"
 	"github.com/mpapenbr/iracelog-graphql/internal/car/driver"
 	"github.com/mpapenbr/iracelog-graphql/internal/car/entry"
 	"github.com/mpapenbr/iracelog-graphql/internal/car/team"
-	"github.com/mpapenbr/iracelog-graphql/internal/events"
-	"github.com/mpapenbr/iracelog-graphql/internal/tracks"
+	"github.com/mpapenbr/iracelog-graphql/internal/db/models"
 )
 
-// converts model arguments to db arguments
+const (
+	ASC  = "asc"
+	DESC = "desc"
+)
 
-func convertEventSortArgs(modelArgs []*model.EventSortArg) []internal.DbSortArg {
+func convertEventSortArgs(modelArgs []*model.EventSortArg) *clause.OrderBy {
+	ret := clause.OrderBy{}
 	if len(modelArgs) == 0 {
-		ret := []internal.DbSortArg{
-			{Column: "event_time", Order: "desc"},
-		}
-		return ret
+		ret.AppendOrder(clause.OrderDef{
+			Expression: models.EventColumns.EventTime,
+			Direction:  DESC,
+		})
+
+		return &ret
 	}
-	var ret []internal.DbSortArg
 	for _, arg := range modelArgs {
-		var item internal.DbSortArg
+		var item clause.OrderDef
+		//nolint:exhaustive // by design
 		switch arg.Field {
 		case model.EventSortFieldName:
-			item.Column = "name"
+			item.Expression = models.EventColumns.Name
 		case model.EventSortFieldRecordDate:
-			item.Column = "event_time"
-		case model.EventSortFieldTrack:
-			item.Column = "data->'info'->'trackDisplayName'"
+			item.Expression = models.EventColumns.EventTime
 		}
 		if arg.Order != nil && *arg.Order == model.SortOrderDesc {
-			item.Order = "desc"
+			item.Direction = DESC
 		} else {
-			item.Order = "asc"
+			item.Direction = ASC
 		}
-		ret = append(ret, item)
+		ret.AppendOrder(item)
 	}
-	return ret
+	return &ret
 }
 
-func convertTrackSortArgs(modelArgs []*model.TrackSortArg) []internal.DbSortArg {
+func convertTrackSortArgs(modelArgs []*model.TrackSortArg) *clause.OrderBy {
+	ret := clause.OrderBy{}
 	if len(modelArgs) == 0 {
-		ret := []internal.DbSortArg{
-			{Column: "name'", Order: "asc"},
-		}
-		return ret
+		ret.AppendOrder(clause.OrderDef{
+			Expression: models.TrackColumns.Name,
+			Direction:  ASC,
+		})
+
+		return &ret
 	}
-	var ret []internal.DbSortArg
 	for _, arg := range modelArgs {
-		var item internal.DbSortArg
+		var item clause.OrderDef
 		switch arg.Field {
 		case model.TrackSortFieldName:
-			item.Column = "name'"
+			item.Expression = models.TrackColumns.Name
 		case model.TrackSortFieldShortName:
-			item.Column = "short_name'"
+			item.Expression = models.TrackColumns.ShortName
 		case model.TrackSortFieldID:
-			item.Column = "id"
+			item.Expression = models.TrackColumns.ID
 		case model.TrackSortFieldLength:
-			item.Column = "track_length"
+			item.Expression = models.TrackColumns.TrackLength
 		case model.TrackSortFieldPitlaneLength:
-			item.Column = "pit_lane_length"
+			item.Expression = models.TrackColumns.PitLaneLength
 		case model.TrackSortFieldNumSectors:
-			item.Column = "jsonb_array_length(sectors)"
+			item.Expression = dialect.NewExpression(
+				psql.F("jsonb_array_length", models.TrackColumns.Sectors))
 		}
 		if arg.Order != nil && *arg.Order == model.SortOrderDesc {
-			item.Order = "desc"
+			item.Direction = DESC
 		} else {
-			item.Order = "asc"
+			item.Direction = ASC
 		}
-		ret = append(ret, item)
+		ret.AppendOrder(item)
 	}
-	return ret
+	return &ret
 }
 
-func convertDbEventToModel(dbEvent *events.DbEvent) *model.Event {
+func convertDbEventToModel(dbEvent *models.Event) *model.Event {
 	return &model.Event{
-		ID:                dbEvent.ID,
+		ID:                int(dbEvent.ID),
 		Name:              dbEvent.Name,
-		Description:       dbEvent.Description,
-		Key:               dbEvent.Key,
-		TrackId:           dbEvent.TrackId,
+		Description:       dbEvent.Description.GetOr(""),
+		Key:               dbEvent.EventKey,
+		TrackId:           int(dbEvent.TrackID),
 		RecordDate:        dbEvent.EventTime,
 		RaceloggerVersion: dbEvent.RaceloggerVersion,
 		TeamRacing:        dbEvent.TeamRacing,
 		MultiClass:        dbEvent.MultiClass,
-		IracingSessionId:  dbEvent.IrSessionId,
-		NumCarClasses:     dbEvent.NumCarClasses,
-		NumCarTypes:       dbEvent.NumCarTypes,
-		Track:             &model.Track{},
-		DbEvent:           dbEvent,
+		IracingSessionId:  int(dbEvent.IrSubSessionID),
+		NumCarClasses:     int(dbEvent.NumCarClasses),
+		NumCarTypes:       int(dbEvent.NumCarTypes),
 	}
 }
 
-func convertDbTrackToModel(dbTrack *tracks.DbTrack) *model.Track {
+//nolint:errcheck // by design
+func convertDbTrackToModel(dbTrack *models.Track) *model.Track {
 	return &model.Track{
-		ID:            dbTrack.ID,
+		ID:            int(dbTrack.ID),
 		Name:          dbTrack.Name,
 		ShortName:     dbTrack.ShortName,
 		ConfigName:    dbTrack.Config,
-		Length:        dbTrack.Length,
+		Length:        dbTrack.TrackLength.Abs().InexactFloat64(),
 		NumSectors:    len(dbTrack.Sectors),
-		PitLaneLength: dbTrack.PitLaneLength,
-		PitSpeed:      dbTrack.PitSpeed,
+		PitLaneLength: dbTrack.PitLaneLength.Abs().InexactFloat64(),
+		PitSpeed:      dbTrack.PitSpeed.Abs().InexactFloat64(),
 	}
 }
 

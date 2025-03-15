@@ -2,11 +2,13 @@ package postgres
 
 import (
 	"context"
+	"database/sql"
 
 	"github.com/exaring/otelpgx"
 	pgxuuid "github.com/jackc/pgx-gofrs-uuid"
 	"github.com/jackc/pgx/v5"
 	"github.com/jackc/pgx/v5/pgxpool"
+	"github.com/jackc/pgx/v5/stdlib"
 
 	"github.com/mpapenbr/iracelog-graphql/log"
 )
@@ -51,6 +53,10 @@ func InitWithUrl(url string, opts ...PoolConfigOption) *pgxpool.Pool {
 		log.Fatal("Unable to get a valid database connection", log.ErrorField(err))
 	}
 	return DbPool
+}
+
+func InitStdLibWithUrl(url string, opts ...PoolConfigOption) *sql.DB {
+	return stdlib.OpenDBFromPool(InitWithUrl(url, opts...))
 }
 
 func CloseDb() {

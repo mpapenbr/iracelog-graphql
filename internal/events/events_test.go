@@ -6,9 +6,12 @@ import (
 	"slices"
 	"testing"
 
-	"github.com/jackc/pgx/v5/pgxpool"
+	"github.com/stephenafamo/bob"
+	"github.com/stephenafamo/bob/clause"
+	"github.com/stephenafamo/bob/dialect/psql"
 
 	"github.com/mpapenbr/iracelog-graphql/internal"
+	"github.com/mpapenbr/iracelog-graphql/internal/db/models"
 	tcpg "github.com/mpapenbr/iracelog-graphql/testsupport/tcpostgres"
 )
 
@@ -19,16 +22,20 @@ type checkData struct {
 	id        int
 	eventName string
 }
+type sortCol struct {
+	col psql.Expression
+	dir string
+}
 
-func extractCheckData(dbData []*DbEvent) []checkData {
+func extractCheckData(dbData models.EventSlice) []checkData {
 	ret := make([]checkData, len(dbData))
 	for i, item := range dbData {
-		ret[i] = checkData{id: item.ID, eventName: item.Name}
+		ret[i] = checkData{id: int(item.ID), eventName: item.Name}
 	}
 	return ret
 }
 
-func extractAndSortCheckData(dbData []*DbEvent) []checkData {
+func extractAndSortCheckData(dbData models.EventSlice) []checkData {
 	ret := extractCheckData(dbData)
 	slices.SortFunc(ret, func(a, b checkData) int { return a.id - b.id })
 	return ret
@@ -40,10 +47,11 @@ func intHelper(i int) *int {
 }
 
 func TestGetALl(t *testing.T) {
-	pool := tcpg.SetupTestDb()
+	db := bob.NewDB(tcpg.SetupStdlibDb())
+
 	type args struct {
-		pool     *pgxpool.Pool
 		pageable internal.DbPageable
+		sortCols []sortCol
 	}
 	tests := []struct {
 		name    string
@@ -53,11 +61,12 @@ func TestGetALl(t *testing.T) {
 	}{
 		{
 			name: "2 results, eventName desc", args: args{
-				pool: pool,
 				pageable: internal.DbPageable{
-					Sort:  []internal.DbSortArg{{Column: "name", Order: "desc"}},
+					SortOld: []internal.DbSortArg{{Column: "name", Order: "desc"}},
+
 					Limit: intHelper(2),
 				},
+				sortCols: []sortCol{{models.EventColumns.Name, "desc"}},
 			},
 			want: []checkData{
 				{id: 8, eventName: "VRPC Sprint Zandvoort"},
@@ -67,12 +76,12 @@ func TestGetALl(t *testing.T) {
 		},
 		{
 			name: "2 results, offset 1, eventName asc", args: args{
-				pool: pool,
 				pageable: internal.DbPageable{
-					Sort:   []internal.DbSortArg{{Column: "name", Order: "asc"}},
-					Limit:  intHelper(2),
-					Offset: intHelper(1),
+					SortOld: []internal.DbSortArg{{Column: "name", Order: "asc"}},
+					Limit:   intHelper(2),
+					Offset:  intHelper(1),
 				},
+				sortCols: []sortCol{{models.EventColumns.Name, "asc"}},
 			},
 			want: []checkData{
 				{id: 4, eventName: "6 Hrs of the Glen"},
@@ -82,13 +91,16 @@ func TestGetALl(t *testing.T) {
 		},
 		{
 			name: "2 results, offset 1, name asc,id desc", args: args{
-				pool: pool,
 				pageable: internal.DbPageable{
-					Sort: []internal.DbSortArg{
+					SortOld: []internal.DbSortArg{
 						{Column: "name", Order: "desc"}, {Column: "id", Order: "desc"},
 					},
 					Limit:  intHelper(2),
 					Offset: intHelper(1),
+				},
+				sortCols: []sortCol{
+					{models.EventColumns.Name, "desc"},
+					{models.EventColumns.ID, "desc"},
 				},
 			},
 			want: []checkData{
@@ -100,7 +112,15 @@ func TestGetALl(t *testing.T) {
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			got, err := GetALl(tt.args.pool, tt.args.pageable)
+			order := clause.OrderBy{}
+			for _, sortArg := range tt.args.sortCols {
+				order.AppendOrder(clause.OrderDef{
+					Expression: sortArg.col,
+					Direction:  sortArg.dir,
+				})
+			}
+			tt.args.pageable.Sort = &order
+			got, err := GetALl(db, tt.args.pageable)
 			if (err != nil) != tt.wantErr {
 				t.Errorf("GetALl() error = %v, wantErr %v", err, tt.wantErr)
 				return
@@ -115,10 +135,9 @@ func TestGetALl(t *testing.T) {
 }
 
 func TestGetByIds(t *testing.T) {
-	pool := tcpg.SetupTestDb()
+	db := bob.NewDB(tcpg.SetupStdlibDb())
 	type args struct {
-		pool *pgxpool.Pool
-		ids  []int
+		ids []int
 	}
 	tests := []struct {
 		name    string
@@ -128,7 +147,7 @@ func TestGetByIds(t *testing.T) {
 	}{
 		{
 			name:    "Get events 4,5",
-			args:    args{pool: pool, ids: []int{4, 5}},
+			args:    args{ids: []int{4, 5}},
 			wantErr: false,
 			want: []checkData{
 				{id: 4, eventName: "6 Hrs of the Glen"},
@@ -137,20 +156,20 @@ func TestGetByIds(t *testing.T) {
 		},
 		{
 			name:    "empty request",
-			args:    args{pool: pool, ids: []int{}},
+			args:    args{ids: []int{}},
 			wantErr: false,
 			want:    []checkData{},
 		},
 		{
 			name:    "unknown ids",
-			args:    args{pool: pool, ids: []int{999, 3333}},
+			args:    args{ids: []int{999, 3333}},
 			wantErr: false,
 			want:    []checkData{},
 		},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			got, err := GetByIds(tt.args.pool, tt.args.ids)
+			got, err := GetByIds(db, tt.args.ids)
 			if (err != nil) != tt.wantErr {
 				t.Errorf("GetByIds() error = %v, wantErr %v", err, tt.wantErr)
 				return
@@ -165,11 +184,11 @@ func TestGetByIds(t *testing.T) {
 }
 
 func TestGetEventsByTrackIds(t *testing.T) {
-	pool := tcpg.SetupTestDb()
+	db := bob.NewDB(tcpg.SetupStdlibDb())
 	type args struct {
-		pool     *pgxpool.Pool
 		trackIds []int
 		pageable internal.DbPageable
+		sortCols []sortCol
 	}
 	tests := []struct {
 		name    string
@@ -179,10 +198,11 @@ func TestGetEventsByTrackIds(t *testing.T) {
 	}{
 		{
 			name: "Daytona,Zolder", args: args{
-				pool: pool, trackIds: []int{192, 199},
+				trackIds: []int{192, 199},
 				pageable: internal.DbPageable{
-					Sort: []internal.DbSortArg{{Column: "id", Order: "asc"}},
+					SortOld: []internal.DbSortArg{{Column: "id", Order: "asc"}},
 				},
+				sortCols: []sortCol{{models.EventColumns.ID, "asc"}},
 			},
 
 			want: map[int][]checkData{
@@ -195,12 +215,16 @@ func TestGetEventsByTrackIds(t *testing.T) {
 		},
 		{
 			name: "Daytona, custom sort", args: args{
-				pool: pool, trackIds: []int{192, 199},
+				trackIds: []int{192, 199},
 				pageable: internal.DbPageable{
-					Sort: []internal.DbSortArg{
+					SortOld: []internal.DbSortArg{
 						{Column: "name", Order: "asc"},
 						{Column: "id", Order: "desc"},
 					},
+				},
+				sortCols: []sortCol{
+					{models.EventColumns.Name, "asc"},
+					{models.EventColumns.ID, "desc"},
 				},
 			},
 
@@ -214,7 +238,7 @@ func TestGetEventsByTrackIds(t *testing.T) {
 		},
 		{
 			name: "Sebring, Road Atlanta",
-			args: args{pool: pool, trackIds: []int{95, 127}},
+			args: args{trackIds: []int{95, 127}},
 
 			want: map[int][]checkData{
 				95:  {{id: 13, eventName: "GT Endurance"}},
@@ -222,14 +246,22 @@ func TestGetEventsByTrackIds(t *testing.T) {
 			},
 		},
 		{
-			name: "no results", args: args{pool: pool, trackIds: []int{999, 333}},
+			name: "no results", args: args{trackIds: []int{999, 333}},
 			want: map[int][]checkData{},
 		},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
+			order := clause.OrderBy{}
+			for _, sortArg := range tt.args.sortCols {
+				order.AppendOrder(clause.OrderDef{
+					Expression: sortArg.col,
+					Direction:  sortArg.dir,
+				})
+			}
+			tt.args.pageable.Sort = &order
 			got, err := GetEventsByTrackIds(
-				tt.args.pool,
+				db,
 				tt.args.trackIds,
 				tt.args.pageable)
 			if (err != nil) != tt.wantErr {
@@ -238,7 +270,7 @@ func TestGetEventsByTrackIds(t *testing.T) {
 			}
 			check := make(map[int][]checkData, len(got))
 			for k, v := range got {
-				tmp := make([]*DbEvent, len(v))
+				tmp := make([]*models.Event, len(v))
 				copy(tmp, v)
 				check[k] = extractCheckData(tmp)
 			}
@@ -250,7 +282,7 @@ func TestGetEventsByTrackIds(t *testing.T) {
 }
 
 func TestSimpleSearchEvents(t *testing.T) {
-	pool := tcpg.SetupTestDb()
+	db := bob.NewDB(tcpg.SetupStdlibDb())
 	type args struct {
 		searchArg string
 	}
@@ -288,11 +320,17 @@ func TestSimpleSearchEvents(t *testing.T) {
 			},
 		},
 	}
+	order := clause.OrderBy{}
+	order.AppendOrder(clause.OrderDef{
+		Expression: models.EventColumns.ID,
+		Direction:  "asc",
+	})
+
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			got, err := SimpleEventSearch(pool, tt.args.searchArg,
+			got, err := SimpleEventSearch(db, tt.args.searchArg,
 				internal.DbPageable{
-					Sort: []internal.DbSortArg{{Column: "id", Order: "asc"}},
+					Sort: &order,
 				})
 			if (err != nil) != tt.wantErr {
 				t.Errorf("TestSimpleSearchEvents() error = %v, wantErr %v",
@@ -308,7 +346,7 @@ func TestSimpleSearchEvents(t *testing.T) {
 }
 
 func TestAdvancedEventSearch(t *testing.T) {
-	pool := tcpg.SetupTestDb()
+	db := bob.NewDB(tcpg.SetupStdlibDb())
 	type args struct {
 		search EventSearchKeys
 	}
@@ -351,11 +389,16 @@ func TestAdvancedEventSearch(t *testing.T) {
 			want: []checkData{},
 		},
 	}
+	order := clause.OrderBy{}
+	order.AppendOrder(clause.OrderDef{
+		Expression: models.EventColumns.ID,
+		Direction:  "asc",
+	})
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			got, err := AdvancedEventSearch(pool, &tt.args.search,
+			got, err := AdvancedEventSearch(db, &tt.args.search,
 				internal.DbPageable{
-					Sort: []internal.DbSortArg{{Column: "id", Order: "asc"}},
+					Sort: &order,
 				})
 			if (err != nil) != tt.wantErr {
 				t.Errorf("AdvancedEventSearch() error = %v, wantErr %v", err, tt.wantErr)
