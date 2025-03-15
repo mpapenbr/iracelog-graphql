@@ -131,3 +131,9 @@ release-tag:
 	git tag -a  $(v) -m "Release $(v)"
 	git push origin $(v)
 
+.PHONY: generate bob files
+## `release-tag`: Create a tag to trigger a release. (`make release-tag v=v0.1.0` for example)
+bob:
+	echo "  >  Generating bob files from database"
+	go run github.com/stephenafamo/bob/gen/bobgen-psql@latest -c ./bobgen.yml
+

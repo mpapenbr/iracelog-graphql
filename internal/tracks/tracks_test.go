@@ -6,10 +6,14 @@ import (
 	"slices"
 	"testing"
 
-	"github.com/jackc/pgx/v5/pgxpool"
+	"github.com/stephenafamo/bob"
+	"github.com/stephenafamo/bob/clause"
+	"github.com/stephenafamo/bob/dialect/psql"
+	"github.com/stephenafamo/bob/dialect/psql/dialect"
 	"github.com/stretchr/testify/assert"
 
 	"github.com/mpapenbr/iracelog-graphql/internal"
+	"github.com/mpapenbr/iracelog-graphql/internal/db/models"
 	tcpg "github.com/mpapenbr/iracelog-graphql/testsupport/tcpostgres"
 )
 
@@ -18,15 +22,15 @@ type checkData struct {
 	trackName string
 }
 
-func extractCheckData(dbData []*DbTrack) []checkData {
+func extractCheckData(dbData models.TrackSlice) []checkData {
 	ret := make([]checkData, len(dbData))
 	for i, item := range dbData {
-		ret[i] = checkData{id: item.ID, trackName: item.ShortName}
+		ret[i] = checkData{id: int(item.ID), trackName: item.ShortName}
 	}
 	return ret
 }
 
-func extractAndSortCheckData(dbData []*DbTrack) []checkData {
+func extractAndSortCheckData(dbData models.TrackSlice) []checkData {
 	ret := extractCheckData(dbData)
 	slices.SortFunc(ret, func(a, b checkData) int { return a.id - b.id })
 	return ret
@@ -38,12 +42,18 @@ func intHelper(i int) *int {
 }
 
 func TestGetALl(t *testing.T) {
-	pool := tcpg.SetupTestDb()
+	db := bob.NewDB(tcpg.SetupStdlibDb())
 
-	type args struct {
-		pool     *pgxpool.Pool
-		pageable internal.DbPageable
+	type sortCol struct {
+		col psql.Expression
+		dir string
 	}
+	type args struct {
+		pageable internal.DbPageable
+		sortCols []sortCol
+	}
+
+	// composeOrderBy := func(sortOld []internal.DbSortArg) *clause.OrderBy {
 
 	tests := []struct {
 		name    string
@@ -56,10 +66,10 @@ func TestGetALl(t *testing.T) {
 
 		{
 			name: "2 results, displayShort asc",
-			args: args{pool: pool, pageable: internal.DbPageable{
-				Sort:  []internal.DbSortArg{{Column: "short_name", Order: "asc"}},
-				Limit: intHelper(2),
-			}},
+			args: args{
+				pageable: internal.DbPageable{Limit: intHelper(2)},
+				sortCols: []sortCol{{models.TrackColumns.ShortName, "asc"}},
+			},
 			want: []checkData{
 				{id: 268, trackName: "24 Heures"},
 				{id: 345, trackName: "Barcelona"},
@@ -68,25 +78,49 @@ func TestGetALl(t *testing.T) {
 		},
 		{
 			name: "2 results, trackLength desc",
-			args: args{pool: pool, pageable: internal.DbPageable{
-				Sort:  []internal.DbSortArg{{Column: "track_length", Order: "desc"}},
-				Limit: intHelper(2),
-			}},
+			args: args{
+				pageable: internal.DbPageable{Limit: intHelper(2)},
+				sortCols: []sortCol{
+					{models.TrackColumns.TrackLength, "desc"},
+					{models.TrackColumns.ID, "desc"}, // we have 3 Spa entries...,
+				},
+			},
 			want: []checkData{
 				{id: 268, trackName: "24 Heures"},
-				{id: 165, trackName: "Spa"},
+				{id: 525, trackName: "Spa"},
 			},
 			wantErr: false,
 		},
 		{
 			name: "2 results, trackLength, default sorting (asc)",
-			args: args{pool: pool, pageable: internal.DbPageable{
-				Sort:  []internal.DbSortArg{{Column: "track_length"}},
-				Limit: intHelper(2),
-			}},
+			args: args{
+				pageable: internal.DbPageable{Limit: intHelper(2)},
+				sortCols: []sortCol{{models.TrackColumns.TrackLength, ""}},
+			},
 			want: []checkData{
 				{id: 106, trackName: "Watkins"},
 				{id: 233, trackName: "Donington"},
+			},
+			wantErr: false,
+		},
+		{
+			name: "2 results, numSectors desc",
+			args: args{
+				pageable: internal.DbPageable{Limit: intHelper(2)},
+				sortCols: []sortCol{
+					{
+						dialect.NewExpression(
+							psql.F("jsonb_array_length", models.TrackColumns.Sectors)),
+						"desc",
+					},
+					{ // include ID to have defined order (both have 7 sectors)
+						models.TrackColumns.ID, "asc",
+					},
+				},
+			},
+			want: []checkData{
+				{id: 95, trackName: "Sebring"},
+				{id: 268, trackName: "24 Heures"},
 			},
 			wantErr: false,
 		},
@@ -94,14 +128,22 @@ func TestGetALl(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			got, err := GetALl(tt.args.pool, tt.args.pageable)
+			order := clause.OrderBy{}
+			for _, sortArg := range tt.args.sortCols {
+				order.AppendOrder(clause.OrderDef{
+					Expression: sortArg.col,
+					Direction:  sortArg.dir,
+				})
+			}
+			tt.args.pageable.Sort = &order
+			got, err := GetAll(db, tt.args.pageable)
 
 			if (err != nil) != tt.wantErr {
 				t.Errorf("GetALl() error = %v, wantErr %v", err, tt.wantErr)
 				return
 			}
-			assert.Equal(t, len(got), len(tt.want), "number of results do not match")
-			check := extractCheckData(got)
+			assert.Equal(t, len(tt.want), len(got), "number of results do not match")
+			check := extractAndSortCheckData(got)
 			if !reflect.DeepEqual(check, tt.want) {
 				t.Errorf("GetAll() = %v, want %v", check, tt.want)
 			}
@@ -110,10 +152,10 @@ func TestGetALl(t *testing.T) {
 }
 
 func TestGetByIds(t *testing.T) {
-	pool := tcpg.SetupTestDb()
+	db := tcpg.SetupStdlibDb()
+
 	type args struct {
-		pool *pgxpool.Pool
-		ids  []int
+		ids []int
 	}
 	tests := []struct {
 		name    string
@@ -123,7 +165,7 @@ func TestGetByIds(t *testing.T) {
 	}{
 		{
 			name:    "Get tracks 18,106",
-			args:    args{pool: pool, ids: []int{18, 106}},
+			args:    args{ids: []int{18, 106}},
 			wantErr: false,
 			want: []checkData{
 				{id: 18, trackName: "Road America"}, {id: 106, trackName: "Watkins"},
@@ -131,13 +173,13 @@ func TestGetByIds(t *testing.T) {
 		},
 		{
 			name:    "empty request",
-			args:    args{pool: pool, ids: []int{}},
+			args:    args{ids: []int{}},
 			wantErr: false,
 			want:    []checkData{},
 		},
 		{
 			name:    "unknown ids",
-			args:    args{pool: pool, ids: []int{999, 3333}},
+			args:    args{ids: []int{999, 3333}},
 			wantErr: false,
 			want:    []checkData{},
 		},
@@ -145,7 +187,7 @@ func TestGetByIds(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			got, err := GetByIds(tt.args.pool, tt.args.ids)
+			got, err := GetByIds(bob.NewDB(db), tt.args.ids)
 			if (err != nil) != tt.wantErr {
 				t.Errorf("GetByIds() error = %v, wantErr %v", err, tt.wantErr)
 				return

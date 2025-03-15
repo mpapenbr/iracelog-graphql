@@ -1,17 +1,17 @@
 package events
 
 import (
-	"bytes"
 	"context"
-	"fmt"
-	"log"
-	"text/template"
 	"time"
 
-	"github.com/jackc/pgx/v5"
-	"github.com/jackc/pgx/v5/pgxpool"
+	"github.com/stephenafamo/bob"
+	"github.com/stephenafamo/bob/dialect/psql"
+	"github.com/stephenafamo/bob/dialect/psql/dialect"
+	"github.com/stephenafamo/bob/dialect/psql/sm"
+	"github.com/stephenafamo/bob/mods"
 
 	"github.com/mpapenbr/iracelog-graphql/internal"
+	"github.com/mpapenbr/iracelog-graphql/internal/db/models"
 )
 
 type DbEvent struct {
@@ -51,45 +51,33 @@ type EventSearchKeys struct {
 	Team   string
 }
 
-func GetALl(pool *pgxpool.Pool, pageable internal.DbPageable) ([]*DbEvent, error) {
-	query := internal.HandlePageableArgs(selector, pageable)
+//nolint:whitespace // editor/linter issue
+func GetALl(exec bob.Executor, pageable internal.DbPageable) (
+	models.EventSlice, error,
+) {
+	query := models.Events.Query()
 
-	rows, err := pool.Query(context.Background(), query)
-	if err != nil {
-		log.Printf("error reading events: %v", err)
-		return []*DbEvent{}, err
-	}
-	defer rows.Close()
-	var ret []*DbEvent
-	for rows.Next() {
-		e := DbEvent{}
-		err = scan(&e, rows)
-		if err != nil {
-			log.Printf("Error scaning Event: %v\n", err)
-		}
-		ret = append(ret, &e)
-	}
-	return ret, nil
+	query.Apply(createPageableMods(pageable)...)
+
+	ret, err := query.All(context.Background(), exec)
+	return ret, err
 }
 
-func GetByIds(pool *pgxpool.Pool, ids []int) ([]*DbEvent, error) {
-	rows, err := pool.Query(context.Background(),
-		fmt.Sprintf("%s where id=any($1)", selector), ids)
-	if err != nil {
-		log.Printf("error reading tracks: %v", err)
-		return []*DbEvent{}, err
+//nolint:whitespace // editor/linter issue
+func GetByIds(exec bob.Executor, ids []int) (
+	models.EventSlice, error,
+) {
+	myIds := make([]int32, len(ids))
+	for i, v := range ids {
+		myIds[i] = int32(v)
 	}
-	defer rows.Close()
-	var ret []*DbEvent
-	for rows.Next() {
-		e := DbEvent{}
-		err = scan(&e, rows)
-		if err != nil {
-			log.Printf("Error scaning Event: %v\n", err)
-		}
-		ret = append(ret, &e)
+	if len(ids) == 0 {
+		return models.EventSlice{}, nil
 	}
-	return ret, nil
+	ret, err := models.Events.Query(
+		models.SelectWhere.Events.ID.In(myIds...),
+	).All(context.Background(), exec)
+	return ret, err
 }
 
 /*
@@ -102,149 +90,162 @@ consider a track with 2 and another with 10 events and a query with offset 5
 */
 //nolint:whitespace // editor/linter issue
 func GetEventsByTrackIds(
-	pool *pgxpool.Pool,
+	exec bob.Executor,
 	trackIds []int,
 	pageable internal.DbPageable,
-) (map[int][]*DbEvent, error) {
-	query := internal.HandlePageableArgs(
-		fmt.Sprintf("%s where track_id=any($1)", selector), pageable)
-	rows, err := pool.Query(context.Background(), query, trackIds)
-	if err != nil {
-		log.Printf("error reading ids for trackId: %v", err)
-		return map[int][]*DbEvent{}, err
+) (map[int][]*models.Event, error) {
+	myIds := make([]int32, len(trackIds))
+	for i, v := range trackIds {
+		myIds[i] = int32(v)
 	}
-	defer rows.Close()
-	ret := map[int][]*DbEvent{}
-	for rows.Next() {
-		var e DbEvent
-		err = scan(&e, rows)
-		if err != nil {
-			log.Printf("Error scaning Event: %v\n", err)
-		}
-		val, ok := ret[e.TrackId]
+	if len(myIds) == 0 {
+		return map[int][]*models.Event{}, nil
+	}
+	query := models.Events.Query(
+		models.SelectWhere.Events.TrackID.In(myIds...),
+	)
+	query.Apply(createPageableMods(pageable)...)
+	res, err := query.All(context.Background(), exec)
+	if err != nil {
+		return nil, err
+	}
+
+	ret := map[int][]*models.Event{}
+	for i := range res {
+		val, ok := ret[int(res[i].TrackID)]
 		if !ok {
-			val = []*DbEvent{}
+			val = []*models.Event{}
 		}
-		val = append(val, &e)
-		ret[e.TrackId] = val
+		val = append(val, res[i])
+		ret[int(res[i].TrackID)] = val
 	}
 
 	return ret, nil
 }
 
-//nolint:lll,whitespace // sql redability
+//nolint:lll,whitespace,funlen // sql readability
 func SimpleEventSearch(
-	pool *pgxpool.Pool,
+	exec bob.Executor,
 	searchArg string,
 	pageable internal.DbPageable,
-) ([]*DbEvent, error) {
-	query := internal.HandlePageableArgs(fmt.Sprintf(
-		`%s
+) (models.EventSlice, error) {
+	// we keep the original query for reference
+	_ = `
+select id,name	
 WHERE name ilike $1
 OR    description ilike $1
 OR    track_id in (select id from track where name ilike $1)
 OR id in (select event_id from c_car where name ilike $1)
 OR id in (select e.event_id from c_car_entry e join c_car_team t on t.c_car_entry_id=e.id and t.name ilike $1)
 OR id in (select e.event_id from c_car_entry e join c_car_driver d on d.c_car_entry_id=e.id and d.name ilike $1)
-		`, selector), pageable)
+		`
 
-	rows, err := pool.Query(context.Background(), query, fmt.Sprintf("%%%s%%", searchArg))
-	if err != nil {
-		log.Printf("error reading ids for searchArg: %v", err)
-		return []*DbEvent{}, err
-	}
-	defer rows.Close()
-	var ret []*DbEvent
-	for rows.Next() {
-		e := DbEvent{}
-		err = scan(&e, rows)
-		if err != nil {
-			log.Printf("Error scaning Event: %v\n", err)
-		}
-		ret = append(ret, &e)
-	}
-	return ret, nil
-}
-
-//nolint:lll,funlen,whitespace // sql redability
-func AdvancedEventSearch(
-	pool *pgxpool.Pool,
-	search *EventSearchKeys,
-	pageable internal.DbPageable,
-) ([]*DbEvent, error) {
-	type paramType struct {
-		Selector string
-		Param    *EventSearchKeys
-	}
-	param := paramType{Selector: selector, Param: search}
-	//nolint:lll // sql redability
-	tmpl, err := template.New("sql").Parse(`
-	{{ .Selector }}
-	WHERE
-	{{if .Param.Name }} name ilike '%{{ .Param.Name }}%' {{ else }} true {{ end }}
-	
-	{{- if .Param.Track }} 
-	AND track_id in (select id from track where name ilike '%{{ .Param.Track }}%') 
-	{{ end }}
-	 
-	{{- if .Param.Car }}
-	AND id in (select event_id from c_car where name ilike '%{{ .Param.Car }}%') 
-	{{ end }}
-
-	{{- if .Param.Team }}
-	AND id in (select e.event_id from c_car_entry e join c_car_team t on t.c_car_entry_id=e.id and t.name ilike '%{{ .Param.Team }}%')
-	{{ end }}
-	
-	{{- if .Param.Driver }}
-	AND id in (select e.event_id from c_car_entry e join c_car_driver d on d.c_car_entry_id=e.id and d.name ilike '%{{ .Param.Driver }}%')
-	{{ end }}
-	
-	`)
-	if err != nil {
-		return nil, err
-	}
-	var tpl bytes.Buffer
-	err = tmpl.Execute(&tpl, param)
-	if err != nil {
-		return nil, err
-	}
-	qString := tpl.String()
-	query := internal.HandlePageableArgs(qString, pageable)
-
-	rows, err := pool.Query(context.Background(), query)
-	if err != nil {
-		log.Printf("error reading ids for searchArg: %v", err)
-		return []*DbEvent{}, err
-	}
-	defer rows.Close()
-	var ret []*DbEvent
-	for rows.Next() {
-		e := DbEvent{}
-		err = scan(&e, rows)
-		if err != nil {
-			log.Printf("Error scaning Event: %v\n", err)
-		}
-		ret = append(ret, &e)
-	}
-	return ret, nil
-}
-
-// little helper
-const selector = string(`
-select id,name,event_key,description,event_time,
-racelogger_version,team_racing, multi_class, num_car_types,
-num_car_classes,ir_session_id, track_id, pit_speed,
-replay_min_timestamp, replay_min_session_time,replay_max_session_time, sessions
-from event 
-`)
-
-func scan(e *DbEvent, rows pgx.Rows) error {
-	err := rows.Scan(&e.ID, &e.Name, &e.Key, &e.Description, &e.EventTime,
-		&e.RaceloggerVersion, &e.TeamRacing, &e.MultiClass, &e.NumCarTypes,
-		&e.NumCarClasses, &e.IrSessionId, &e.TrackId, &e.PitSpeed,
-		&e.ReplayMinTimestamp, &e.ReplayMinSessionTime, &e.ReplayMaxSessionTime,
-		&e.Sessions,
+	partMain := psql.WhereOr(
+		models.SelectWhere.Events.Name.ILike(sqlStringContains(searchArg)),
+		models.SelectWhere.Events.Description.ILike(sqlStringContains(searchArg)),
+		modSubQueryTrack(searchArg),
+		modSubQueryCar(searchArg),
+		modSubQueryTeam(searchArg),
+		modSubQueryDriver(searchArg),
 	)
 
-	return err
+	query := models.Events.Query(partMain)
+	query.Apply(createPageableMods(pageable)...)
+	res, err := query.All(context.Background(), exec)
+	return res, err
+}
+
+//nolint:lll,funlen,whitespace // sql readability
+func AdvancedEventSearch(
+	exec bob.Executor,
+	search *EventSearchKeys,
+	pageable internal.DbPageable,
+) (models.EventSlice, error) {
+	query := models.Events.Query()
+	query.Apply(createPageableMods(pageable)...)
+
+	if search.Name != "" {
+		w := models.SelectWhere.Events.Name.ILike(sqlStringContains(search.Name))
+		query.Apply(w)
+	}
+	if search.Track != "" {
+		query.Apply(modSubQueryTrack(sqlStringContains(search.Track)))
+	}
+	if search.Car != "" {
+		query.Apply(modSubQueryCar(sqlStringContains(search.Car)))
+	}
+	if search.Driver != "" {
+		query.Apply(modSubQueryDriver(sqlStringContains(search.Driver)))
+	}
+	if search.Team != "" {
+		query.Apply(modSubQueryTeam(sqlStringContains(search.Team)))
+	}
+	exec = bob.Debug(exec)
+
+	res, err := query.All(context.Background(), exec)
+	return res, err
+}
+
+func sqlStringContains(arg string) string {
+	return "%" + arg + "%"
+}
+
+func modSubQueryTrack(searchArg string) mods.Where[*dialect.SelectQuery] {
+	sub := psql.Select(
+		sm.Columns(models.TrackColumns.ID),
+		sm.From(models.TableNames.Tracks),
+		models.SelectWhere.Tracks.Name.ILike(sqlStringContains(searchArg)),
+	)
+	w := sm.Where(models.EventColumns.TrackID.In(sub))
+	return w
+}
+
+func modSubQueryCar(searchArg string) mods.Where[*dialect.SelectQuery] {
+	sub := psql.Select(
+		sm.Columns(models.CCarColumns.EventID),
+		sm.From(models.TableNames.CCars),
+		models.SelectWhere.CCars.Name.ILike(sqlStringContains(searchArg)),
+	)
+	w := sm.Where(models.EventColumns.ID.In(sub))
+	return w
+}
+
+func modSubQueryDriver(searchArg string) mods.Where[*dialect.SelectQuery] {
+	sub := psql.Select(
+		sm.Columns(models.CCarEntryColumns.EventID),
+		sm.From(models.TableNames.CCarEntries),
+		sm.InnerJoin(models.TableNames.CCarDrivers).
+			On(models.CCarEntryColumns.ID.EQ(models.CCarDriverColumns.CCarEntryID)),
+		models.SelectWhere.CCarDrivers.Name.ILike(sqlStringContains(searchArg)))
+	w := sm.Where(models.EventColumns.ID.In(sub))
+	return w
+}
+
+func modSubQueryTeam(searchArg string) mods.Where[*dialect.SelectQuery] {
+	sub := psql.Select(
+		sm.Columns(models.CCarEntryColumns.EventID),
+		sm.From(models.TableNames.CCarEntries),
+		sm.InnerJoin(models.TableNames.CCarTeams).
+			On(models.CCarEntryColumns.ID.EQ(models.CCarTeamColumns.CCarEntryID)),
+		models.SelectWhere.CCarTeams.Name.ILike(sqlStringContains(searchArg)),
+	)
+	w := sm.Where(models.EventColumns.ID.In(sub))
+	return w
+}
+
+func createPageableMods(pageable internal.DbPageable) []bob.Mod[*dialect.SelectQuery] {
+	mods := make([]bob.Mod[*dialect.SelectQuery], 0)
+	if pageable.Limit != nil {
+		mods = append(mods, sm.Limit(*pageable.Limit))
+	}
+	if pageable.Offset != nil {
+		mods = append(mods, sm.Offset(*pageable.Offset))
+	}
+	if pageable.Sort != nil {
+		//nolint:gocritic // by design
+		for _, s := range pageable.Sort.Expressions {
+			mods = append(mods, sm.OrderBy(s))
+		}
+	}
+	return mods
 }

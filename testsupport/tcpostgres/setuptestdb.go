@@ -2,12 +2,14 @@ package tcpostgres
 
 import (
 	"context"
+	"database/sql"
 	"fmt"
 	"log"
 	"time"
 
 	"github.com/docker/go-connections/nat"
 	"github.com/jackc/pgx/v5/pgxpool"
+	"github.com/jackc/pgx/v5/stdlib"
 	"github.com/testcontainers/testcontainers-go/wait"
 
 	database "github.com/mpapenbr/iracelog-graphql/internal/pkg/db/postgres"
@@ -38,4 +40,8 @@ func SetupTestDb() *pgxpool.Pool {
 		host, containerPort.Port())
 	pool := database.InitWithUrl(dbUrl)
 	return pool
+}
+
+func SetupStdlibDb() *sql.DB {
+	return stdlib.OpenDBFromPool(SetupTestDb())
 }

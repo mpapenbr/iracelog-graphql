@@ -1,0 +1,35 @@
+types:
+  mytypes.EventSessionSlice:
+    imports:
+      ['mytypes "github.com/mpapenbr/iracelog-graphql/internal/db/mytypes"']
+    random_expr: |
+      return "mytypes.EventSession{}"
+  "mytypes.SectorSlice":
+    imports:
+      ['mytypes "github.com/mpapenbr/iracelog-graphql/internal/db/mytypes"']
+    random_expr: |
+      return "mytypes.Sector{}"
+
+replacements:
+  - tables: ["event"]
+    match:
+      name: "sessions"
+    replace: "mytypes.EventSessionSlice"
+  - tables: ["track"]
+    match:
+      name: "sectors"
+    replace: "mytypes.SectorSlice"
+
+no_tests: true
+no_factory: true
+psql:
+  dsn: "postgres://docker:docker@localhost:5432/iracelog?sslmode=disable"
+  driver_name: github.com/jackc/pgx/v5
+  output: internal/db/models
+  only:
+    "track":
+    "event":
+    "c_car":
+    "c_car_entry":
+    "c_car_team":
+    "c_car_driver":

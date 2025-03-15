@@ -3,12 +3,15 @@ package internal
 import (
 	"fmt"
 	"strings"
+
+	"github.com/stephenafamo/bob/clause"
 )
 
 type DbPageable struct {
-	Limit  *int
-	Offset *int
-	Sort   []DbSortArg
+	Limit   *int
+	Offset  *int
+	SortOld []DbSortArg
+	Sort    *clause.OrderBy
 }
 
 type DbSortArg struct {
@@ -27,8 +30,8 @@ func convertSortArg(args []DbSortArg) string {
 
 func HandlePageableArgs(query string, pageable DbPageable) string {
 	ret := query
-	if len(pageable.Sort) > 0 {
-		ret = fmt.Sprintf("%s order by %s", ret, convertSortArg(pageable.Sort))
+	if len(pageable.SortOld) > 0 {
+		ret = fmt.Sprintf("%s order by %s", ret, convertSortArg(pageable.SortOld))
 	}
 
 	if pageable.Offset != nil {

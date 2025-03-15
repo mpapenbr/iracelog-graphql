@@ -42,7 +42,8 @@ func startServer(ctx context.Context) {
 	}
 	srv.SetupLogger()
 	srv.waitForRequiredServices()
-	srv.SetupDb()
+	srv.SetupDbPgx()
+	srv.SetupDbBop()
 
 	if err := srv.Start(); err != nil {
 		srv.log.Error("error starting server", log.ErrorField(err))
@@ -53,7 +54,7 @@ func (s *grpcServer) SetupLogger() {
 	s.log = log.GetFromContext(s.ctx).Named("server")
 }
 
-func (s *grpcServer) SetupDb() {
+func (s *grpcServer) SetupDbPgx() {
 	pgTracer := pgxtrace.CompositeQueryTracer{
 		postgres.NewMyTracer(log.GetFromContext(s.ctx).Named("sql"), log.DebugLevel),
 	}
@@ -74,7 +75,11 @@ func (s *grpcServer) SetupDb() {
 		config.DB,
 		pgOptions...,
 	)
-	s.log.Info("Database connection initialized")
+	s.log.Info("PgxPool initialized")
+}
+
+func (s *grpcServer) SetupDbBop() {
+	s.log.Info("sql.DB initialized")
 }
 
 func (s *grpcServer) Start() error {
