@@ -2,6 +2,7 @@ package server
 
 import (
 	"context"
+	"encoding/json"
 	"net/http"
 
 	"github.com/99designs/gqlgen/graphql/handler"
@@ -113,8 +114,23 @@ func (s *Server) Start() error {
 
 	router.Handle("/", playground.Handler("GraphQL playground", "/query"))
 	router.Handle("/query", dataloaderSrv)
+	router.Handle("/healthz", healthzHandler())
 	s.log.Info("iRacelog GraphQL service", log.String("version", version.FullVersion))
 	s.log.Info("Listen", log.String("addr", s.addr))
 	//nolint:gosec // tbd
 	return http.ListenAndServe(s.addr, router)
+}
+
+func healthzHandler() http.Handler {
+	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		data := struct {
+			Status string `json:"status"`
+		}{Status: "ok"}
+
+		w.Header().Set("Content-Type", "application/json")
+		respData, _ := json.Marshal(data)
+		if _, err := w.Write(respData); err != nil {
+			log.Error("error writing healthz response", log.ErrorField(err))
+		}
+	})
 }
