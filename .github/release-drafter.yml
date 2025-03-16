@@ -1,33 +1,33 @@
-name-template: 'v$RESOLVED_VERSION'
-tag-template: 'v$RESOLVED_VERSION'
+name-template: "v$RESOLVED_VERSION"
+tag-template: "v$RESOLVED_VERSION"
 tag-prefix: "v"
 
 categories:
-  - title: ':lock: Security Issues'
+  - title: ":lock: Security Issues"
     labels: [security]
 
-  - title: ':rocket: Updates'
+  - title: ":rocket: Updates"
     labels: [enhancement, feature, update]
 
-  - title: ':bug: Bug Fixes'
+  - title: ":bug: Bug Fixes"
     labels: [bug, bugfix, fix]
 
-  - title: ':memo: Documentation'
+  - title: ":memo: Documentation"
     labels: [documentation, docs]
 
-  - title: ':construction: Work in Progress'
+  - title: ":construction: Work in Progress"
     labels: [wip, in-progress, incomplete, partial, hotfix]
 
-  - title: ':package: Dependencies'
-    labels: [dependencies, dependency]
+  - title: ":package: Dependencies"
+    labels: [dependencies, dependency, go]
 
   - title: ":test_tube: Tests and Refactor"
     labels: [refactoring, refactor, tests, testing]
 
   - title: ":robot: CI/CD and Pipelines"
-    labels: [build, ci, pipeline]
+    labels: [build, ci, pipeline, github_actions]
 
-change-template: '- $TITLE — @$AUTHOR (#$NUMBER)'
+change-template: "- $TITLE — @$AUTHOR (#$NUMBER)"
 change-title-escapes: '\<*_&' # You can add # and @ to disable mentions, and add ` to disable code blocks.
 version-resolver:
   major:
@@ -37,7 +37,6 @@ version-resolver:
   default: patch
 
 exclude-labels: [skip-changelog]
-
 
 template: |
   ## Here's What Changed
