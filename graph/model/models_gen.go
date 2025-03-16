@@ -126,7 +126,7 @@ func (e EventSortField) String() string {
 	return string(e)
 }
 
-func (e *EventSortField) UnmarshalGQL(v interface{}) error {
+func (e *EventSortField) UnmarshalGQL(v any) error {
 	str, ok := v.(string)
 	if !ok {
 		return fmt.Errorf("enums must be strings")
@@ -167,7 +167,7 @@ func (e SortOrder) String() string {
 	return string(e)
 }
 
-func (e *SortOrder) UnmarshalGQL(v interface{}) error {
+func (e *SortOrder) UnmarshalGQL(v any) error {
 	str, ok := v.(string)
 	if !ok {
 		return fmt.Errorf("enums must be strings")
@@ -216,7 +216,7 @@ func (e TrackSortField) String() string {
 	return string(e)
 }
 
-func (e *TrackSortField) UnmarshalGQL(v interface{}) error {
+func (e *TrackSortField) UnmarshalGQL(v any) error {
 	str, ok := v.(string)
 	if !ok {
 		return fmt.Errorf("enums must be strings")
