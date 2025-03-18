@@ -17,7 +17,7 @@ func (db *DbStorage) CollectEventEntries(
 	ctx context.Context,
 	eventIds dataloader.Keys,
 ) map[string][]*model.EventEntry {
-	res, _ := entry.GetEventEntriesByEventId(db.pool, IntKeysToSlice(eventIds))
+	res, _ := entry.GetEventEntriesByEventId(db.executor, IntKeysToSlice(eventIds))
 	ret := map[string][]*model.EventEntry{}
 	for k, v := range res {
 		key := IntKey(k).String()
@@ -35,7 +35,7 @@ func (db *DbStorage) CollectEventEntriesById(
 	ctx context.Context,
 	ids dataloader.Keys,
 ) map[string]*model.EventEntry {
-	res, _ := entry.GetEventEntriesByIds(db.pool, IntKeysToSlice(ids))
+	res, _ := entry.GetEventEntriesByIds(db.executor, IntKeysToSlice(ids))
 	ret := map[string]*model.EventEntry{}
 	for k, d := range res {
 		key := IntKey(k).String()

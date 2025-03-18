@@ -2,84 +2,90 @@ package car
 
 import (
 	"context"
-	"log"
 
-	"github.com/jackc/pgx/v5/pgxpool"
+	"github.com/stephenafamo/bob"
+	"github.com/stephenafamo/bob/dialect/psql"
+	"github.com/stephenafamo/bob/dialect/psql/dialect"
+	"github.com/stephenafamo/bob/dialect/psql/sm"
+	"github.com/stephenafamo/bob/expr"
+	"github.com/stephenafamo/bob/mods"
+	"github.com/stephenafamo/scan"
+
+	"github.com/mpapenbr/iracelog-graphql/internal/db/models"
+	"github.com/mpapenbr/iracelog-graphql/internal/utils"
 )
 
-type DbCar struct {
-	ID            int     `json:"id"`
-	EventId       int     `json:"eventId"`
-	CarId         int     `json:"carId"`
-	Name          string  `json:"name"`
-	NameShort     string  `json:"nameShort"`
-	FuelPct       float64 `json:"fuelPct"`
-	PowerAdjust   float64 `json:"powerAdjust"`
-	WeightPenalty float64 `json:"weightPenalty"`
-	DryTireSets   int     `json:"dryTireSets"`
-}
+func GetEventCars(exec bob.Executor, eventIDs []int) (map[int][]*models.CCar, error) {
+	myIds := utils.IntSliceToInt32Slice(eventIDs)
 
-func GetEventCars(pool *pgxpool.Pool, eventIDs []int) (map[int][]*DbCar, error) {
-	rows, err := pool.Query(context.Background(), `
-	select id,event_id, car_id, name, name_short, 
-	  fuel_pct, power_adjust, weight_penalty, dry_tire_sets
-	from c_car
-	where event_id = any($1) order by name asc`, eventIDs)
+	query := models.CCars.Query(
+		// Note: we use any(myIds) instead of In(myIds...) here
+		// in Postgres the IN operator is limited to 32k elements
+		// even if we probably never reach that limit, it's better to be safe
+		// otherwise we could use models.SelectWhere.CCars.EventID.In(myIds...),
+		// bonus: for IN we have to check for empty ids, with any we don't
+		// bonus: we learn how to code this with bob ;)
+		sm.Where(models.CCarColumns.EventID.EQ(psql.F("ANY", expr.Arg(myIds)))),
+		sm.OrderBy(models.CCarColumns.Name),
+	)
+
+	res, err := query.All(context.Background(), exec)
 	if err != nil {
-		log.Printf("error reading cars: %v", err)
-		return map[int][]*DbCar{}, err
+		return nil, err
 	}
-	defer rows.Close()
-	ret := map[int][]*DbCar{}
-	for rows.Next() {
-		d := DbCar{}
-		err := rows.Scan(&d.ID, &d.EventId, &d.CarId, &d.Name, &d.NameShort,
-			&d.FuelPct, &d.PowerAdjust, &d.WeightPenalty, &d.DryTireSets)
-		if err != nil {
-			log.Printf("Error scanning c_car: %v\n", err)
+
+	ret := map[int][]*models.CCar{}
+	for i := range res {
+		val, ok := ret[int(res[i].EventID)]
+		if !ok {
+			val = []*models.CCar{}
 		}
-		if _, ok := ret[d.EventId]; !ok {
-			ret[d.EventId] = []*DbCar{}
-		}
-		ret[d.EventId] = append(ret[d.EventId], &d)
+		val = append(val, res[i])
+		ret[int(res[i].EventID)] = val
 	}
+
 	return ret, nil
 }
 
-//nolint:whitespace // editor/linter issue
+// see here for using bob with user defined structs
+// https://github.com/ParkWithEase/parkeasy/blob/main/backend/internal/pkg/repositories/booking/postgres.go
+//
+//nolint:whitespace,lll // editor/linter issue
 func GetEventEntryCars(
-	pool *pgxpool.Pool,
+	exec bob.Executor,
 	eventEntryIDs []int,
-) (map[int]*DbCar, error) {
-	rows, err := pool.Query(context.Background(), `
-	select 
-	c.id,
-	c.event_id,
-	c.car_id,
-	c.name,
-	c.name_short,
-	c.fuel_pct,
-	c.power_adjust,
-	c.weight_penalty, 
-	c.dry_tire_sets,
-	ce.id
-	from c_car c join c_car_entry ce on ce.c_car_id = c.id
-	where ce.id = any($1)`, eventEntryIDs)
-	if err != nil {
-		log.Printf("error reading cars: %v", err)
-		return map[int]*DbCar{}, err
+) (map[int]*models.CCar, error) {
+	myIds := utils.IntSliceToInt32Slice(eventEntryIDs)
+	type myStruct struct {
+		models.CCar
+		EntryId int32 `db:"e_id"`
 	}
-	defer rows.Close()
-	ret := map[int]*DbCar{}
-	for rows.Next() {
-		d := DbCar{}
-		var ceId int
-		err := rows.Scan(&d.ID, &d.EventId, &d.CarId, &d.Name, &d.NameShort,
-			&d.FuelPct, &d.PowerAdjust, &d.WeightPenalty, &d.DryTireSets, &ceId)
-		if err != nil {
-			log.Printf("Error scanning c_car: %v\n", err)
-		}
-		ret[ceId] = &d
+
+	smods := []bob.Mod[*dialect.SelectQuery]{
+		sm.Columns(models.CCars.Columns()),
+		sm.Columns(models.CCarEntryColumns.ID.As("e_id")),
+	}
+	whereMods := []mods.Where[*dialect.SelectQuery]{
+		sm.Where(models.CCarEntryColumns.ID.EQ(psql.F("ANY", expr.Arg(myIds)))),
+	}
+
+	smods = append(smods,
+		sm.From(models.TableNames.CCars),
+		sm.InnerJoin(models.TableNames.CCarEntries).
+			On(models.CCarEntryColumns.CCarID.EQ(models.CCarColumns.ID)),
+		psql.WhereAnd(whereMods...),
+	)
+
+	query := psql.Select(smods...)
+
+	res, err := bob.All(context.Background(), exec, query, scan.StructMapper[myStruct]())
+	if err != nil {
+		return nil, err
+	}
+
+	ret := map[int]*models.CCar{}
+	for i := range res {
+		ret[int(res[i].EntryId)] = &res[i].CCar
 	}
 	return ret, nil
 }

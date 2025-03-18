@@ -17,7 +17,7 @@ func (db *DbStorage) CollectEventCars(
 	ctx context.Context,
 	eventIds dataloader.Keys,
 ) map[string][]*model.Car {
-	res, _ := car.GetEventCars(db.pool, IntKeysToSlice(eventIds))
+	res, _ := car.GetEventCars(db.executor, IntKeysToSlice(eventIds))
 	ret := map[string][]*model.Car{}
 	for k, v := range res {
 		key := IntKey(k).String()
@@ -35,7 +35,7 @@ func (db *DbStorage) CollectCarsByEventEntry(
 	ctx context.Context,
 	eventEntryIds dataloader.Keys,
 ) map[string]*model.Car {
-	res, _ := car.GetEventEntryCars(db.pool, IntKeysToSlice(eventEntryIds))
+	res, _ := car.GetEventEntryCars(db.executor, IntKeysToSlice(eventEntryIds))
 	ret := map[string]*model.Car{}
 	for k, d := range res {
 		key := IntKey(k).String()

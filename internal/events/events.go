@@ -2,7 +2,6 @@ package events
 
 import (
 	"context"
-	"time"
 
 	"github.com/stephenafamo/bob"
 	"github.com/stephenafamo/bob/dialect/psql"
@@ -13,26 +12,6 @@ import (
 	"github.com/mpapenbr/iracelog-graphql/internal"
 	"github.com/mpapenbr/iracelog-graphql/internal/db/models"
 )
-
-type DbEvent struct {
-	ID                   int    `json:"id"`
-	Name                 string `json:"name"`
-	Key                  string `json:"key"`
-	Description          string
-	EventTime            time.Time `json:"eventTime"`
-	RaceloggerVersion    string    `json:"raceloggerVersion"`
-	TeamRacing           bool      `json:"teamRacing"`
-	MultiClass           bool      `json:"multiClass"`
-	NumCarTypes          int       `json:"numCarTypes"`
-	NumCarClasses        int       `json:"numCarClasses"`
-	IrSessionId          int       `json:"irSessionId"`
-	TrackId              int       `json:"trackId"`
-	PitSpeed             float64   `json:"pitSpeed"`
-	ReplayMinTimestamp   time.Time `json:"replayMinTimestamp"`
-	ReplayMinSessionTime float64   `json:"replayMinSessionTime"`
-	ReplayMaxSessionTime float64   `json:"replayMaxSessionTime"`
-	Sessions             []Session `json:"sessions"`
-}
 
 //nolint:tagliatelle // json is that way
 type Session struct {
