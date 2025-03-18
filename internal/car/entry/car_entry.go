@@ -2,67 +2,70 @@ package entry
 
 import (
 	"context"
-	"log"
 
-	"github.com/jackc/pgx/v5/pgxpool"
+	"github.com/stephenafamo/bob"
+	"github.com/stephenafamo/bob/dialect/psql"
+	"github.com/stephenafamo/bob/dialect/psql/sm"
+	"github.com/stephenafamo/bob/expr"
+
+	"github.com/mpapenbr/iracelog-graphql/internal/db/models"
+	"github.com/mpapenbr/iracelog-graphql/internal/utils"
 )
-
-type DbCarEntry struct {
-	ID        int    `json:"id"`
-	EventId   int    `json:"eventId"`
-	CarId     int    `json:"carId"`
-	CarIdx    int    `json:"carIdx"`
-	CarNum    string `json:"carNum"`
-	CarNumRaw int    `json:"carNumRaw"`
-}
 
 //nolint:whitespace // editor/linter issue
 func GetEventEntriesByEventId(
-	pool *pgxpool.Pool,
+	exec bob.Executor,
 	eventIDs []int,
-) (map[int][]*DbCarEntry, error) {
-	rows, err := pool.Query(context.Background(), `
-	select id,event_id, c_car_id, car_idx, car_number, car_number_raw
-	from c_car_entry
-	where event_id = any($1) order by car_number_raw asc`, eventIDs)
+) (map[int][]*models.CCarEntry, error) {
+	myIds := utils.IntSliceToInt32Slice(eventIDs)
+
+	query := models.CCarEntries.Query(
+		// see also notes in interanl/car/car/car.go
+		sm.Where(models.CCarEntryColumns.EventID.EQ(psql.F("ANY", expr.Arg(myIds)))),
+		sm.OrderBy(models.CCarEntryColumns.CarNumberRaw),
+	)
+
+	res, err := query.All(context.Background(), exec)
 	if err != nil {
-		log.Printf("error reading entries: %v", err)
-		return map[int][]*DbCarEntry{}, err
+		return nil, err
 	}
-	defer rows.Close()
-	ret := map[int][]*DbCarEntry{}
-	for rows.Next() {
-		d := DbCarEntry{}
-		err := rows.Scan(&d.ID, &d.EventId, &d.CarId, &d.CarIdx, &d.CarNum, &d.CarNumRaw)
-		if err != nil {
-			log.Printf("Error scanning c_car_entry: %v\n", err)
+
+	ret := map[int][]*models.CCarEntry{}
+	for i := range res {
+		val, ok := ret[int(res[i].EventID)]
+		if !ok {
+			val = []*models.CCarEntry{}
 		}
-		if _, ok := ret[d.EventId]; !ok {
-			ret[d.EventId] = []*DbCarEntry{}
-		}
-		ret[d.EventId] = append(ret[d.EventId], &d)
+		val = append(val, res[i])
+		ret[int(res[i].EventID)] = val
 	}
+
 	return ret, nil
 }
 
-func GetEventEntriesByIds(pool *pgxpool.Pool, ids []int) (map[int]*DbCarEntry, error) {
-	rows, err := pool.Query(context.Background(), `
-	select id,event_id, c_car_id, car_idx, car_number, car_number_raw
-	from c_car_entry
-	where id = any($1) order by car_number_raw asc`, ids)
+//nolint:whitespace // editor/linter issue
+func GetEventEntriesByIds(
+	exec bob.Executor,
+	ids []int) (
+	map[int]*models.CCarEntry, error,
+) {
+	myIds := utils.IntSliceToInt32Slice(ids)
+
+	query := models.CCarEntries.Query(
+		// see also notes in interanl/car/car/car.go
+		sm.Where(models.CCarEntryColumns.ID.EQ(psql.F("ANY", expr.Arg(myIds)))),
+		sm.OrderBy(models.CCarEntryColumns.CarNumberRaw),
+	)
+
+	res, err := query.All(context.Background(), exec)
 	if err != nil {
-		log.Printf("error reading entries: %v", err)
-		return map[int]*DbCarEntry{}, err
+		return nil, err
 	}
-	defer rows.Close()
-	ret := map[int]*DbCarEntry{}
-	for rows.Next() {
-		d := DbCarEntry{}
-		err := rows.Scan(&d.ID, &d.EventId, &d.CarId, &d.CarIdx, &d.CarNum, &d.CarNumRaw)
-		if err != nil {
-			log.Printf("Error scanning c_car_entry: %v\n", err)
-		}
-		ret[d.ID] = &d
+
+	ret := map[int]*models.CCarEntry{}
+	for i := range res {
+		ret[int(res[i].EventID)] = res[i]
 	}
+
 	return ret, nil
 }

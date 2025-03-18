@@ -6,10 +6,6 @@ import (
 	"github.com/stephenafamo/bob/dialect/psql/dialect"
 
 	"github.com/mpapenbr/iracelog-graphql/graph/model"
-	"github.com/mpapenbr/iracelog-graphql/internal/car/car"
-	"github.com/mpapenbr/iracelog-graphql/internal/car/driver"
-	"github.com/mpapenbr/iracelog-graphql/internal/car/entry"
-	"github.com/mpapenbr/iracelog-graphql/internal/car/team"
 	"github.com/mpapenbr/iracelog-graphql/internal/db/models"
 )
 
@@ -115,45 +111,50 @@ func convertDbTrackToModel(dbTrack *models.Track) *model.Track {
 	}
 }
 
-func convertDbCarToModel(d *car.DbCar) *model.Car {
+func convertDbCarToModel(d *models.CCar) *model.Car {
 	return &model.Car{
-		ID:            d.ID,
+		ID:            int(d.ID),
 		Name:          d.Name,
 		NameShort:     d.NameShort,
-		CarID:         d.CarId,
-		FuelPct:       d.FuelPct,
-		PowerAdjust:   d.PowerAdjust,
-		WeightPenalty: d.WeightPenalty,
-		DryTireSets:   d.DryTireSets,
+		CarID:         int(d.CarID),
+		FuelPct:       d.FuelPCT.InexactFloat64(),
+		PowerAdjust:   d.PowerAdjust.InexactFloat64(),
+		WeightPenalty: d.WeightPenalty.InexactFloat64(),
+		DryTireSets:   int(d.DryTireSets),
 	}
 }
 
-func convertDbEventEntryToModel(d *entry.DbCarEntry) *model.EventEntry {
+func convertDbEventEntryToModel(d *models.CCarEntry) *model.EventEntry {
 	return &model.EventEntry{
-		ID:        d.ID,
-		CarNum:    &d.CarNum,
-		CarNumRaw: &d.CarNumRaw,
+		ID:        int(d.ID),
+		CarNum:    &d.CarNumber,
+		CarNumRaw: toIntPtr(d.CarNumberRaw),
 	}
 }
 
-func convertDbCarTeamToModel(d *team.DbCarTeam) *model.EventTeam {
+func convertDbCarTeamToModel(d *models.CCarTeam) *model.EventTeam {
 	return &model.EventTeam{
-		ID:     d.ID,
+		ID:     int(d.ID),
 		Name:   d.Name,
-		TeamID: d.TeamId,
+		TeamID: int(d.TeamID),
 	}
 }
 
-func convertDbCarDriverToModel(d *driver.DbCarDriver) *model.EventDriver {
+func convertDbCarDriverToModel(d *models.CCarDriver) *model.EventDriver {
 	return &model.EventDriver{
-		ID:              d.ID,
+		ID:              int(d.ID),
 		Name:            d.Name,
-		DriverID:        d.DriverId,
+		DriverID:        int(d.DriverID),
 		Initials:        &d.Initials,
 		AbbrevName:      &d.AbbrevName,
-		IRating:         &d.IRating,
-		LicenseLevel:    &d.LicenseLevel,
-		LicenseSubLevel: &d.LicenseSubLevel,
-		LicenseString:   &d.LicenseString,
+		IRating:         toIntPtr(d.Irating),
+		LicenseLevel:    toIntPtr(d.LicLevel),
+		LicenseSubLevel: toIntPtr(d.LicSubLevel),
+		LicenseString:   &d.LicString,
 	}
+}
+
+func toIntPtr(i int32) *int {
+	ret := int(i)
+	return &ret
 }

@@ -139,10 +139,10 @@ func (r *queryResolver) SimpleSearchEvent(ctx context.Context, arg string, limit
 // AdvancedSearchEvent is the resolver for the advancedSearchEvent field.
 func (r *queryResolver) AdvancedSearchEvent(ctx context.Context, arg string, limit *int, offset *int, sort []*model.EventSortArg) ([]*model.Event, error) {
 	searchArgs, err := storage.ExtractEventSearchKeys(arg)
-	if err != nil {
-		return r.db.SimpleSearchEvents(ctx, arg, limit, offset, sort)
-	} else {
+	if err == nil {
 		return r.db.AdvancedSearchEvents(ctx, searchArgs, limit, offset, sort)
+	} else {
+		return r.db.SimpleSearchEvents(ctx, arg, limit, offset, sort)
 	}
 }
 
@@ -188,10 +188,12 @@ func (r *Resolver) Team() generated.TeamResolver { return &teamResolver{r} }
 // Track returns generated.TrackResolver implementation.
 func (r *Resolver) Track() generated.TrackResolver { return &trackResolver{r} }
 
-type driverResolver struct{ *Resolver }
-type eventResolver struct{ *Resolver }
-type eventEntryResolver struct{ *Resolver }
-type eventTeamResolver struct{ *Resolver }
-type queryResolver struct{ *Resolver }
-type teamResolver struct{ *Resolver }
-type trackResolver struct{ *Resolver }
+type (
+	driverResolver     struct{ *Resolver }
+	eventResolver      struct{ *Resolver }
+	eventEntryResolver struct{ *Resolver }
+	eventTeamResolver  struct{ *Resolver }
+	queryResolver      struct{ *Resolver }
+	teamResolver       struct{ *Resolver }
+	trackResolver      struct{ *Resolver }
+)

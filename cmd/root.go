@@ -72,7 +72,7 @@ func init() {
 	// will be global for your application.
 
 	rootCmd.PersistentFlags().StringVar(&cfgFile, "config", "",
-		"config file (default is $HOME/.ism.yml)")
+		"config file (default is $HOME/.igql.yml)")
 
 	rootCmd.PersistentFlags().StringVar(&config.DB, "db",
 		"postgresql://DB_USERNAME:DB_USER_PASSWORD@DB_HOST:5432/iracelog",

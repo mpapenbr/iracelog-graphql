@@ -2,44 +2,55 @@ package team
 
 import (
 	"context"
-	"log"
 
-	"github.com/jackc/pgx/v5/pgxpool"
+	"github.com/stephenafamo/bob"
+	"github.com/stephenafamo/bob/dialect/psql"
+	"github.com/stephenafamo/bob/dialect/psql/dialect"
+	"github.com/stephenafamo/bob/dialect/psql/sm"
+	"github.com/stephenafamo/bob/expr"
+	"github.com/stephenafamo/bob/mods"
+	"github.com/stephenafamo/scan"
+
+	"github.com/mpapenbr/iracelog-graphql/internal/db/models"
+	"github.com/mpapenbr/iracelog-graphql/internal/utils"
 )
-
-type DbCarTeam struct {
-	ID     int    `json:"id"`
-	TeamId int    `json:"teamId"`
-	Name   string `json:"name"`
-}
 
 //nolint:whitespace // editor/linter issue
 func GetTeamsByEventEntry(
-	pool *pgxpool.Pool,
+	exec bob.Executor,
 	eventEntryIDs []int,
-) (map[int]*DbCarTeam, error) {
-	rows, err := pool.Query(context.Background(), `
-	select 
-	t.id,	
-	t.name,	
-	t.team_id,	
-	ce.id
-	from c_car_team t join c_car_entry ce on ce.id = t.c_car_entry_id
-	where ce.id = any($1)`, eventEntryIDs)
-	if err != nil {
-		log.Printf("error reading car_team: %v", err)
-		return map[int]*DbCarTeam{}, err
+) (map[int]*models.CCarTeam, error) {
+	myIds := utils.IntSliceToInt32Slice(eventEntryIDs)
+	type myStruct struct {
+		models.CCarTeam
+		EntryId int32 `db:"e_id"`
 	}
-	defer rows.Close()
-	ret := map[int]*DbCarTeam{}
-	for rows.Next() {
-		d := DbCarTeam{}
-		var ceId int
-		err := rows.Scan(&d.ID, &d.Name, &d.TeamId, &ceId)
-		if err != nil {
-			log.Printf("Error scanning c_car_team: %v\n", err)
-		}
-		ret[ceId] = &d
+
+	smods := []bob.Mod[*dialect.SelectQuery]{
+		sm.Columns(models.CCarTeams.Columns()),
+		sm.Columns(models.CCarEntryColumns.ID.As("e_id")),
+	}
+	whereMods := []mods.Where[*dialect.SelectQuery]{
+		sm.Where(models.CCarEntryColumns.ID.EQ(psql.F("ANY", expr.Arg(myIds)))),
+	}
+
+	smods = append(smods,
+		sm.From(models.TableNames.CCarTeams),
+		sm.InnerJoin(models.TableNames.CCarEntries).
+			On(models.CCarEntryColumns.CCarID.EQ(models.CCarTeamColumns.ID)),
+		psql.WhereAnd(whereMods...),
+	)
+
+	query := psql.Select(smods...)
+	exec = bob.Debug(exec)
+	res, err := bob.All(context.Background(), exec, query, scan.StructMapper[myStruct]())
+	if err != nil {
+		return nil, err
+	}
+
+	ret := map[int]*models.CCarTeam{}
+	for i := range res {
+		ret[int(res[i].EntryId)] = &res[i].CCarTeam
 	}
 	return ret, nil
 }
