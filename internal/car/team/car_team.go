@@ -42,7 +42,6 @@ func GetTeamsByEventEntry(
 	)
 
 	query := psql.Select(smods...)
-	exec = bob.Debug(exec)
 	res, err := bob.All(context.Background(), exec, query, scan.StructMapper[myStruct]())
 	if err != nil {
 		return nil, err
