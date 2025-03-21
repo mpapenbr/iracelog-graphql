@@ -159,7 +159,6 @@ func AdvancedEventSearch(
 	if search.Team != "" {
 		query.Apply(modSubQueryTeam(sqlStringContains(search.Team)))
 	}
-	exec = bob.Debug(exec)
 
 	res, err := query.All(context.Background(), exec)
 	return res, err
