@@ -15,6 +15,7 @@ import (
 // the resulting map key is built by Key.String()
 
 type Storage interface {
+	ResolveTenant(ctx context.Context, externalId string) (int, error)
 	// GetTracks expects keys of type IntKey. IntKey.String() is used as map key
 	GetTracksByKeys(ctx context.Context, keys dataloader.Keys) map[string]*model.Track
 	// GetEvents expects keys of type IntKey. IntKey.String() is used as map key

@@ -31,10 +31,12 @@ type EventSearchKeys struct {
 }
 
 //nolint:whitespace // editor/linter issue
-func GetALl(exec bob.Executor, pageable internal.DbPageable) (
+func GetALl(exec bob.Executor, tenantId int, pageable internal.DbPageable) (
 	models.EventSlice, error,
 ) {
-	query := models.Events.Query()
+	query := models.Events.Query(
+		models.SelectWhere.Events.TenantID.EQ(int32(tenantId)),
+	)
 
 	query.Apply(createPageableMods(pageable)...)
 
@@ -43,7 +45,7 @@ func GetALl(exec bob.Executor, pageable internal.DbPageable) (
 }
 
 //nolint:whitespace // editor/linter issue
-func GetByIds(exec bob.Executor, ids []int) (
+func GetByIds(exec bob.Executor, tenantId int, ids []int) (
 	models.EventSlice, error,
 ) {
 	myIds := make([]int32, len(ids))
@@ -55,6 +57,7 @@ func GetByIds(exec bob.Executor, ids []int) (
 	}
 	ret, err := models.Events.Query(
 		models.SelectWhere.Events.ID.In(myIds...),
+		models.SelectWhere.Events.TenantID.EQ(int32(tenantId)),
 	).All(context.Background(), exec)
 	return ret, err
 }
@@ -70,6 +73,7 @@ consider a track with 2 and another with 10 events and a query with offset 5
 //nolint:whitespace // editor/linter issue
 func GetEventsByTrackIds(
 	exec bob.Executor,
+	tenantId int,
 	trackIds []int,
 	pageable internal.DbPageable,
 ) (map[int][]*models.Event, error) {
@@ -82,6 +86,7 @@ func GetEventsByTrackIds(
 	}
 	query := models.Events.Query(
 		models.SelectWhere.Events.TrackID.In(myIds...),
+		models.SelectWhere.Events.TenantID.EQ(int32(tenantId)),
 	)
 	query.Apply(createPageableMods(pageable)...)
 	res, err := query.All(context.Background(), exec)
@@ -105,6 +110,7 @@ func GetEventsByTrackIds(
 //nolint:lll,whitespace,funlen // sql readability
 func SimpleEventSearch(
 	exec bob.Executor,
+	tenantId int,
 	searchArg string,
 	pageable internal.DbPageable,
 ) (models.EventSlice, error) {
@@ -128,7 +134,10 @@ OR id in (select e.event_id from c_car_entry e join c_car_driver d on d.c_car_en
 		modSubQueryDriver(searchArg),
 	)
 
-	query := models.Events.Query(partMain)
+	query := models.Events.Query(
+		models.SelectWhere.Events.TenantID.EQ(int32(tenantId)),
+		partMain,
+	)
 	query.Apply(createPageableMods(pageable)...)
 	res, err := query.All(context.Background(), exec)
 	return res, err
@@ -137,10 +146,13 @@ OR id in (select e.event_id from c_car_entry e join c_car_driver d on d.c_car_en
 //nolint:lll,funlen,whitespace // sql readability
 func AdvancedEventSearch(
 	exec bob.Executor,
+	tenantId int,
 	search *EventSearchKeys,
 	pageable internal.DbPageable,
 ) (models.EventSlice, error) {
-	query := models.Events.Query()
+	query := models.Events.Query(
+		models.SelectWhere.Events.TenantID.EQ(int32(tenantId)),
+	)
 	query.Apply(createPageableMods(pageable)...)
 
 	if search.Name != "" {

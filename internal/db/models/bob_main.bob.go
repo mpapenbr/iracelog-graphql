@@ -19,6 +19,7 @@ var TableNames = struct {
 	CCarEntries string
 	CCarTeams   string
 	Events      string
+	Tenants     string
 	Tracks      string
 }{
 	CCars:       "c_car",
@@ -26,6 +27,7 @@ var TableNames = struct {
 	CCarEntries: "c_car_entry",
 	CCarTeams:   "c_car_team",
 	Events:      "event",
+	Tenants:     "tenant",
 	Tracks:      "track",
 }
 
@@ -35,6 +37,7 @@ var ColumnNames = struct {
 	CCarEntries cCarEntryColumnNames
 	CCarTeams   cCarTeamColumnNames
 	Events      eventColumnNames
+	Tenants     tenantColumnNames
 	Tracks      trackColumnNames
 }{
 	CCars: cCarColumnNames{
@@ -96,6 +99,13 @@ var ColumnNames = struct {
 		IrSubSessionID:       "ir_sub_session_id",
 		TenantID:             "tenant_id",
 	},
+	Tenants: tenantColumnNames{
+		ID:         "id",
+		ExternalID: "external_id",
+		Name:       "name",
+		APIKey:     "api_key",
+		Active:     "active",
+	},
 	Tracks: trackColumnNames{
 		ID:            "id",
 		Name:          "name",
@@ -123,6 +133,7 @@ func Where[Q psql.Filterable]() struct {
 	CCarEntries cCarEntryWhere[Q]
 	CCarTeams   cCarTeamWhere[Q]
 	Events      eventWhere[Q]
+	Tenants     tenantWhere[Q]
 	Tracks      trackWhere[Q]
 } {
 	return struct {
@@ -131,6 +142,7 @@ func Where[Q psql.Filterable]() struct {
 		CCarEntries cCarEntryWhere[Q]
 		CCarTeams   cCarTeamWhere[Q]
 		Events      eventWhere[Q]
+		Tenants     tenantWhere[Q]
 		Tracks      trackWhere[Q]
 	}{
 		CCars:       buildCCarWhere[Q](CCarColumns),
@@ -138,6 +150,7 @@ func Where[Q psql.Filterable]() struct {
 		CCarEntries: buildCCarEntryWhere[Q](CCarEntryColumns),
 		CCarTeams:   buildCCarTeamWhere[Q](CCarTeamColumns),
 		Events:      buildEventWhere[Q](EventColumns),
+		Tenants:     buildTenantWhere[Q](TenantColumns),
 		Tracks:      buildTrackWhere[Q](TrackColumns),
 	}
 }
@@ -168,6 +181,7 @@ type joins[Q dialect.Joinable] struct {
 	CCarEntries joinSet[cCarEntryJoins[Q]]
 	CCarTeams   joinSet[cCarTeamJoins[Q]]
 	Events      joinSet[eventJoins[Q]]
+	Tenants     joinSet[tenantJoins[Q]]
 	Tracks      joinSet[trackJoins[Q]]
 }
 
@@ -186,6 +200,7 @@ func getJoins[Q dialect.Joinable]() joins[Q] {
 		CCarEntries: buildJoinSet[cCarEntryJoins[Q]](CCarEntryColumns, buildCCarEntryJoins),
 		CCarTeams:   buildJoinSet[cCarTeamJoins[Q]](CCarTeamColumns, buildCCarTeamJoins),
 		Events:      buildJoinSet[eventJoins[Q]](EventColumns, buildEventJoins),
+		Tenants:     buildJoinSet[tenantJoins[Q]](TenantColumns, buildTenantJoins),
 		Tracks:      buildJoinSet[trackJoins[Q]](TrackColumns, buildTrackJoins),
 	}
 }

@@ -69,6 +69,7 @@ type EventsQuery = *psql.ViewQuery[*Event, EventSlice]
 type eventR struct {
 	CCars       CCarSlice      // c_car.c_car_event_id_fkey
 	CCarEntries CCarEntrySlice // c_car_entry.c_car_entry_event_id_fkey
+	Tenant      *Tenant        // event.event_tenant_id_fk
 	Track       *Track         // event.event_track_id_fkey
 }
 
@@ -871,6 +872,7 @@ type eventJoins[Q dialect.Joinable] struct {
 	typ         string
 	CCars       func(context.Context) modAs[Q, cCarColumns]
 	CCarEntries func(context.Context) modAs[Q, cCarEntryColumns]
+	Tenant      func(context.Context) modAs[Q, tenantColumns]
 	Track       func(context.Context) modAs[Q, trackColumns]
 }
 
@@ -883,6 +885,7 @@ func buildEventJoins[Q dialect.Joinable](cols eventColumns, typ string) eventJoi
 		typ:         typ,
 		CCars:       eventsJoinCCars[Q](cols, typ),
 		CCarEntries: eventsJoinCCarEntries[Q](cols, typ),
+		Tenant:      eventsJoinTenant[Q](cols, typ),
 		Track:       eventsJoinTrack[Q](cols, typ),
 	}
 }
@@ -916,6 +919,25 @@ func eventsJoinCCarEntries[Q dialect.Joinable](from eventColumns, typ string) fu
 				{
 					mods = append(mods, dialect.Join[Q](typ, CCarEntries.Name().As(to.Alias())).On(
 						to.EventID.EQ(from.ID),
+					))
+				}
+
+				return mods
+			},
+		}
+	}
+}
+
+func eventsJoinTenant[Q dialect.Joinable](from eventColumns, typ string) func(context.Context) modAs[Q, tenantColumns] {
+	return func(ctx context.Context) modAs[Q, tenantColumns] {
+		return modAs[Q, tenantColumns]{
+			c: TenantColumns,
+			f: func(to tenantColumns) bob.Mod[Q] {
+				mods := make(mods.QueryMods[Q], 0, 1)
+
+				{
+					mods = append(mods, dialect.Join[Q](typ, Tenants.Name().As(to.Alias())).On(
+						to.ID.EQ(from.TenantID),
 					))
 				}
 
@@ -980,6 +1002,24 @@ func (os EventSlice) CCarEntries(mods ...bob.Mod[*dialect.SelectQuery]) CCarEntr
 	)...)
 }
 
+// Tenant starts a query for related objects on tenant
+func (o *Event) Tenant(mods ...bob.Mod[*dialect.SelectQuery]) TenantsQuery {
+	return Tenants.Query(append(mods,
+		sm.Where(TenantColumns.ID.EQ(psql.Arg(o.TenantID))),
+	)...)
+}
+
+func (os EventSlice) Tenant(mods ...bob.Mod[*dialect.SelectQuery]) TenantsQuery {
+	PKArgs := make([]bob.Expression, len(os))
+	for i, o := range os {
+		PKArgs[i] = psql.ArgGroup(o.TenantID)
+	}
+
+	return Tenants.Query(append(mods,
+		sm.Where(psql.Group(TenantColumns.ID).In(PKArgs...)),
+	)...)
+}
+
 // Track starts a query for related objects on track
 func (o *Event) Track(mods ...bob.Mod[*dialect.SelectQuery]) TracksQuery {
 	return Tracks.Query(append(mods,
@@ -1030,6 +1070,18 @@ func (o *Event) Preload(name string, retrieved any) error {
 			if rel != nil {
 				rel.R.Event = o
 			}
+		}
+		return nil
+	case "Tenant":
+		rel, ok := retrieved.(*Tenant)
+		if !ok {
+			return fmt.Errorf("event cannot load %T as %q", retrieved, name)
+		}
+
+		o.R.Tenant = rel
+
+		if rel != nil {
+			rel.R.Events = EventSlice{o}
 		}
 		return nil
 	case "Track":
@@ -1187,6 +1239,91 @@ func (os EventSlice) LoadEventCCarEntries(ctx context.Context, exec bob.Executor
 			rel.R.Event = o
 
 			o.R.CCarEntries = append(o.R.CCarEntries, rel)
+		}
+	}
+
+	return nil
+}
+
+func PreloadEventTenant(opts ...psql.PreloadOption) psql.Preloader {
+	return psql.Preload[*Tenant, TenantSlice](orm.Relationship{
+		Name: "Tenant",
+		Sides: []orm.RelSide{
+			{
+				From: TableNames.Events,
+				To:   TableNames.Tenants,
+				FromColumns: []string{
+					ColumnNames.Events.TenantID,
+				},
+				ToColumns: []string{
+					ColumnNames.Tenants.ID,
+				},
+			},
+		},
+	}, Tenants.Columns().Names(), opts...)
+}
+
+func ThenLoadEventTenant(queryMods ...bob.Mod[*dialect.SelectQuery]) psql.Loader {
+	return psql.Loader(func(ctx context.Context, exec bob.Executor, retrieved any) error {
+		loader, isLoader := retrieved.(interface {
+			LoadEventTenant(context.Context, bob.Executor, ...bob.Mod[*dialect.SelectQuery]) error
+		})
+		if !isLoader {
+			return fmt.Errorf("object %T cannot load EventTenant", retrieved)
+		}
+
+		err := loader.LoadEventTenant(ctx, exec, queryMods...)
+
+		// Don't cause an issue due to missing relationships
+		if errors.Is(err, sql.ErrNoRows) {
+			return nil
+		}
+
+		return err
+	})
+}
+
+// LoadEventTenant loads the event's Tenant into the .R struct
+func (o *Event) LoadEventTenant(ctx context.Context, exec bob.Executor, mods ...bob.Mod[*dialect.SelectQuery]) error {
+	if o == nil {
+		return nil
+	}
+
+	// Reset the relationship
+	o.R.Tenant = nil
+
+	related, err := o.Tenant(mods...).One(ctx, exec)
+	if err != nil {
+		return err
+	}
+
+	related.R.Events = EventSlice{o}
+
+	o.R.Tenant = related
+	return nil
+}
+
+// LoadEventTenant loads the event's Tenant into the .R struct
+func (os EventSlice) LoadEventTenant(ctx context.Context, exec bob.Executor, mods ...bob.Mod[*dialect.SelectQuery]) error {
+	if len(os) == 0 {
+		return nil
+	}
+
+	tenants, err := os.Tenant(mods...).All(ctx, exec)
+	if err != nil {
+		return err
+	}
+
+	for _, o := range os {
+		for _, rel := range tenants {
+			if o.TenantID != rel.ID {
+				continue
+			}
+
+			rel.R.Events = append(rel.R.Events, o)
+
+			o.R.Tenant = rel
+			break
 		}
 	}
 
@@ -1410,6 +1547,52 @@ func (event0 *Event) AttachCCarEntries(ctx context.Context, exec bob.Executor, r
 	for _, rel := range related {
 		rel.R.Event = event0
 	}
+
+	return nil
+}
+
+func attachEventTenant0(ctx context.Context, exec bob.Executor, count int, event0 *Event, tenant1 *Tenant) (*Event, error) {
+	setter := &EventSetter{
+		TenantID: omit.From(tenant1.ID),
+	}
+
+	err := event0.Update(ctx, exec, setter)
+	if err != nil {
+		return nil, fmt.Errorf("attachEventTenant0: %w", err)
+	}
+
+	return event0, nil
+}
+
+func (event0 *Event) InsertTenant(ctx context.Context, exec bob.Executor, related *TenantSetter) error {
+	tenant1, err := Tenants.Insert(related).One(ctx, exec)
+	if err != nil {
+		return fmt.Errorf("inserting related objects: %w", err)
+	}
+
+	_, err = attachEventTenant0(ctx, exec, 1, event0, tenant1)
+	if err != nil {
+		return err
+	}
+
+	event0.R.Tenant = tenant1
+
+	tenant1.R.Events = append(tenant1.R.Events, event0)
+
+	return nil
+}
+
+func (event0 *Event) AttachTenant(ctx context.Context, exec bob.Executor, tenant1 *Tenant) error {
+	var err error
+
+	_, err = attachEventTenant0(ctx, exec, 1, event0, tenant1)
+	if err != nil {
+		return err
+	}
+
+	event0.R.Tenant = tenant1
+
+	tenant1.R.Events = append(tenant1.R.Events, event0)
 
 	return nil
 }
