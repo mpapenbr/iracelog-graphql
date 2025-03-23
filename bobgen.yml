@@ -27,6 +27,7 @@ psql:
   driver_name: github.com/jackc/pgx/v5
   output: internal/db/models
   only:
+    "tenant":
     "track":
     "event":
     "c_car":

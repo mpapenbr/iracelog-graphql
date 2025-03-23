@@ -9,6 +9,7 @@ import (
 	"github.com/mpapenbr/iracelog-graphql/graph/model"
 	"github.com/mpapenbr/iracelog-graphql/internal"
 	"github.com/mpapenbr/iracelog-graphql/internal/events"
+	"github.com/mpapenbr/iracelog-graphql/internal/tenant"
 )
 
 // contains implementations of storage interface that return a model.Event items
@@ -21,8 +22,13 @@ func (db *DbStorage) GetAllEvents(
 	sort []*model.EventSortArg,
 ) ([]*model.Event, error) {
 	var result []*model.Event
+	tp := tenant.GetFromContext(ctx)
+	if tp == nil {
+		return nil, fmt.Errorf("tenant not found in context")
+	}
+	tenantId, _ := tp()
 	dbEventSortArg := convertEventSortArgs(sort)
-	events, err := events.GetALl(db.executor, internal.DbPageable{
+	events, err := events.GetALl(db.executor, tenantId, internal.DbPageable{
 		Limit:  limit,
 		Offset: offset,
 		Sort:   dbEventSortArg,
@@ -43,9 +49,14 @@ func (db *DbStorage) GetEventsByKeys(
 	ctx context.Context,
 	ids dataloader.Keys,
 ) map[string]*model.Event {
+	tp := tenant.GetFromContext(ctx)
+	if tp == nil {
+		return nil
+	}
+	tenantId, _ := tp()
 	intIds := IntKeysToSlice(ids)
 	result := map[string]*model.Event{}
-	events, _ := events.GetByIds(db.executor, intIds)
+	events, _ := events.GetByIds(db.executor, tenantId, intIds)
 	// convert the internal database Track to the GraphQL-Track
 	for _, dbEvents := range events {
 		// this would cause assigning the last loop content to all result entries
@@ -62,6 +73,11 @@ func (db *DbStorage) GetEventsForTrackIdsKeys(
 	ctx context.Context,
 	trackIds dataloader.Keys,
 ) map[string][]*model.Event {
+	tp := tenant.GetFromContext(ctx)
+	if tp == nil {
+		return nil
+	}
+	tenantId, _ := tp()
 	result := map[string][]*model.Event{}
 
 	intTrackIds := make([]int, len(trackIds))
@@ -71,6 +87,7 @@ func (db *DbStorage) GetEventsForTrackIdsKeys(
 	}
 	byTrackId, err := events.GetEventsByTrackIds(
 		db.executor,
+		tenantId,
 		intTrackIds,
 		internal.DbPageable{Sort: convertEventSortArgs([]*model.EventSortArg{})})
 	if err == nil {

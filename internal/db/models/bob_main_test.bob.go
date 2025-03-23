@@ -7,6 +7,7 @@ import (
 	"database/sql"
 	"database/sql/driver"
 
+	"github.com/gofrs/uuid/v5"
 	mytypes "github.com/mpapenbr/iracelog-graphql/internal/db/mytypes"
 	"github.com/shopspring/decimal"
 	"github.com/stephenafamo/bob"
@@ -27,6 +28,9 @@ var _ bob.HookableType = &CCarTeam{}
 // Make sure the type Event runs hooks after queries
 var _ bob.HookableType = &Event{}
 
+// Make sure the type Tenant runs hooks after queries
+var _ bob.HookableType = &Tenant{}
+
 // Make sure the type Track runs hooks after queries
 var _ bob.HookableType = &Track{}
 
@@ -41,6 +45,12 @@ var _ sql.Scanner = (*mytypes.EventSessionSlice)(nil)
 
 // Make sure the type mytypes.EventSessionSlice satisfies database/sql/driver.Valuer
 var _ driver.Valuer = *new(mytypes.EventSessionSlice)
+
+// Make sure the type uuid.UUID satisfies database/sql.Scanner
+var _ sql.Scanner = (*uuid.UUID)(nil)
+
+// Make sure the type uuid.UUID satisfies database/sql/driver.Valuer
+var _ driver.Valuer = *new(uuid.UUID)
 
 // Make sure the type mytypes.SectorSlice satisfies database/sql.Scanner
 var _ sql.Scanner = (*mytypes.SectorSlice)(nil)

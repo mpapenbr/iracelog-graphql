@@ -3,7 +3,6 @@ package storage
 
 import (
 	"context"
-	"database/sql"
 
 	"github.com/graph-gophers/dataloader"
 	"github.com/jackc/pgx/v5/pgxpool"
@@ -14,31 +13,32 @@ import (
 	"github.com/mpapenbr/iracelog-graphql/internal"
 	"github.com/mpapenbr/iracelog-graphql/internal/analysis"
 	"github.com/mpapenbr/iracelog-graphql/internal/events"
+	"github.com/mpapenbr/iracelog-graphql/internal/tenant"
 )
 
 // for implementation of the storage interface see db_storage_xxx.go
 // depending on the type of data to be returned
-type DbStorage struct {
-	// Storage
-	pool     *pgxpool.Pool // @deprecated
-	db       *sql.DB
-	executor bob.Executor
-}
+type (
+	DbStorage struct {
+		// Storage
+		pool     *pgxpool.Pool
+		executor bob.Executor
+	}
 
-func NewDbStorageWithPool(pool *pgxpool.Pool) Storage {
+	DbStorageOption func(*DbStorage)
+)
+
+func NewDbStorage(pool *pgxpool.Pool, opts ...DbStorageOption) Storage {
 	db := stdlib.OpenDBFromPool(pool)
 
-	return &DbStorage{
+	ret := &DbStorage{
 		pool:     pool,
-		db:       db,
 		executor: bob.New(db),
 	}
-}
-
-func NewDbStorageWithDb(db *sql.DB) Storage {
-	return &DbStorage{
-		db: db,
+	for _, opt := range opts {
+		opt(ret)
 	}
+	return ret
 }
 
 // events
@@ -51,10 +51,16 @@ func (db *DbStorage) SimpleSearchEvents(
 	offset *int,
 	sort []*model.EventSortArg,
 ) ([]*model.Event, error) {
+	tp := tenant.GetFromContext(ctx)
+	if tp == nil {
+		return nil, tenant.ErrNoTenantInContext
+	}
+	tenantId, _ := tp()
 	var result []*model.Event
 	dbEventSortArg := convertEventSortArgs(sort)
 	events, err := events.SimpleEventSearch(
 		db.executor,
+		tenantId,
 		arg,
 		internal.DbPageable{Limit: limit, Offset: offset, Sort: dbEventSortArg})
 	if err == nil {
@@ -77,9 +83,15 @@ func (db *DbStorage) AdvancedSearchEvents(
 	sort []*model.EventSortArg,
 ) ([]*model.Event, error) {
 	var result []*model.Event
+	tp := tenant.GetFromContext(ctx)
+	if tp == nil {
+		return nil, tenant.ErrNoTenantInContext
+	}
+	tenantId, _ := tp()
 	dbEventSortArg := convertEventSortArgs(sort)
 	events, err := events.AdvancedEventSearch(
 		db.executor,
+		tenantId,
 		arg,
 		internal.DbPageable{Limit: limit, Offset: offset, Sort: dbEventSortArg})
 	if err == nil {

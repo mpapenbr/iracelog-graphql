@@ -3,6 +3,7 @@ package server
 import (
 	"context"
 	"encoding/json"
+	"fmt"
 	"net/http"
 
 	"github.com/99designs/gqlgen/graphql/handler"
@@ -18,6 +19,7 @@ import (
 	"github.com/mpapenbr/iracelog-graphql/graph/generated"
 	"github.com/mpapenbr/iracelog-graphql/graph/resolver"
 	"github.com/mpapenbr/iracelog-graphql/graph/storage"
+	"github.com/mpapenbr/iracelog-graphql/internal/tenant"
 	"github.com/mpapenbr/iracelog-graphql/log"
 	"github.com/mpapenbr/iracelog-graphql/version"
 )
@@ -25,11 +27,13 @@ import (
 type (
 	Option func(*Server)
 
-	Server struct {
-		ctx  context.Context
-		log  *log.Logger
-		db   storage.Storage
-		addr string
+	TenantResolver func(r *http.Request) (int, error)
+	Server         struct {
+		ctx            context.Context
+		log            *log.Logger
+		db             storage.Storage
+		addr           string
+		tenantResolver TenantResolver
 	}
 )
 
@@ -41,6 +45,7 @@ func NewServer(opts ...Option) *Server {
 	for _, opt := range opts {
 		opt(ret)
 	}
+
 	return ret
 }
 
@@ -68,6 +73,27 @@ func WithAddr(arg string) Option {
 	}
 }
 
+func WithTenantResolver(arg TenantResolver) Option {
+	return func(s *Server) {
+		s.tenantResolver = arg
+	}
+}
+
+func WithRequestBasedTenantResolver() Option {
+	return func(s *Server) {
+		s.tenantResolver = func(r *http.Request) (int, error) {
+			s.log.Debug("RequestBasedTenantResolver")
+
+			if id := r.Header.Get("X-Tenant-ID"); id != "" {
+				return s.db.ResolveTenant(r.Context(), id)
+			}
+			s.log.Debug("no X-Tenant-ID found in header")
+			return 0, fmt.Errorf("no tenant id found in request")
+		}
+	}
+}
+
+//nolint:funlen // ok here
 func (s *Server) Start() error {
 	graphResolver := resolver.NewResolver(s.db)
 	srv := handler.New(
@@ -87,7 +113,7 @@ func (s *Server) Start() error {
 
 	router := chi.NewRouter()
 
-	// add logger to context
+	// add logger to context (will be used on all endpoints)
 	router.Use(func(h http.Handler) http.Handler {
 		return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 			newCtx := log.AddToContext(r.Context(), s.log)
@@ -95,13 +121,25 @@ func (s *Server) Start() error {
 			h.ServeHTTP(w, r)
 		})
 	})
-
+	// log every request as debug
 	router.Use(func(h http.Handler) http.Handler {
 		return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 			s.log.Debug("Request", log.String("url", r.URL.String()))
 			h.ServeHTTP(w, r)
 		})
 	})
+
+	// add tenant provider to context
+	tenantMiddle := func(h http.Handler) http.Handler {
+		return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+			tp := func() (int, error) {
+				return s.tenantResolver(r)
+			}
+			newCtx := tenant.AddToContext(r.Context(), tp)
+			r = r.WithContext(newCtx)
+			h.ServeHTTP(w, r)
+		})
+	}
 
 	// CORS handling
 	// Add CORS middleware around every request
@@ -110,10 +148,11 @@ func (s *Server) Start() error {
 		AllowedOrigins:   []string{"*"},
 		AllowCredentials: true,
 		Debug:            false,
+		AllowedHeaders:   []string{"x-tenant-id", "Content-Type", "Authorization"},
 	}).Handler)
 
 	router.Handle("/", playground.Handler("GraphQL playground", "/query"))
-	router.Handle("/query", dataloaderSrv)
+	router.Handle("/query", tenantMiddle(dataloaderSrv))
 	router.Handle("/healthz", healthzHandler())
 	s.log.Info("iRacelog GraphQL service", log.String("version", version.FullVersion))
 	s.log.Info("Listen", log.String("addr", s.addr))

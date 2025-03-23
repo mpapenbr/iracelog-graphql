@@ -18,6 +18,8 @@ import (
 // Note: we don't check every attribute here.
 // We just pick some to verify the results for specific requests
 
+var testTenantId = 1
+
 type checkData struct {
 	id        int
 	eventName string
@@ -120,7 +122,7 @@ func TestGetALl(t *testing.T) {
 				})
 			}
 			tt.args.pageable.Sort = &order
-			got, err := GetALl(db, tt.args.pageable)
+			got, err := GetALl(db, testTenantId, tt.args.pageable)
 			if (err != nil) != tt.wantErr {
 				t.Errorf("GetALl() error = %v, wantErr %v", err, tt.wantErr)
 				return
@@ -169,7 +171,7 @@ func TestGetByIds(t *testing.T) {
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			got, err := GetByIds(db, tt.args.ids)
+			got, err := GetByIds(db, testTenantId, tt.args.ids)
 			if (err != nil) != tt.wantErr {
 				t.Errorf("GetByIds() error = %v, wantErr %v", err, tt.wantErr)
 				return
@@ -262,6 +264,7 @@ func TestGetEventsByTrackIds(t *testing.T) {
 			tt.args.pageable.Sort = &order
 			got, err := GetEventsByTrackIds(
 				db,
+				testTenantId,
 				tt.args.trackIds,
 				tt.args.pageable)
 			if (err != nil) != tt.wantErr {
@@ -328,7 +331,9 @@ func TestSimpleSearchEvents(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			got, err := SimpleEventSearch(db, tt.args.searchArg,
+			got, err := SimpleEventSearch(db,
+				testTenantId,
+				tt.args.searchArg,
 				internal.DbPageable{
 					Sort: &order,
 				})
@@ -396,7 +401,9 @@ func TestAdvancedEventSearch(t *testing.T) {
 	})
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			got, err := AdvancedEventSearch(db, &tt.args.search,
+			got, err := AdvancedEventSearch(db,
+				testTenantId,
+				&tt.args.search,
 				internal.DbPageable{
 					Sort: &order,
 				})

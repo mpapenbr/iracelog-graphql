@@ -2,6 +2,7 @@ package server
 
 import (
 	"context"
+	"net/http"
 	"os"
 	"os/signal"
 	"sync"
@@ -18,6 +19,11 @@ import (
 	"github.com/mpapenbr/iracelog-graphql/log"
 )
 
+var (
+	supportTenants  bool
+	defaultTenantId int = 1 // default tenant id (used if tenants are disabled)
+)
+
 func NewServerCmd() *cobra.Command {
 	cmd := &cobra.Command{
 		Use:   "server",
@@ -27,34 +33,43 @@ func NewServerCmd() *cobra.Command {
 			startServer(cmd.Context())
 		},
 	}
+	cmd.Flags().BoolVar(&supportTenants,
+		"enable-tenants",
+		false,
+		"enables tenant support")
+	cmd.Flags().IntVar(&defaultTenantId,
+		"default-tenant-id",
+		defaultTenantId,
+		"id of the internal default tenant (will be used if tenants are disabled)")
 	return cmd
 }
 
-type grpcServer struct {
-	ctx  context.Context
-	log  *log.Logger
-	pool *pgxpool.Pool
-} // to be renamed to graphlServer
+type graphqlServer struct {
+	ctx            context.Context
+	log            *log.Logger
+	pool           *pgxpool.Pool
+	supportTenants bool
+}
 
 func startServer(ctx context.Context) {
-	srv := &grpcServer{
-		ctx: ctx,
+	srv := &graphqlServer{
+		ctx:            ctx,
+		supportTenants: supportTenants,
 	}
 	srv.SetupLogger()
 	srv.waitForRequiredServices()
 	srv.SetupDbPgx()
-	srv.SetupDbBop()
 
 	if err := srv.Start(); err != nil {
 		srv.log.Error("error starting server", log.ErrorField(err))
 	}
 }
 
-func (s *grpcServer) SetupLogger() {
+func (s *graphqlServer) SetupLogger() {
 	s.log = log.GetFromContext(s.ctx).Named("server")
 }
 
-func (s *grpcServer) SetupDbPgx() {
+func (s *graphqlServer) SetupDbPgx() {
 	pgTracer := pgxtrace.CompositeQueryTracer{
 		postgres.NewMyTracer(log.GetFromContext(s.ctx).Named("sql"), log.DebugLevel),
 	}
@@ -78,23 +93,30 @@ func (s *grpcServer) SetupDbPgx() {
 	s.log.Info("PgxPool initialized")
 }
 
-func (s *grpcServer) SetupDbBop() {
-	s.log.Info("sql.DB initialized")
-}
-
-func (s *grpcServer) Start() error {
+func (s *graphqlServer) Start() error {
 	ch := make(chan error, 2)
 
 	s.log.Info("Starting server")
 	go func() {
+		storageOpts := []storage.DbStorageOption{}
+
+		myStorage := storage.NewDbStorage(s.pool, storageOpts...)
 		opts := []server.Option{
 			server.WithContext(s.ctx),
 			server.WithLogger(log.GetFromContext(s.ctx).Named("gql")),
-			server.WithStorage(storage.NewDbStorageWithPool(s.pool)),
+			server.WithStorage(myStorage),
+			server.WithTenantResolver(func(r *http.Request) (int, error) {
+				return defaultTenantId, nil
+			}),
 		}
 		if config.Addr != "" {
 			opts = append(opts, server.WithAddr(config.Addr))
 		}
+		if s.supportTenants {
+			s.log.Info("enabled tenant support")
+			opts = append(opts, server.WithRequestBasedTenantResolver())
+		}
+
 		gqlServer := server.NewServer(opts...)
 		ch <- gqlServer.Start()
 	}()
@@ -114,7 +136,7 @@ func (s *grpcServer) Start() error {
 	return nil
 }
 
-func (s *grpcServer) waitForRequiredServices() {
+func (s *graphqlServer) waitForRequiredServices() {
 	var err error
 	wg := sync.WaitGroup{}
 	checkTcp := func(addr string) {

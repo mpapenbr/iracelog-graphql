@@ -9,4 +9,5 @@ var (
 	LogLevel        string        // sets the log level (zap log level values)
 	LogFile         string        // log file to write to
 	WaitForServices time.Duration // duration to wait for other services to be ready
+	TenantId        int           // default tenant id to use
 )
