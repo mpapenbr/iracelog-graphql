@@ -18,9 +18,9 @@ require (
 require (
 	github.com/aarondl/opt v0.0.0-20230114172057-b91f370c41f0
 	github.com/exaring/otelpgx v0.9.0
-	github.com/gofrs/uuid/v5 v5.0.0
+	github.com/gofrs/uuid/v5 v5.3.1
 	github.com/jackc/pgx-gofrs-uuid v0.0.0-20230224015001-1d428863c2e2
-	github.com/jackc/pgx/v5 v5.7.2
+	github.com/jackc/pgx/v5 v5.7.3
 	github.com/pgx-contrib/pgxtrace v0.0.0-20241223102757-e8c8837146e4
 	github.com/shopspring/decimal v1.4.0
 	github.com/spf13/cobra v1.9.1
