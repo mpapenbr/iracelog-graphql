@@ -7,19 +7,19 @@ import (
 	"github.com/stephenafamo/bob/clause"
 )
 
-type DbPageable struct {
+type DBPageable struct {
 	Limit   *int
 	Offset  *int
-	SortOld []DbSortArg
+	SortOld []DBSortArg
 	Sort    *clause.OrderBy
 }
 
-type DbSortArg struct {
+type DBSortArg struct {
 	Column string
 	Order  string
 }
 
-func convertSortArg(args []DbSortArg) string {
+func convertSortArg(args []DBSortArg) string {
 	var ret []string
 	//nolint:gocritic // by design
 	for _, val := range args {
@@ -28,7 +28,7 @@ func convertSortArg(args []DbSortArg) string {
 	return strings.Join(ret, ",")
 }
 
-func HandlePageableArgs(query string, pageable DbPageable) string {
+func HandlePageableArgs(query string, pageable DBPageable) string {
 	ret := query
 	if len(pageable.SortOld) > 0 {
 		ret = fmt.Sprintf("%s order by %s", ret, convertSortArg(pageable.SortOld))

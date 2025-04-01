@@ -20,10 +20,10 @@ import (
 func GetEventDrivers(ctx context.Context, exec bob.Executor, eventIDs []int) (
 	map[int][]*models.CCarDriver, error,
 ) {
-	myIds := utils.IntSliceToInt32Slice(eventIDs)
+	myIDs := utils.IntSliceToInt32Slice(eventIDs)
 	type myStruct struct {
 		models.CCarDriver
-		EventId int32 `db:"event_id"`
+		EventID int32 `db:"event_id"`
 	}
 
 	smods := []bob.Mod[*dialect.SelectQuery]{
@@ -32,7 +32,7 @@ func GetEventDrivers(ctx context.Context, exec bob.Executor, eventIDs []int) (
 		sm.OrderBy(models.CCarDriverColumns.Name).Asc(),
 	}
 	whereMods := []mods.Where[*dialect.SelectQuery]{
-		sm.Where(models.CCarEntryColumns.EventID.EQ(psql.F("ANY", expr.Arg(myIds)))),
+		sm.Where(models.CCarEntryColumns.EventID.EQ(psql.F("ANY", expr.Arg(myIDs)))),
 	}
 
 	smods = append(smods,
@@ -51,12 +51,12 @@ func GetEventDrivers(ctx context.Context, exec bob.Executor, eventIDs []int) (
 
 	ret := map[int][]*models.CCarDriver{}
 	for i := range res {
-		val, ok := ret[int(res[i].EventId)]
+		val, ok := ret[int(res[i].EventID)]
 		if !ok {
 			val = []*models.CCarDriver{}
 		}
 		val = append(val, &res[i].CCarDriver)
-		ret[int(res[i].EventId)] = val
+		ret[int(res[i].EventID)] = val
 	}
 	return ret, nil
 }
@@ -65,10 +65,10 @@ func GetEventDrivers(ctx context.Context, exec bob.Executor, eventIDs []int) (
 func GetDriversByEventEntry(ctx context.Context, exec bob.Executor, eventIDs []int) (
 	map[int][]*models.CCarDriver, error,
 ) {
-	myIds := utils.IntSliceToInt32Slice(eventIDs)
+	myIDs := utils.IntSliceToInt32Slice(eventIDs)
 	type myStruct struct {
 		models.CCarDriver
-		EntryId int32 `db:"e_id"`
+		EntryID int32 `db:"e_id"`
 	}
 
 	smods := []bob.Mod[*dialect.SelectQuery]{
@@ -77,7 +77,7 @@ func GetDriversByEventEntry(ctx context.Context, exec bob.Executor, eventIDs []i
 		sm.OrderBy(models.CCarDriverColumns.Name).Asc(),
 	}
 	whereMods := []mods.Where[*dialect.SelectQuery]{
-		sm.Where(models.CCarEntryColumns.ID.EQ(psql.F("ANY", expr.Arg(myIds)))),
+		sm.Where(models.CCarEntryColumns.ID.EQ(psql.F("ANY", expr.Arg(myIDs)))),
 	}
 
 	smods = append(smods,
@@ -96,12 +96,12 @@ func GetDriversByEventEntry(ctx context.Context, exec bob.Executor, eventIDs []i
 
 	ret := map[int][]*models.CCarDriver{}
 	for i := range res {
-		val, ok := ret[int(res[i].EntryId)]
+		val, ok := ret[int(res[i].EntryID)]
 		if !ok {
 			val = []*models.CCarDriver{}
 		}
 		val = append(val, &res[i].CCarDriver)
-		ret[int(res[i].EntryId)] = val
+		ret[int(res[i].EntryID)] = val
 	}
 	return ret, nil
 }
@@ -110,14 +110,14 @@ func GetDriversByEventEntry(ctx context.Context, exec bob.Executor, eventIDs []i
 func GetDriversByTeam(
 	ctx context.Context,
 	exec bob.Executor,
-	teamIds []int,
+	teamIDs []int,
 ) (
 	map[int][]*models.CCarDriver, error,
 ) {
-	myIds := utils.IntSliceToInt32Slice(teamIds)
+	myIDs := utils.IntSliceToInt32Slice(teamIDs)
 	type myStruct struct {
 		models.CCarDriver
-		TeamId int32 `db:"t_id"`
+		TeamID int32 `db:"t_id"`
 	}
 
 	smods := []bob.Mod[*dialect.SelectQuery]{
@@ -126,7 +126,7 @@ func GetDriversByTeam(
 		sm.OrderBy(models.CCarDrivers.Name).Asc(),
 	}
 	whereMods := []mods.Where[*dialect.SelectQuery]{
-		sm.Where(models.CCarTeamColumns.ID.EQ(psql.F("ANY", expr.Arg(myIds)))),
+		sm.Where(models.CCarTeamColumns.ID.EQ(psql.F("ANY", expr.Arg(myIDs)))),
 	}
 
 	smods = append(smods,
@@ -147,12 +147,12 @@ func GetDriversByTeam(
 
 	ret := map[int][]*models.CCarDriver{}
 	for i := range res {
-		val, ok := ret[int(res[i].TeamId)]
+		val, ok := ret[int(res[i].TeamID)]
 		if !ok {
 			val = []*models.CCarDriver{}
 		}
 		val = append(val, &res[i].CCarDriver)
-		ret[int(res[i].TeamId)] = val
+		ret[int(res[i].TeamID)] = val
 	}
 	return ret, nil
 }

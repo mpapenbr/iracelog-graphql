@@ -20,10 +20,10 @@ func GetTeamsByEventEntry(
 	exec bob.Executor,
 	eventEntryIDs []int,
 ) (map[int]*models.CCarTeam, error) {
-	myIds := utils.IntSliceToInt32Slice(eventEntryIDs)
+	myIDs := utils.IntSliceToInt32Slice(eventEntryIDs)
 	type myStruct struct {
 		models.CCarTeam
-		EntryId int32 `db:"e_id"`
+		EntryID int32 `db:"e_id"`
 	}
 
 	smods := []bob.Mod[*dialect.SelectQuery]{
@@ -31,7 +31,7 @@ func GetTeamsByEventEntry(
 		sm.Columns(models.CCarEntryColumns.ID.As("e_id")),
 	}
 	whereMods := []mods.Where[*dialect.SelectQuery]{
-		sm.Where(models.CCarEntryColumns.ID.EQ(psql.F("ANY", expr.Arg(myIds)))),
+		sm.Where(models.CCarEntryColumns.ID.EQ(psql.F("ANY", expr.Arg(myIDs)))),
 	}
 
 	smods = append(smods,
@@ -49,7 +49,7 @@ func GetTeamsByEventEntry(
 
 	ret := map[int]*models.CCarTeam{}
 	for i := range res {
-		ret[int(res[i].EntryId)] = &res[i].CCarTeam
+		ret[int(res[i].EntryID)] = &res[i].CCarTeam
 	}
 	return ret, nil
 }

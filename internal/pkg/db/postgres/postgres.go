@@ -13,7 +13,7 @@ import (
 	"github.com/mpapenbr/iracelog-graphql/log"
 )
 
-var DbPool *pgxpool.Pool
+var DBPool *pgxpool.Pool
 
 type PoolConfigOption func(cfg *pgxpool.Config)
 
@@ -31,7 +31,7 @@ func NewMyTracer(logger *log.Logger, level log.Level) pgx.QueryTracer {
 	return &myQueryTracer{log: logger, level: level}
 }
 
-func InitWithUrl(url string, opts ...PoolConfigOption) *pgxpool.Pool {
+func InitWithURL(url string, opts ...PoolConfigOption) *pgxpool.Pool {
 	dbConfig, err := pgxpool.ParseConfig(url)
 	if err != nil {
 		log.Fatal("Unable to parse database config", log.ErrorField(err))
@@ -45,22 +45,22 @@ func InitWithUrl(url string, opts ...PoolConfigOption) *pgxpool.Pool {
 		opt(dbConfig)
 	}
 
-	DbPool, err = pgxpool.NewWithConfig(context.Background(), dbConfig)
+	DBPool, err = pgxpool.NewWithConfig(context.Background(), dbConfig)
 	if err != nil {
 		log.Fatal("Unable to create the database pool", log.ErrorField(err))
 	}
-	if err := DbPool.Ping(context.Background()); err != nil {
+	if err := DBPool.Ping(context.Background()); err != nil {
 		log.Fatal("Unable to get a valid database connection", log.ErrorField(err))
 	}
-	return DbPool
+	return DBPool
 }
 
-func InitStdLibWithUrl(url string, opts ...PoolConfigOption) *sql.DB {
-	return stdlib.OpenDBFromPool(InitWithUrl(url, opts...))
+func InitStdLibWithURL(url string, opts ...PoolConfigOption) *sql.DB {
+	return stdlib.OpenDBFromPool(InitWithURL(url, opts...))
 }
 
-func CloseDb() {
-	DbPool.Close()
+func CloseDB() {
+	DBPool.Close()
 }
 
 type myQueryTracer struct {

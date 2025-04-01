@@ -13,9 +13,9 @@ import (
 //nolint:whitespace // editor/linter issue
 func (i *DataLoader) GetEventCars(
 	ctx context.Context,
-	eventId int,
+	eventID int,
 ) ([]*model.Car, []error) {
-	thunk := i.eventCarsLoader.Load(ctx, storage.IntKey(eventId))
+	thunk := i.eventCarsLoader.Load(ctx, storage.IntKey(eventID))
 	result, err := thunk()
 	if err != nil {
 		log.Printf("error loading analysis data: %v", err)
@@ -29,9 +29,9 @@ func (i *DataLoader) GetEventCars(
 //nolint:whitespace // editor/linter issue
 func (i *DataLoader) GetEventEntryCar(
 	ctx context.Context,
-	eventEntryId int,
+	eventEntryID int,
 ) (*model.Car, []error) {
-	thunk := i.eventEntryCarLoader.Load(ctx, storage.IntKey(eventEntryId))
+	thunk := i.eventEntryCarLoader.Load(ctx, storage.IntKey(eventEntryID))
 	result, err := thunk()
 	if err != nil {
 		log.Printf("error loading event car data: %v", err)

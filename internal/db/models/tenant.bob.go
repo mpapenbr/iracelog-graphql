@@ -112,7 +112,7 @@ func buildTenantWhere[Q psql.Filterable](cols tenantColumns) tenantWhere[Q] {
 var TenantErrors = &tenantErrors{
 	ErrUniqueApiKey: &UniqueConstraintError{s: "tenant_api_key_unique"},
 
-	ErrUniqueExternalId: &UniqueConstraintError{s: "tenant_external_id_unique"},
+	ErrUniqueExternalID: &UniqueConstraintError{s: "tenant_external_id_unique"},
 
 	ErrUniqueName: &UniqueConstraintError{s: "tenant_name_unique"},
 }
@@ -120,7 +120,7 @@ var TenantErrors = &tenantErrors{
 type tenantErrors struct {
 	ErrUniqueApiKey *UniqueConstraintError
 
-	ErrUniqueExternalId *UniqueConstraintError
+	ErrUniqueExternalID *UniqueConstraintError
 
 	ErrUniqueName *UniqueConstraintError
 }

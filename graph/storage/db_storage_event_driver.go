@@ -12,17 +12,17 @@ import (
 // contains implementations of storage interface that return a model.EventDriver items
 //
 //nolint:dupl,whitespace // false positive
-func (db *DbStorage) CollectEventDrivers(
+func (db *DBStorage) CollectEventDrivers(
 	ctx context.Context,
-	eventIds dataloader.Keys,
+	eventIDs dataloader.Keys,
 ) map[string][]*model.EventDriver {
-	res, _ := driver.GetEventDrivers(ctx, db.executor, IntKeysToSlice(eventIds))
+	res, _ := driver.GetEventDrivers(ctx, db.executor, IntKeysToSlice(eventIDs))
 	ret := map[string][]*model.EventDriver{}
 	for k, v := range res {
 		key := IntKey(k).String()
 		ed := make([]*model.EventDriver, len(v))
 		for i, d := range v {
-			ed[i] = convertDbCarDriverToModel(d)
+			ed[i] = convertDBCarDriverToModel(d)
 		}
 		ret[key] = ed
 	}
@@ -30,20 +30,20 @@ func (db *DbStorage) CollectEventDrivers(
 }
 
 //nolint:dupl,whitespace // false positive
-func (db *DbStorage) CollectDriversByEventEntry(
+func (db *DBStorage) CollectDriversByEventEntry(
 	ctx context.Context,
-	eventEntryIds dataloader.Keys,
+	eventEntryIDs dataloader.Keys,
 ) map[string][]*model.EventDriver {
 	res, _ := driver.GetDriversByEventEntry(
 		ctx,
 		db.executor,
-		IntKeysToSlice(eventEntryIds))
+		IntKeysToSlice(eventEntryIDs))
 	ret := map[string][]*model.EventDriver{}
 	for k, v := range res {
 		key := IntKey(k).String()
 		ed := make([]*model.EventDriver, len(v))
 		for i, d := range v {
-			ed[i] = convertDbCarDriverToModel(d)
+			ed[i] = convertDBCarDriverToModel(d)
 		}
 		ret[key] = ed
 	}
@@ -51,17 +51,17 @@ func (db *DbStorage) CollectDriversByEventEntry(
 }
 
 //nolint:dupl,whitespace // false positive
-func (db *DbStorage) CollectDriversByTeam(
+func (db *DBStorage) CollectDriversByTeam(
 	ctx context.Context,
-	teamIds dataloader.Keys,
+	teamIDs dataloader.Keys,
 ) map[string][]*model.EventDriver {
-	res, _ := driver.GetDriversByTeam(ctx, db.executor, IntKeysToSlice(teamIds))
+	res, _ := driver.GetDriversByTeam(ctx, db.executor, IntKeysToSlice(teamIDs))
 	ret := map[string][]*model.EventDriver{}
 	for k, v := range res {
 		key := IntKey(k).String()
 		ed := make([]*model.EventDriver, len(v))
 		for i, d := range v {
-			ed[i] = convertDbCarDriverToModel(d)
+			ed[i] = convertDBCarDriverToModel(d)
 		}
 		ret[key] = ed
 	}

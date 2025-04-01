@@ -11,12 +11,12 @@ import (
 // contains implementations of DataLoader struct that return a model.EventEntry items
 //
 //nolint:whitespace // editor/linter issue
-func (i *DataLoader) GetEventEntriesForIds(
+func (i *DataLoader) GetEventEntriesForIDs(
 	ctx context.Context,
 	ids []int,
 ) ([]*model.EventEntry, []error) {
 	eventKeys := storage.NewKeysFromInts(ids)
-	thunkMany := i.eventEntriesByIdsLoader.LoadMany(ctx, eventKeys)
+	thunkMany := i.eventEntriesByIDsLoader.LoadMany(ctx, eventKeys)
 	result, err := thunkMany()
 	if err != nil {
 		return nil, err
@@ -35,9 +35,9 @@ func (i *DataLoader) GetEventEntriesForIds(
 //nolint:whitespace // editor/linter issue
 func (i *DataLoader) GetEventEntries(
 	ctx context.Context,
-	eventId int,
+	eventID int,
 ) ([]*model.EventEntry, []error) {
-	thunk := i.eventEntriesByEventLoader.Load(ctx, storage.IntKey(eventId))
+	thunk := i.eventEntriesByEventLoader.Load(ctx, storage.IntKey(eventID))
 	result, err := thunk()
 	if err != nil {
 		log.Printf("error loading event entry data: %v", err)

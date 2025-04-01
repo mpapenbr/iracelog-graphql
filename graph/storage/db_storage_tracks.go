@@ -13,7 +13,7 @@ import (
 // contains implementations of storage interface that return a model.Track items
 //
 //nolint:whitespace // editor/linter issue
-func (db *DbStorage) GetAllTracks(
+func (db *DBStorage) GetAllTracks(
 	ctx context.Context,
 	limit *int,
 	offset *int,
@@ -24,29 +24,29 @@ func (db *DbStorage) GetAllTracks(
 	dbTrackSortArg := convertTrackSortArgs(sort)
 	tracks, err := tracks.GetAll(
 		db.executor,
-		internal.DbPageable{Limit: limit, Offset: offset, Sort: dbTrackSortArg})
+		internal.DBPageable{Limit: limit, Offset: offset, Sort: dbTrackSortArg})
 	if err == nil {
 		// convert the internal database Track to the GraphQL-Track
 		for _, track := range tracks {
-			result = append(result, convertDbTrackToModel(track))
+			result = append(result, convertDBTrackToModel(track))
 		}
 	}
 	return result, err
 }
 
 //nolint:whitespace // editor/linter issue
-func (db *DbStorage) GetTracksByKeys(
+func (db *DBStorage) GetTracksByKeys(
 	ctx context.Context,
 	ids dataloader.Keys,
 ) map[string]*model.Track {
-	intIds := IntKeysToSlice(ids)
+	intIDs := IntKeysToSlice(ids)
 	result := map[string]*model.Track{}
 
-	tracks, _ := tracks.GetByIds(db.executor, intIds)
+	tracks, _ := tracks.GetByIDs(db.executor, intIDs)
 
 	// convert the internal database Track to the GraphQL-Track
 	for _, track := range tracks {
-		result[IntKey(track.ID).String()] = convertDbTrackToModel(track)
+		result[IntKey(track.ID).String()] = convertDBTrackToModel(track)
 	}
 	return result
 }

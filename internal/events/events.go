@@ -31,11 +31,11 @@ type EventSearchKeys struct {
 }
 
 //nolint:whitespace // editor/linter issue
-func GetALl(exec bob.Executor, tenantId int, pageable internal.DbPageable) (
+func GetALl(exec bob.Executor, tenantID int, pageable internal.DBPageable) (
 	models.EventSlice, error,
 ) {
 	query := models.Events.Query(
-		models.SelectWhere.Events.TenantID.EQ(int32(tenantId)),
+		models.SelectWhere.Events.TenantID.EQ(int32(tenantID)),
 	)
 
 	query.Apply(createPageableMods(pageable)...)
@@ -45,19 +45,19 @@ func GetALl(exec bob.Executor, tenantId int, pageable internal.DbPageable) (
 }
 
 //nolint:whitespace // editor/linter issue
-func GetByIds(exec bob.Executor, tenantId int, ids []int) (
+func GetByIDs(exec bob.Executor, tenantID int, ids []int) (
 	models.EventSlice, error,
 ) {
-	myIds := make([]int32, len(ids))
+	myIDs := make([]int32, len(ids))
 	for i, v := range ids {
-		myIds[i] = int32(v)
+		myIDs[i] = int32(v)
 	}
 	if len(ids) == 0 {
 		return models.EventSlice{}, nil
 	}
 	ret, err := models.Events.Query(
-		models.SelectWhere.Events.ID.In(myIds...),
-		models.SelectWhere.Events.TenantID.EQ(int32(tenantId)),
+		models.SelectWhere.Events.ID.In(myIDs...),
+		models.SelectWhere.Events.TenantID.EQ(int32(tenantID)),
 	).All(context.Background(), exec)
 	return ret, err
 }
@@ -71,22 +71,22 @@ should offset apply only for those tracks having more than offset events?
 consider a track with 2 and another with 10 events and a query with offset 5
 */
 //nolint:whitespace // editor/linter issue
-func GetEventsByTrackIds(
+func GetEventsByTrackIDs(
 	exec bob.Executor,
-	tenantId int,
-	trackIds []int,
-	pageable internal.DbPageable,
+	tenantID int,
+	trackIDs []int,
+	pageable internal.DBPageable,
 ) (map[int][]*models.Event, error) {
-	myIds := make([]int32, len(trackIds))
-	for i, v := range trackIds {
-		myIds[i] = int32(v)
+	myIDs := make([]int32, len(trackIDs))
+	for i, v := range trackIDs {
+		myIDs[i] = int32(v)
 	}
-	if len(myIds) == 0 {
+	if len(myIDs) == 0 {
 		return map[int][]*models.Event{}, nil
 	}
 	query := models.Events.Query(
-		models.SelectWhere.Events.TrackID.In(myIds...),
-		models.SelectWhere.Events.TenantID.EQ(int32(tenantId)),
+		models.SelectWhere.Events.TrackID.In(myIDs...),
+		models.SelectWhere.Events.TenantID.EQ(int32(tenantID)),
 	)
 	query.Apply(createPageableMods(pageable)...)
 	res, err := query.All(context.Background(), exec)
@@ -110,9 +110,9 @@ func GetEventsByTrackIds(
 //nolint:lll,whitespace,funlen // sql readability
 func SimpleEventSearch(
 	exec bob.Executor,
-	tenantId int,
+	tenantID int,
 	searchArg string,
-	pageable internal.DbPageable,
+	pageable internal.DBPageable,
 ) (models.EventSlice, error) {
 	// we keep the original query for reference
 	_ = `
@@ -135,7 +135,7 @@ OR id in (select e.event_id from c_car_entry e join c_car_driver d on d.c_car_en
 	)
 
 	query := models.Events.Query(
-		models.SelectWhere.Events.TenantID.EQ(int32(tenantId)),
+		models.SelectWhere.Events.TenantID.EQ(int32(tenantID)),
 		partMain,
 	)
 	query.Apply(createPageableMods(pageable)...)
@@ -146,12 +146,12 @@ OR id in (select e.event_id from c_car_entry e join c_car_driver d on d.c_car_en
 //nolint:lll,funlen,whitespace // sql readability
 func AdvancedEventSearch(
 	exec bob.Executor,
-	tenantId int,
+	tenantID int,
 	search *EventSearchKeys,
-	pageable internal.DbPageable,
+	pageable internal.DBPageable,
 ) (models.EventSlice, error) {
 	query := models.Events.Query(
-		models.SelectWhere.Events.TenantID.EQ(int32(tenantId)),
+		models.SelectWhere.Events.TenantID.EQ(int32(tenantID)),
 	)
 	query.Apply(createPageableMods(pageable)...)
 
@@ -223,7 +223,7 @@ func modSubQueryTeam(searchArg string) mods.Where[*dialect.SelectQuery] {
 	return w
 }
 
-func createPageableMods(pageable internal.DbPageable) []bob.Mod[*dialect.SelectQuery] {
+func createPageableMods(pageable internal.DBPageable) []bob.Mod[*dialect.SelectQuery] {
 	mods := make([]bob.Mod[*dialect.SelectQuery], 0)
 	if pageable.Limit != nil {
 		mods = append(mods, sm.Limit(*pageable.Limit))

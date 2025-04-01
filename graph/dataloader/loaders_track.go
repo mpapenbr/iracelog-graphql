@@ -28,9 +28,9 @@ func (i *DataLoader) GetTrack(
 //nolint:whitespace // editor/linter issue
 func (i *DataLoader) GetTracks(
 	ctx context.Context,
-	trackIds []int,
+	trackIDs []int,
 ) ([]*model.Track, []error) {
-	trackKeys := storage.NewKeysFromInts(trackIds)
+	trackKeys := storage.NewKeysFromInts(trackIDs)
 	thunkMany := i.trackLoader.LoadMany(ctx, trackKeys)
 	result, err := thunkMany()
 	if err != nil {

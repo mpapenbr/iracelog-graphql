@@ -15,7 +15,7 @@ import (
 // contains implementations of storage interface that return a model.Event items
 //
 //nolint:whitespace // editor/linter issue
-func (db *DbStorage) GetAllEvents(
+func (db *DBStorage) GetAllEvents(
 	ctx context.Context,
 	limit *int,
 	offset *int,
@@ -26,9 +26,9 @@ func (db *DbStorage) GetAllEvents(
 	if tp == nil {
 		return nil, fmt.Errorf("tenant not found in context")
 	}
-	tenantId, _ := tp()
+	tenantID, _ := tp()
 	dbEventSortArg := convertEventSortArgs(sort)
-	events, err := events.GetALl(db.executor, tenantId, internal.DbPageable{
+	events, err := events.GetALl(db.executor, tenantID, internal.DBPageable{
 		Limit:  limit,
 		Offset: offset,
 		Sort:   dbEventSortArg,
@@ -38,14 +38,14 @@ func (db *DbStorage) GetAllEvents(
 		for _, dbEvents := range events {
 			// this would cause assigning the last loop content to all result entries
 
-			result = append(result, convertDbEventToModel(dbEvents))
+			result = append(result, convertDBEventToModel(dbEvents))
 		}
 	}
 	return result, err
 }
 
 //nolint:whitespace // editor/linter issue
-func (db *DbStorage) GetEventsByKeys(
+func (db *DBStorage) GetEventsByKeys(
 	ctx context.Context,
 	ids dataloader.Keys,
 ) map[string]*model.Event {
@@ -53,14 +53,14 @@ func (db *DbStorage) GetEventsByKeys(
 	if tp == nil {
 		return nil
 	}
-	tenantId, _ := tp()
-	intIds := IntKeysToSlice(ids)
+	tenantID, _ := tp()
+	intIDs := IntKeysToSlice(ids)
 	result := map[string]*model.Event{}
-	events, _ := events.GetByIds(db.executor, tenantId, intIds)
+	events, _ := events.GetByIDs(db.executor, tenantID, intIDs)
 	// convert the internal database Track to the GraphQL-Track
 	for _, dbEvents := range events {
 		// this would cause assigning the last loop content to all result entries
-		result[IntKey(dbEvents.ID).String()] = convertDbEventToModel(dbEvents)
+		result[IntKey(dbEvents.ID).String()] = convertDBEventToModel(dbEvents)
 	}
 
 	return result
@@ -69,33 +69,33 @@ func (db *DbStorage) GetEventsByKeys(
 // Note: we use (temporary) a string as key (to reuse existing batcher mechanics)
 //
 //nolint:whitespace // editor/linter issue
-func (db *DbStorage) GetEventsForTrackIdsKeys(
+func (db *DBStorage) GetEventsForTrackIDsKeys(
 	ctx context.Context,
-	trackIds dataloader.Keys,
+	trackIDs dataloader.Keys,
 ) map[string][]*model.Event {
 	tp := tenant.GetFromContext(ctx)
 	if tp == nil {
 		return nil
 	}
-	tenantId, _ := tp()
+	tenantID, _ := tp()
 	result := map[string][]*model.Event{}
 
-	intTrackIds := make([]int, len(trackIds))
-	for i, id := range trackIds {
+	intTrackIDs := make([]int, len(trackIDs))
+	for i, id := range trackIDs {
 		//nolint:errcheck // we know that the conversion works
-		intTrackIds[i] = id.Raw().(int)
+		intTrackIDs[i] = id.Raw().(int)
 	}
-	byTrackId, err := events.GetEventsByTrackIds(
+	byTrackID, err := events.GetEventsByTrackIDs(
 		db.executor,
-		tenantId,
-		intTrackIds,
-		internal.DbPageable{Sort: convertEventSortArgs([]*model.EventSortArg{})})
+		tenantID,
+		intTrackIDs,
+		internal.DBPageable{Sort: convertEventSortArgs([]*model.EventSortArg{})})
 	if err == nil {
 		// convert the internal database Event to the GraphQL-Event
-		for k, event := range byTrackId {
+		for k, event := range byTrackID {
 			convertedEvents := make([]*model.Event, len(event))
 			for i, dbEvent := range event {
-				convertedEvents[i] = convertDbEventToModel(dbEvent)
+				convertedEvents[i] = convertDBEventToModel(dbEvent)
 			}
 			result[fmt.Sprintf("%d", k)] = convertedEvents
 		}

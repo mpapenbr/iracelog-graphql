@@ -27,7 +27,7 @@ type DataLoader struct {
 	driverEventLinkLoader     *dataloader.Loader // deprecated
 	eventsByTrackLoader       *dataloader.Loader // deprecated
 	driversByEventLoader      *dataloader.Loader // deprecated
-	eventEntriesByIdsLoader   *dataloader.Loader
+	eventEntriesByIDsLoader   *dataloader.Loader
 	eventEntriesByEventLoader *dataloader.Loader
 	eventCarsLoader           *dataloader.Loader
 	eventEntryCarLoader       *dataloader.Loader
@@ -69,7 +69,7 @@ func (i *DataLoader) GetDriversTeams(
 // deprecated
 //
 //nolint:all // this is a deprecated function
-func (i *DataLoader) GetEventIdsForTeam(ctx context.Context, team string) []int {
+func (i *DataLoader) GetEventIDsForTeam(ctx context.Context, team string) []int {
 	thunk := i.teamEventLinkLoader.Load(ctx, dataloader.StringKey(team))
 	result, err := thunk()
 	if err != nil {
@@ -82,7 +82,7 @@ func (i *DataLoader) GetEventIdsForTeam(ctx context.Context, team string) []int 
 // deprecated
 //
 //nolint:all // this is a deprecated function
-func (i *DataLoader) GetEventIdsForDriver(ctx context.Context, driver string) []int {
+func (i *DataLoader) GetEventIDsForDriver(ctx context.Context, driver string) []int {
 	thunk := i.driverEventLinkLoader.Load(ctx, dataloader.StringKey(driver))
 	result, err := thunk()
 	if err != nil {
@@ -128,25 +128,25 @@ func NewDataLoader(db storage.Storage) *DataLoader {
 		name: "teamsForDrivers", collector: db.CollectTeamsForDrivers,
 	}
 
-	analysis := &genericMapBatcher[analysis.DbAnalysis]{collector: db.CollectAnalysisData}
+	analysis := &genericMapBatcher[analysis.DBAnalysis]{collector: db.CollectAnalysisData}
 
 	driverEventLink := &genericMapBatcher[[]int]{
-		name: "eventIdsForDriver", collector: db.CollectEventIdsForDrivers,
+		name: "eventIDsForDriver", collector: db.CollectEventIDsForDrivers,
 	}
 	teamEventLink := &genericMapBatcher[[]int]{
-		name: "eventIdsForTeams", collector: db.CollectEventIdsForTeams,
+		name: "eventIDsForTeams", collector: db.CollectEventIDsForTeams,
 	}
 
 	eventsByTrack := &genericMapBatcher[[]*model.Event]{
-		name: "eventsByTrack", collector: db.GetEventsForTrackIdsKeys,
+		name: "eventsByTrack", collector: db.GetEventsForTrackIDsKeys,
 	}
 	driversByEvent := &genericMapBatcher[[]*model.EventDriver]{
 		name: "eventDrivers", collector: db.CollectEventDrivers,
 	}
 
 	// new collectors start here
-	eventEntriesByIds := &genericMapBatcher[*model.EventEntry]{
-		name: "eventEntriesById", collector: db.CollectEventEntriesById,
+	eventEntriesByIDs := &genericMapBatcher[*model.EventEntry]{
+		name: "eventEntriesByID", collector: db.CollectEventEntriesByID,
 	}
 	eventEntriesByEvent := &genericMapBatcher[[]*model.EventEntry]{
 		name: "eventEntries", collector: db.CollectEventEntries,
@@ -177,7 +177,7 @@ func NewDataLoader(db storage.Storage) *DataLoader {
 		driverEventLinkLoader:     dataloader.NewBatchedLoader(driverEventLink.get),
 		eventsByTrackLoader:       dataloader.NewBatchedLoader(eventsByTrack.get),
 		driversByEventLoader:      dataloader.NewBatchedLoader(driversByEvent.get),
-		eventEntriesByIdsLoader:   dataloader.NewBatchedLoader(eventEntriesByIds.get),
+		eventEntriesByIDsLoader:   dataloader.NewBatchedLoader(eventEntriesByIDs.get),
 		eventEntriesByEventLoader: dataloader.NewBatchedLoader(eventEntriesByEvent.get),
 		eventCarsLoader:           dataloader.NewBatchedLoader(eventCars.get),
 		eventEntryCarLoader:       dataloader.NewBatchedLoader(eventEntryCars.get),

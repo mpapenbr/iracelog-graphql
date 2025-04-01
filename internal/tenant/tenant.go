@@ -9,9 +9,9 @@ import (
 	"github.com/mpapenbr/iracelog-graphql/internal/db/models"
 )
 
-func FindByExternalId(exec bob.Executor, externalId uuid.UUID) (*models.Tenant, error) {
+func FindByExternalID(exec bob.Executor, externalID uuid.UUID) (*models.Tenant, error) {
 	ret, err := models.Tenants.Query(
-		models.SelectWhere.Tenants.ExternalID.EQ(externalId),
+		models.SelectWhere.Tenants.ExternalID.EQ(externalID),
 	).One(context.Background(), exec)
 
 	return ret, err

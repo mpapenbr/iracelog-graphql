@@ -21,10 +21,10 @@ func NewKeysFromInts(ints []int) dataloader.Keys {
 }
 
 func IntKeysToSlice(keys dataloader.Keys) []int {
-	intIds := make([]int, len(keys))
+	intIDs := make([]int, len(keys))
 	for i, id := range keys {
 		//nolint:errcheck // by design
-		intIds[i] = id.Raw().(int)
+		intIDs[i] = id.Raw().(int)
 	}
-	return intIds
+	return intIDs
 }

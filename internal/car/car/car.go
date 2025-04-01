@@ -16,16 +16,16 @@ import (
 )
 
 func GetEventCars(exec bob.Executor, eventIDs []int) (map[int][]*models.CCar, error) {
-	myIds := utils.IntSliceToInt32Slice(eventIDs)
+	myIDs := utils.IntSliceToInt32Slice(eventIDs)
 
 	query := models.CCars.Query(
-		// Note: we use any(myIds) instead of In(myIds...) here
+		// Note: we use any(myIDs) instead of In(myIDs...) here
 		// in Postgres the IN operator is limited to 32k elements
 		// even if we probably never reach that limit, it's better to be safe
-		// otherwise we could use models.SelectWhere.CCars.EventID.In(myIds...),
+		// otherwise we could use models.SelectWhere.CCars.EventID.In(myIDs...),
 		// bonus: for IN we have to check for empty ids, with any we don't
 		// bonus: we learn how to code this with bob ;)
-		sm.Where(models.CCarColumns.EventID.EQ(psql.F("ANY", expr.Arg(myIds)))),
+		sm.Where(models.CCarColumns.EventID.EQ(psql.F("ANY", expr.Arg(myIDs)))),
 		sm.OrderBy(models.CCarColumns.Name),
 	)
 
@@ -55,10 +55,10 @@ func GetEventEntryCars(
 	exec bob.Executor,
 	eventEntryIDs []int,
 ) (map[int]*models.CCar, error) {
-	myIds := utils.IntSliceToInt32Slice(eventEntryIDs)
+	myIDs := utils.IntSliceToInt32Slice(eventEntryIDs)
 	type myStruct struct {
 		models.CCar
-		EntryId int32 `db:"e_id"`
+		EntryID int32 `db:"e_id"`
 	}
 
 	smods := []bob.Mod[*dialect.SelectQuery]{
@@ -66,7 +66,7 @@ func GetEventEntryCars(
 		sm.Columns(models.CCarEntryColumns.ID.As("e_id")),
 	}
 	whereMods := []mods.Where[*dialect.SelectQuery]{
-		sm.Where(models.CCarEntryColumns.ID.EQ(psql.F("ANY", expr.Arg(myIds)))),
+		sm.Where(models.CCarEntryColumns.ID.EQ(psql.F("ANY", expr.Arg(myIDs)))),
 	}
 
 	smods = append(smods,
@@ -85,7 +85,7 @@ func GetEventEntryCars(
 
 	ret := map[int]*models.CCar{}
 	for i := range res {
-		ret[int(res[i].EntryId)] = &res[i].CCar
+		ret[int(res[i].EntryID)] = &res[i].CCar
 	}
 	return ret, nil
 }

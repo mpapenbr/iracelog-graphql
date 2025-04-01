@@ -15,16 +15,16 @@ import (
 // the resulting map key is built by Key.String()
 
 type Storage interface {
-	ResolveTenant(ctx context.Context, externalId string) (int, error)
+	ResolveTenant(ctx context.Context, externalID string) (int, error)
 	// GetTracks expects keys of type IntKey. IntKey.String() is used as map key
 	GetTracksByKeys(ctx context.Context, keys dataloader.Keys) map[string]*model.Track
 	// GetEvents expects keys of type IntKey. IntKey.String() is used as map key
 	GetEventsByKeys(ctx context.Context, keys dataloader.Keys) map[string]*model.Event
 
-	// trackIds contains IntKey instances.
-	GetEventsForTrackIdsKeys(
+	// trackIDs contains IntKey instances.
+	GetEventsForTrackIDsKeys(
 		ctx context.Context,
-		trackIds dataloader.Keys) map[string][]*model.Event
+		trackIDs dataloader.Keys) map[string][]*model.Event
 
 	// GetAllTracks lists all Tracks in the database
 	GetAllTracks(
@@ -68,54 +68,54 @@ type Storage interface {
 		ctx context.Context,
 		drivers dataloader.Keys) map[string][]*model.Team
 
-	// collect the analysis data for a number of eventIds
+	// collect the analysis data for a number of eventIDs
 	CollectAnalysisData(
 		ctx context.Context,
-		eventIds dataloader.Keys) map[string]analysis.DbAnalysis
+		eventIDs dataloader.Keys) map[string]analysis.DBAnalysis
 
-	CollectEventIdsForTeams(
+	CollectEventIDsForTeams(
 		ctx context.Context,
 		teams dataloader.Keys) map[string][]int
-	CollectEventIdsForDrivers(
+	CollectEventIDsForDrivers(
 		ctx context.Context,
 		drivers dataloader.Keys) map[string][]int
 
-	// collect the drivers for a number of eventIds
+	// collect the drivers for a number of eventIDs
 	CollectEventDrivers(
 		ctx context.Context,
-		eventIds dataloader.Keys) map[string][]*model.EventDriver
+		eventIDs dataloader.Keys) map[string][]*model.EventDriver
 
 	// search team by name
 	SearchTeams(ctx context.Context, arg string) []*model.Team
 
 	// new collectors start here
-	// collect the event entries for a number of eventIds
+	// collect the event entries for a number of eventIDs
 	CollectEventEntries(
 		ctx context.Context,
-		eventIds dataloader.Keys) map[string][]*model.EventEntry
+		eventIDs dataloader.Keys) map[string][]*model.EventEntry
 	// collect the event entries for selected ids
-	CollectEventEntriesById(
+	CollectEventEntriesByID(
 		ctx context.Context,
 		ids dataloader.Keys) map[string]*model.EventEntry
-	// collect the cars for a number of eventIds
+	// collect the cars for a number of eventIDs
 	CollectEventCars(
 		ctx context.Context,
-		eventIds dataloader.Keys) map[string][]*model.Car
+		eventIDs dataloader.Keys) map[string][]*model.Car
 
-	// collect the cars for a number of eventEntryIds
+	// collect the cars for a number of eventEntryIDs
 	CollectCarsByEventEntry(
 		ctx context.Context,
-		eventEntryIds dataloader.Keys) map[string]*model.Car
-	// collect the teams for a number of eventEntryIds
+		eventEntryIDs dataloader.Keys) map[string]*model.Car
+	// collect the teams for a number of eventEntryIDs
 	CollectTeamByEventEntry(
 		ctx context.Context,
-		eventEntryIds dataloader.Keys) map[string]*model.EventTeam
-	// collect the event drivers for a number of eventEntryIds
+		eventEntryIDs dataloader.Keys) map[string]*model.EventTeam
+	// collect the event drivers for a number of eventEntryIDs
 	CollectDriversByEventEntry(
 		ctx context.Context,
-		eventEntryIds dataloader.Keys) map[string][]*model.EventDriver
-	// collect the event drivers for a number of eventEntryIds
+		eventEntryIDs dataloader.Keys) map[string][]*model.EventDriver
+	// collect the event drivers for a number of eventEntryIDs
 	CollectDriversByTeam(
 		ctx context.Context,
-		teamIds dataloader.Keys) map[string][]*model.EventDriver
+		teamIDs dataloader.Keys) map[string][]*model.EventDriver
 }

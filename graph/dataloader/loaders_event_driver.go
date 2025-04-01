@@ -13,9 +13,9 @@ import (
 //nolint:whitespace // editor/linter issue
 func (i *DataLoader) GetEventDrivers(
 	ctx context.Context,
-	eventId int,
+	eventID int,
 ) ([]*model.EventDriver, []error) {
-	thunk := i.driversByEventLoader.Load(ctx, storage.IntKey(eventId))
+	thunk := i.driversByEventLoader.Load(ctx, storage.IntKey(eventID))
 	result, err := thunk()
 	if err != nil {
 		log.Printf("error loading event driver data: %v", err)
@@ -29,9 +29,9 @@ func (i *DataLoader) GetEventDrivers(
 //nolint:whitespace // editor/linter issue
 func (i *DataLoader) CollectDriversByEventEntry(
 	ctx context.Context,
-	eventId int,
+	eventID int,
 ) ([]*model.EventDriver, []error) {
-	thunk := i.driversByEventEntryLoader.Load(ctx, storage.IntKey(eventId))
+	thunk := i.driversByEventEntryLoader.Load(ctx, storage.IntKey(eventID))
 	result, err := thunk()
 	if err != nil {
 		log.Printf("error loading event driver data: %v", err)
@@ -45,9 +45,9 @@ func (i *DataLoader) CollectDriversByEventEntry(
 //nolint:whitespace // editor/linter issue
 func (i *DataLoader) CollectDriversByTeam(
 	ctx context.Context,
-	teamId int,
+	teamID int,
 ) ([]*model.EventDriver, []error) {
-	thunk := i.driversByTeamLoader.Load(ctx, storage.IntKey(teamId))
+	thunk := i.driversByTeamLoader.Load(ctx, storage.IntKey(teamID))
 	result, err := thunk()
 	if err != nil {
 		log.Printf("error loading event driver data: %v", err)

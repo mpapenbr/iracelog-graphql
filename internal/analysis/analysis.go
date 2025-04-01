@@ -22,9 +22,9 @@ type CarInfo struct {
 		DriverName string `json:"driverName"`
 	}
 }
-type DbAnalysis struct {
+type DBAnalysis struct {
 	ID      int `json:"id"`
-	EventId int `json:"eventId"`
+	EventID int `json:"eventID"`
 	// TODO: Cars
 	CarInfo []CarInfo
 	CarLaps []struct {
@@ -37,7 +37,7 @@ type DbAnalysis struct {
 	RaceOrder []string // last computed race order (contain carNums)
 }
 
-type DbTeamInEvent struct {
+type DBTeamInEvent struct {
 	Name     string `json:"name"`
 	CarNum   string `json:"carNum"`
 	CarClass string `json:"carClass"`
@@ -46,30 +46,30 @@ type DbTeamInEvent struct {
 	}
 }
 
-func GetAnalysisForEvent(pool *pgxpool.Pool, eventId int) (*DbAnalysis, error) {
-	var data DbAnalysis
-	pool.QueryRow(context.Background(), "select id,data from analysis where event_id=$1", eventId).Scan(&data.ID, &data)
+func GetAnalysisForEvent(pool *pgxpool.Pool, eventID int) (*DBAnalysis, error) {
+	var data DBAnalysis
+	pool.QueryRow(context.Background(), "select id,data from analysis where event_id=$1", eventID).Scan(&data.ID, &data)
 	return &data, nil
 }
 
-func GetAnalysisForEvents(pool *pgxpool.Pool, eventIds []int) ([]DbAnalysis, error) {
-	rows, err := pool.Query(context.Background(), "select id,event_id,data->'carInfo' from analysis where event_id=any($1)", eventIds)
+func GetAnalysisForEvents(pool *pgxpool.Pool, eventIDs []int) ([]DBAnalysis, error) {
+	rows, err := pool.Query(context.Background(), "select id,event_id,data->'carInfo' from analysis where event_id=any($1)", eventIDs)
 	if err != nil {
 		log.Printf("error reading analysis: %v", err)
-		return []DbAnalysis{}, err
+		return []DBAnalysis{}, err
 	}
 	defer rows.Close()
-	ret := []DbAnalysis{}
+	ret := []DBAnalysis{}
 
 	for rows.Next() {
-		var dba DbAnalysis
-		err = rows.Scan(&dba.ID, &dba.EventId, &dba.CarInfo)
+		var dba DBAnalysis
+		err = rows.Scan(&dba.ID, &dba.EventID, &dba.CarInfo)
 		ret = append(ret, dba)
 	}
 	return ret, err
 }
 
-func SearchTeams(pool *pgxpool.Pool, arg string) ([]DbTeamSummary, error) {
+func SearchTeams(pool *pgxpool.Pool, arg string) ([]DBTeamSummary, error) {
 	rows, err := pool.Query(context.Background(), fmt.Sprintf(
 		`select s.event_id,tInfo->>'name' as teamName, tInfo from 
 	(select
@@ -82,26 +82,26 @@ func SearchTeams(pool *pgxpool.Pool, arg string) ([]DbTeamSummary, error) {
 	`, arg, arg))
 	if err != nil {
 		log.Printf("error reading analysis: %v", err)
-		return []DbTeamSummary{}, err
+		return []DBTeamSummary{}, err
 	}
 	defer rows.Close()
-	lookup := map[string]DbTeamSummary{}
+	lookup := map[string]DBTeamSummary{}
 
 	for rows.Next() {
 		var dName string
 		var carInfo CarInfo
-		var eventId int
-		err = rows.Scan(&eventId, &dName, &carInfo)
+		var eventID int
+		err = rows.Scan(&eventID, &dName, &carInfo)
 		if err != nil {
 			log.Printf("Error scaning result: %v\n", err)
 		}
 		val, ok := lookup[dName]
 		if !ok {
-			val = DbTeamSummary{Name: dName}
+			val = DBTeamSummary{Name: dName}
 		}
 		val.CarNum = append(val.CarNum, carInfo.CarNum)
 		val.CarClass = append(val.CarClass, carInfo.CarClass)
-		val.EventIds = append(val.EventIds, eventId)
+		val.EventIDs = append(val.EventIDs, eventID)
 		for _, d := range carInfo.Drivers {
 			val.Drivers = append(val.Drivers, d.DriverName)
 		}
@@ -110,7 +110,7 @@ func SearchTeams(pool *pgxpool.Pool, arg string) ([]DbTeamSummary, error) {
 	}
 
 	for k, v := range lookup {
-		v.EventIds = unique(v.EventIds)
+		v.EventIDs = unique(v.EventIDs)
 		v.Drivers = unique(v.Drivers)
 		v.CarNum = unique(v.CarNum)
 		v.CarClass = unique(v.CarClass)
@@ -124,7 +124,7 @@ func SearchTeams(pool *pgxpool.Pool, arg string) ([]DbTeamSummary, error) {
 		keys = append(keys, k)
 	}
 	sort.Strings(keys)
-	ret := make([]DbTeamSummary, len(keys))
+	ret := make([]DBTeamSummary, len(keys))
 	for i, v := range keys {
 		ret[i] = lookup[v]
 	}

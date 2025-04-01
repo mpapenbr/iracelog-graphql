@@ -12,16 +12,16 @@ import (
 // contains implementations of storage interface that return a model.EventTeam items
 //
 //nolint:whitespace // editor/linter issue
-func (db *DbStorage) CollectTeamByEventEntry(
+func (db *DBStorage) CollectTeamByEventEntry(
 	ctx context.Context,
-	eventEntryIds dataloader.Keys,
+	eventEntryIDs dataloader.Keys,
 ) map[string]*model.EventTeam {
-	res, _ := team.GetTeamsByEventEntry(db.executor, IntKeysToSlice(eventEntryIds))
+	res, _ := team.GetTeamsByEventEntry(db.executor, IntKeysToSlice(eventEntryIDs))
 	ret := map[string]*model.EventTeam{}
 	for k, d := range res {
 		key := IntKey(k).String()
 
-		ed := convertDbCarTeamToModel(d)
+		ed := convertDBCarTeamToModel(d)
 
 		ret[key] = ed
 	}

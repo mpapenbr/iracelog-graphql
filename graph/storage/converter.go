@@ -80,25 +80,25 @@ func convertTrackSortArgs(modelArgs []*model.TrackSortArg) *clause.OrderBy {
 	return &ret
 }
 
-func convertDbEventToModel(dbEvent *models.Event) *model.Event {
+func convertDBEventToModel(dbEvent *models.Event) *model.Event {
 	return &model.Event{
 		ID:                int(dbEvent.ID),
 		Name:              dbEvent.Name,
 		Description:       dbEvent.Description.GetOr(""),
 		Key:               dbEvent.EventKey,
-		TrackId:           int(dbEvent.TrackID),
+		TrackID:           int(dbEvent.TrackID),
 		RecordDate:        dbEvent.EventTime,
 		RaceloggerVersion: dbEvent.RaceloggerVersion,
 		TeamRacing:        dbEvent.TeamRacing,
 		MultiClass:        dbEvent.MultiClass,
-		IracingSessionId:  int(dbEvent.IrSubSessionID),
+		IracingSessionID:  int(dbEvent.IrSubSessionID),
 		NumCarClasses:     int(dbEvent.NumCarClasses),
 		NumCarTypes:       int(dbEvent.NumCarTypes),
 	}
 }
 
 //nolint:errcheck // by design
-func convertDbTrackToModel(dbTrack *models.Track) *model.Track {
+func convertDBTrackToModel(dbTrack *models.Track) *model.Track {
 	return &model.Track{
 		ID:            int(dbTrack.ID),
 		Name:          dbTrack.Name,
@@ -111,7 +111,7 @@ func convertDbTrackToModel(dbTrack *models.Track) *model.Track {
 	}
 }
 
-func convertDbCarToModel(d *models.CCar) *model.Car {
+func convertDBCarToModel(d *models.CCar) *model.Car {
 	return &model.Car{
 		ID:            int(d.ID),
 		Name:          d.Name,
@@ -124,7 +124,7 @@ func convertDbCarToModel(d *models.CCar) *model.Car {
 	}
 }
 
-func convertDbEventEntryToModel(d *models.CCarEntry) *model.EventEntry {
+func convertDBEventEntryToModel(d *models.CCarEntry) *model.EventEntry {
 	return &model.EventEntry{
 		ID:        int(d.ID),
 		CarNum:    &d.CarNumber,
@@ -132,7 +132,7 @@ func convertDbEventEntryToModel(d *models.CCarEntry) *model.EventEntry {
 	}
 }
 
-func convertDbCarTeamToModel(d *models.CCarTeam) *model.EventTeam {
+func convertDBCarTeamToModel(d *models.CCarTeam) *model.EventTeam {
 	return &model.EventTeam{
 		ID:     int(d.ID),
 		Name:   d.Name,
@@ -140,7 +140,7 @@ func convertDbCarTeamToModel(d *models.CCarTeam) *model.EventTeam {
 	}
 }
 
-func convertDbCarDriverToModel(d *models.CCarDriver) *model.EventDriver {
+func convertDBCarDriverToModel(d *models.CCarDriver) *model.EventDriver {
 	return &model.EventDriver{
 		ID:              int(d.ID),
 		Name:            d.Name,
