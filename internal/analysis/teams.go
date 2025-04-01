@@ -12,18 +12,18 @@ import (
 	"golang.org/x/exp/slices"
 )
 
-type DbTeamSummary struct {
+type DBTeamSummary struct {
 	Name     string   `json:"name"`
 	CarNum   []string `json:"carNum"`
 	CarClass []string `json:"carClass"`
 	Drivers  []string `json:"drivers"`
-	EventIds []int    `json:"eventId"`
+	EventIDs []int    `json:"eventID"`
 }
 
 /*
 teams contains the exact team names for which the drivers should be collected.
 */
-func SearchTeamsForDrivers(pool *pgxpool.Pool, drivers []string) (map[string][]DbTeamSummary, error) {
+func SearchTeamsForDrivers(pool *pgxpool.Pool, drivers []string) (map[string][]DBTeamSummary, error) {
 	work := make([]string, len(drivers))
 	for i, t := range drivers {
 		work[i] = fmt.Sprintf("('%s')", t)
@@ -42,35 +42,35 @@ func SearchTeamsForDrivers(pool *pgxpool.Pool, drivers []string) (map[string][]D
 	`, strings.Join(work, ",")))
 	if err != nil {
 		log.Printf("error reading analysis: %v", err)
-		return map[string][]DbTeamSummary{}, err
+		return map[string][]DBTeamSummary{}, err
 	}
 	defer rows.Close()
-	teamLookup := map[string]DbTeamSummary{}
-	driverLookup := map[string][]DbTeamSummary{}
+	teamLookup := map[string]DBTeamSummary{}
+	driverLookup := map[string][]DBTeamSummary{}
 
 	for rows.Next() {
 		var driverName string
 		var carInfo CarInfo
-		var eventId int
-		err = rows.Scan(&eventId, &driverName, &carInfo)
+		var eventID int
+		err = rows.Scan(&eventID, &driverName, &carInfo)
 		if err != nil {
 			log.Printf("Error scaning result: %v\n", err)
 		}
 		driverEntry, ok := driverLookup[driverName]
 		if !ok {
-			driverEntry = []DbTeamSummary{}
+			driverEntry = []DBTeamSummary{}
 			driverLookup[driverName] = driverEntry
 		}
 		teamEntry, ok := teamLookup[carInfo.Name]
 		if !ok {
-			teamEntry = DbTeamSummary{Name: carInfo.Name}
+			teamEntry = DBTeamSummary{Name: carInfo.Name}
 			// driverEntry = append(driverEntry, teamEntry)
 			// driverLookup[driverName] = driverEntry
 		}
 
 		teamEntry.CarNum = append(teamEntry.CarNum, carInfo.CarNum)
 		teamEntry.CarClass = append(teamEntry.CarClass, carInfo.CarClass)
-		teamEntry.EventIds = append(teamEntry.EventIds, eventId)
+		teamEntry.EventIDs = append(teamEntry.EventIDs, eventID)
 		teamEntry.Drivers = append(teamEntry.Drivers, driverName)
 
 		teamLookup[carInfo.Name] = teamEntry
@@ -78,7 +78,7 @@ func SearchTeamsForDrivers(pool *pgxpool.Pool, drivers []string) (map[string][]D
 	}
 
 	for k, v := range teamLookup {
-		v.EventIds = unique(v.EventIds)
+		v.EventIDs = unique(v.EventIDs)
 
 		v.CarNum = unique(v.CarNum)
 		v.CarClass = unique(v.CarClass)
@@ -107,7 +107,7 @@ func SearchTeamsForDrivers(pool *pgxpool.Pool, drivers []string) (map[string][]D
 	return driverLookup, nil
 }
 
-func CollectEventIdsForTeams(pool *pgxpool.Pool, teamNames []string) (map[string][]int, error) {
+func CollectEventIDsForTeams(pool *pgxpool.Pool, teamNames []string) (map[string][]int, error) {
 	work := make([]string, len(teamNames))
 	for i, t := range teamNames {
 		work[i] = fmt.Sprintf("('%s')", t)
@@ -125,14 +125,14 @@ func CollectEventIdsForTeams(pool *pgxpool.Pool, teamNames []string) (map[string
 
 	ret := map[string][]int{}
 	for rows.Next() {
-		var eventId int
+		var eventID int
 		var team string
-		err = rows.Scan(&eventId, &team)
+		err = rows.Scan(&eventID, &team)
 		v, ok := ret[team]
 		if !ok {
 			v = []int{}
 		}
-		v = append(v, eventId)
+		v = append(v, eventID)
 		ret[team] = v
 	}
 	return ret, nil

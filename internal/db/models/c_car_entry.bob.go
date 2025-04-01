@@ -27,7 +27,7 @@ type CCarEntry struct {
 	ID           int32  `db:"id,pk" `
 	EventID      int32  `db:"event_id" `
 	CCarID       int32  `db:"c_car_id" `
-	CarIdx       int32  `db:"car_idx" `
+	CarIDx       int32  `db:"car_idx" `
 	CarNumber    string `db:"car_number" `
 	CarNumberRaw int32  `db:"car_number_raw" `
 
@@ -56,7 +56,7 @@ type cCarEntryColumnNames struct {
 	ID           string
 	EventID      string
 	CCarID       string
-	CarIdx       string
+	CarIDx       string
 	CarNumber    string
 	CarNumberRaw string
 }
@@ -68,7 +68,7 @@ type cCarEntryColumns struct {
 	ID           psql.Expression
 	EventID      psql.Expression
 	CCarID       psql.Expression
-	CarIdx       psql.Expression
+	CarIDx       psql.Expression
 	CarNumber    psql.Expression
 	CarNumberRaw psql.Expression
 }
@@ -87,7 +87,7 @@ func buildCCarEntryColumns(alias string) cCarEntryColumns {
 		ID:           psql.Quote(alias, "id"),
 		EventID:      psql.Quote(alias, "event_id"),
 		CCarID:       psql.Quote(alias, "c_car_id"),
-		CarIdx:       psql.Quote(alias, "car_idx"),
+		CarIDx:       psql.Quote(alias, "car_idx"),
 		CarNumber:    psql.Quote(alias, "car_number"),
 		CarNumberRaw: psql.Quote(alias, "car_number_raw"),
 	}
@@ -97,7 +97,7 @@ type cCarEntryWhere[Q psql.Filterable] struct {
 	ID           psql.WhereMod[Q, int32]
 	EventID      psql.WhereMod[Q, int32]
 	CCarID       psql.WhereMod[Q, int32]
-	CarIdx       psql.WhereMod[Q, int32]
+	CarIDx       psql.WhereMod[Q, int32]
 	CarNumber    psql.WhereMod[Q, string]
 	CarNumberRaw psql.WhereMod[Q, int32]
 }
@@ -111,7 +111,7 @@ func buildCCarEntryWhere[Q psql.Filterable](cols cCarEntryColumns) cCarEntryWher
 		ID:           psql.Where[Q, int32](cols.ID),
 		EventID:      psql.Where[Q, int32](cols.EventID),
 		CCarID:       psql.Where[Q, int32](cols.CCarID),
-		CarIdx:       psql.Where[Q, int32](cols.CarIdx),
+		CarIDx:       psql.Where[Q, int32](cols.CarIDx),
 		CarNumber:    psql.Where[Q, string](cols.CarNumber),
 		CarNumberRaw: psql.Where[Q, int32](cols.CarNumberRaw),
 	}
@@ -124,7 +124,7 @@ type CCarEntrySetter struct {
 	ID           omit.Val[int32]  `db:"id,pk" `
 	EventID      omit.Val[int32]  `db:"event_id" `
 	CCarID       omit.Val[int32]  `db:"c_car_id" `
-	CarIdx       omit.Val[int32]  `db:"car_idx" `
+	CarIDx       omit.Val[int32]  `db:"car_idx" `
 	CarNumber    omit.Val[string] `db:"car_number" `
 	CarNumberRaw omit.Val[int32]  `db:"car_number_raw" `
 }
@@ -143,7 +143,7 @@ func (s CCarEntrySetter) SetColumns() []string {
 		vals = append(vals, "c_car_id")
 	}
 
-	if !s.CarIdx.IsUnset() {
+	if !s.CarIDx.IsUnset() {
 		vals = append(vals, "car_idx")
 	}
 
@@ -168,8 +168,8 @@ func (s CCarEntrySetter) Overwrite(t *CCarEntry) {
 	if !s.CCarID.IsUnset() {
 		t.CCarID, _ = s.CCarID.Get()
 	}
-	if !s.CarIdx.IsUnset() {
-		t.CarIdx, _ = s.CarIdx.Get()
+	if !s.CarIDx.IsUnset() {
+		t.CarIDx, _ = s.CarIDx.Get()
 	}
 	if !s.CarNumber.IsUnset() {
 		t.CarNumber, _ = s.CarNumber.Get()
@@ -204,10 +204,10 @@ func (s *CCarEntrySetter) Apply(q *dialect.InsertQuery) {
 			vals[2] = psql.Arg(s.CCarID)
 		}
 
-		if s.CarIdx.IsUnset() {
+		if s.CarIDx.IsUnset() {
 			vals[3] = psql.Raw("DEFAULT")
 		} else {
-			vals[3] = psql.Arg(s.CarIdx)
+			vals[3] = psql.Arg(s.CarIDx)
 		}
 
 		if s.CarNumber.IsUnset() {
@@ -254,10 +254,10 @@ func (s CCarEntrySetter) Expressions(prefix ...string) []bob.Expression {
 		}})
 	}
 
-	if !s.CarIdx.IsUnset() {
+	if !s.CarIDx.IsUnset() {
 		exprs = append(exprs, expr.Join{Sep: " = ", Exprs: []bob.Expression{
 			psql.Quote(append(prefix, "car_idx")...),
-			psql.Arg(s.CarIdx),
+			psql.Arg(s.CarIDx),
 		}})
 	}
 

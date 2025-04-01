@@ -18,7 +18,7 @@ type Sector struct {
 }
 
 //nolint:whitespace // editor/linter issue
-func GetAll(exec bob.Executor, pageable internal.DbPageable) (
+func GetAll(exec bob.Executor, pageable internal.DBPageable) (
 	models.TrackSlice, error,
 ) {
 	query := models.Tracks.Query()
@@ -42,16 +42,16 @@ func GetAll(exec bob.Executor, pageable internal.DbPageable) (
 	return ret, err
 }
 
-func GetByIds(exec bob.Executor, ids []int) (models.TrackSlice, error) {
-	myIds := make([]int32, len(ids))
+func GetByIDs(exec bob.Executor, ids []int) (models.TrackSlice, error) {
+	myIDs := make([]int32, len(ids))
 	for i, v := range ids {
-		myIds[i] = int32(v)
+		myIDs[i] = int32(v)
 	}
 	if len(ids) == 0 {
 		return models.TrackSlice{}, nil
 	}
 	ret, err := models.Tracks.Query(
-		models.SelectWhere.Tracks.ID.In(myIds...),
+		models.SelectWhere.Tracks.ID.In(myIDs...),
 	).All(context.Background(), exec)
 
 	return ret, err

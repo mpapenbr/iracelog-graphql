@@ -78,7 +78,7 @@ type ComplexityRoot struct {
 		Entries           func(childComplexity int) int
 		EventDate         func(childComplexity int) int
 		ID                func(childComplexity int) int
-		IracingSessionId  func(childComplexity int) int
+		IracingSessionID  func(childComplexity int) int
 		Key               func(childComplexity int) int
 		MultiClass        func(childComplexity int) int
 		Name              func(childComplexity int) int
@@ -353,11 +353,11 @@ func (e *executableSchema) Complexity(typeName, field string, childComplexity in
 		return e.complexity.Event.ID(childComplexity), true
 
 	case "Event.iRacingSessionId":
-		if e.complexity.Event.IracingSessionId == nil {
+		if e.complexity.Event.IracingSessionID == nil {
 			break
 		}
 
-		return e.complexity.Event.IracingSessionId(childComplexity), true
+		return e.complexity.Event.IracingSessionID(childComplexity), true
 
 	case "Event.key":
 		if e.complexity.Event.Key == nil {
@@ -2836,7 +2836,7 @@ func (ec *executionContext) _Event_iRacingSessionId(ctx context.Context, field g
 	}()
 	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (any, error) {
 		ctx = rctx // use context from middleware stack in children
-		return obj.IracingSessionId, nil
+		return obj.IracingSessionID, nil
 	})
 	if err != nil {
 		ec.Error(ctx, err)

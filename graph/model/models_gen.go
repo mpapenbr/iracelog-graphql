@@ -12,7 +12,7 @@ type Car struct {
 	ID        int    `json:"id"`
 	Name      string `json:"name"`
 	NameShort string `json:"nameShort"`
-	CarID     int    `json:"carId"`
+	CarID     int    `json:"carID"`
 	// fuel capacity in percent
 	FuelPct float64 `json:"fuelPct"`
 	// engine power adjustment percent
@@ -41,7 +41,7 @@ type Driver struct {
 type EventDriver struct {
 	ID              int     `json:"id"`
 	Name            string  `json:"name"`
-	DriverID        int     `json:"driverId"`
+	DriverID        int     `json:"driverID"`
 	Initials        *string `json:"initials,omitempty"`
 	AbbrevName      *string `json:"abbrevName,omitempty"`
 	IRating         *int    `json:"iRating,omitempty"`
@@ -73,7 +73,7 @@ type EventSortArg struct {
 type EventTeam struct {
 	ID      int            `json:"id"`
 	Name    string         `json:"name"`
-	TeamID  int            `json:"teamId"`
+	TeamID  int            `json:"teamID"`
 	Drivers []*EventDriver `json:"drivers"`
 }
 

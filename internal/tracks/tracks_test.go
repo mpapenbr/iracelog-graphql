@@ -36,24 +36,24 @@ func extractAndSortCheckData(dbData models.TrackSlice) []checkData {
 	return ret
 }
 
-// we need pointer to ints some DbPageable parameter. Can't do that inside struct as &1
+// we need pointer to ints some DBPageable parameter. Can't do that inside struct as &1
 func intHelper(i int) *int {
 	return &i
 }
 
 func TestGetALl(t *testing.T) {
-	db := bob.NewDB(tcpg.SetupStdlibDb())
+	db := bob.NewDB(tcpg.SetupStdlibDB())
 
 	type sortCol struct {
 		col psql.Expression
 		dir string
 	}
 	type args struct {
-		pageable internal.DbPageable
+		pageable internal.DBPageable
 		sortCols []sortCol
 	}
 
-	// composeOrderBy := func(sortOld []internal.DbSortArg) *clause.OrderBy {
+	// composeOrderBy := func(sortOld []internal.DBSortArg) *clause.OrderBy {
 
 	tests := []struct {
 		name    string
@@ -67,7 +67,7 @@ func TestGetALl(t *testing.T) {
 		{
 			name: "2 results, displayShort asc",
 			args: args{
-				pageable: internal.DbPageable{Limit: intHelper(2)},
+				pageable: internal.DBPageable{Limit: intHelper(2)},
 				sortCols: []sortCol{{models.TrackColumns.ShortName, "asc"}},
 			},
 			want: []checkData{
@@ -79,7 +79,7 @@ func TestGetALl(t *testing.T) {
 		{
 			name: "2 results, trackLength desc",
 			args: args{
-				pageable: internal.DbPageable{Limit: intHelper(2)},
+				pageable: internal.DBPageable{Limit: intHelper(2)},
 				sortCols: []sortCol{
 					{models.TrackColumns.TrackLength, "desc"},
 					{models.TrackColumns.ID, "desc"}, // we have 3 Spa entries...,
@@ -94,7 +94,7 @@ func TestGetALl(t *testing.T) {
 		{
 			name: "2 results, trackLength, default sorting (asc)",
 			args: args{
-				pageable: internal.DbPageable{Limit: intHelper(2)},
+				pageable: internal.DBPageable{Limit: intHelper(2)},
 				sortCols: []sortCol{{models.TrackColumns.TrackLength, ""}},
 			},
 			want: []checkData{
@@ -106,7 +106,7 @@ func TestGetALl(t *testing.T) {
 		{
 			name: "2 results, numSectors desc",
 			args: args{
-				pageable: internal.DbPageable{Limit: intHelper(2)},
+				pageable: internal.DBPageable{Limit: intHelper(2)},
 				sortCols: []sortCol{
 					{
 						dialect.NewExpression(
@@ -151,8 +151,8 @@ func TestGetALl(t *testing.T) {
 	}
 }
 
-func TestGetByIds(t *testing.T) {
-	db := tcpg.SetupStdlibDb()
+func TestGetByIDs(t *testing.T) {
+	db := tcpg.SetupStdlibDB()
 
 	type args struct {
 		ids []int
@@ -187,14 +187,14 @@ func TestGetByIds(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			got, err := GetByIds(bob.NewDB(db), tt.args.ids)
+			got, err := GetByIDs(bob.NewDB(db), tt.args.ids)
 			if (err != nil) != tt.wantErr {
-				t.Errorf("GetByIds() error = %v, wantErr %v", err, tt.wantErr)
+				t.Errorf("GetByIDs() error = %v, wantErr %v", err, tt.wantErr)
 				return
 			}
 			check := extractAndSortCheckData(got)
 			if !reflect.DeepEqual(check, tt.want) {
-				t.Errorf("GetByIds() = %v, want %v", check, tt.want)
+				t.Errorf("GetByIDs() = %v, want %v", check, tt.want)
 			}
 		})
 	}

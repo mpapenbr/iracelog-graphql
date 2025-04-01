@@ -19,19 +19,19 @@ import (
 // for implementation of the storage interface see db_storage_xxx.go
 // depending on the type of data to be returned
 type (
-	DbStorage struct {
+	DBStorage struct {
 		// Storage
 		pool     *pgxpool.Pool
 		executor bob.Executor
 	}
 
-	DbStorageOption func(*DbStorage)
+	DBStorageOption func(*DBStorage)
 )
 
-func NewDbStorage(pool *pgxpool.Pool, opts ...DbStorageOption) Storage {
+func NewDBStorage(pool *pgxpool.Pool, opts ...DBStorageOption) Storage {
 	db := stdlib.OpenDBFromPool(pool)
 
-	ret := &DbStorage{
+	ret := &DBStorage{
 		pool:     pool,
 		executor: bob.New(db),
 	}
@@ -44,7 +44,7 @@ func NewDbStorage(pool *pgxpool.Pool, opts ...DbStorageOption) Storage {
 // events
 //
 //nolint:whitespace // editor/linter issue
-func (db *DbStorage) SimpleSearchEvents(
+func (db *DBStorage) SimpleSearchEvents(
 	ctx context.Context,
 	arg string,
 	limit *int,
@@ -55,27 +55,27 @@ func (db *DbStorage) SimpleSearchEvents(
 	if tp == nil {
 		return nil, tenant.ErrNoTenantInContext
 	}
-	tenantId, _ := tp()
+	tenantID, _ := tp()
 	var result []*model.Event
 	dbEventSortArg := convertEventSortArgs(sort)
 	events, err := events.SimpleEventSearch(
 		db.executor,
-		tenantId,
+		tenantID,
 		arg,
-		internal.DbPageable{Limit: limit, Offset: offset, Sort: dbEventSortArg})
+		internal.DBPageable{Limit: limit, Offset: offset, Sort: dbEventSortArg})
 	if err == nil {
 		// convert the internal database Track to the GraphQL-Track
 		for _, dbEvents := range events {
 			// this would cause assigning the last loop content to all result entries
 
-			result = append(result, convertDbEventToModel(dbEvents))
+			result = append(result, convertDBEventToModel(dbEvents))
 		}
 	}
 	return result, err
 }
 
 //nolint:whitespace // editor/linter issue
-func (db *DbStorage) AdvancedSearchEvents(
+func (db *DBStorage) AdvancedSearchEvents(
 	ctx context.Context,
 	arg *events.EventSearchKeys,
 	limit *int,
@@ -87,39 +87,39 @@ func (db *DbStorage) AdvancedSearchEvents(
 	if tp == nil {
 		return nil, tenant.ErrNoTenantInContext
 	}
-	tenantId, _ := tp()
+	tenantID, _ := tp()
 	dbEventSortArg := convertEventSortArgs(sort)
 	events, err := events.AdvancedEventSearch(
 		db.executor,
-		tenantId,
+		tenantID,
 		arg,
-		internal.DbPageable{Limit: limit, Offset: offset, Sort: dbEventSortArg})
+		internal.DBPageable{Limit: limit, Offset: offset, Sort: dbEventSortArg})
 	if err == nil {
 		// convert the internal database Track to the GraphQL-Track
 		for _, dbEvents := range events {
 			// this would cause assigning the last loop content to all result entries
 
-			result = append(result, convertDbEventToModel(dbEvents))
+			result = append(result, convertDBEventToModel(dbEvents))
 		}
 	}
 	return result, err
 }
 
 //nolint:whitespace // editor/linter issue
-func (db *DbStorage) CollectAnalysisData(
+func (db *DBStorage) CollectAnalysisData(
 	ctx context.Context,
-	eventIds dataloader.Keys,
-) map[string]analysis.DbAnalysis {
-	res, _ := analysis.GetAnalysisForEvents(db.pool, IntKeysToSlice(eventIds))
-	ret := map[string]analysis.DbAnalysis{}
+	eventIDs dataloader.Keys,
+) map[string]analysis.DBAnalysis {
+	res, _ := analysis.GetAnalysisForEvents(db.pool, IntKeysToSlice(eventIDs))
+	ret := map[string]analysis.DBAnalysis{}
 	//nolint:gocritic // by design
 	for _, a := range res {
-		ret[IntKey(a.EventId).String()] = a
+		ret[IntKey(a.EventID).String()] = a
 	}
 	return ret
 }
 
-func (db *DbStorage) SearchDrivers(ctx context.Context, arg string) []*model.Driver {
+func (db *DBStorage) SearchDrivers(ctx context.Context, arg string) []*model.Driver {
 	res, _ := analysis.SearchDrivers(db.pool, arg)
 	ret := make([]*model.Driver, len(res))
 	//nolint:gocritic // by design
@@ -139,7 +139,7 @@ func (db *DbStorage) SearchDrivers(ctx context.Context, arg string) []*model.Dri
 }
 
 //nolint:whitespace // editor/linter issue
-func (db *DbStorage) CollectDriversInTeams(
+func (db *DBStorage) CollectDriversInTeams(
 	ctx context.Context,
 	teams dataloader.Keys,
 ) map[string][]*model.Driver {
@@ -161,7 +161,7 @@ func (db *DbStorage) CollectDriversInTeams(
 }
 
 //nolint:whitespace // editor/linter issue
-func (db *DbStorage) CollectTeamsForDrivers(
+func (db *DBStorage) CollectTeamsForDrivers(
 	ctx context.Context,
 	drivers dataloader.Keys,
 ) map[string][]*model.Team {
@@ -179,24 +179,24 @@ func (db *DbStorage) CollectTeamsForDrivers(
 }
 
 //nolint:whitespace // editor/linter issue
-func (db *DbStorage) CollectEventIdsForTeams(
+func (db *DBStorage) CollectEventIDsForTeams(
 	ctx context.Context,
 	teams dataloader.Keys,
 ) map[string][]int {
-	ret, _ := analysis.CollectEventIdsForTeams(db.pool, teams.Keys())
+	ret, _ := analysis.CollectEventIDsForTeams(db.pool, teams.Keys())
 	return ret
 }
 
 //nolint:whitespace // editor/linter issue
-func (db *DbStorage) CollectEventIdsForDrivers(
+func (db *DBStorage) CollectEventIDsForDrivers(
 	ctx context.Context,
 	drivers dataloader.Keys,
 ) map[string][]int {
-	ret, _ := analysis.CollectEventIdsForDrivers(db.pool, drivers.Keys())
+	ret, _ := analysis.CollectEventIDsForDrivers(db.pool, drivers.Keys())
 	return ret
 }
 
-func (db *DbStorage) SearchTeams(ctx context.Context, arg string) []*model.Team {
+func (db *DBStorage) SearchTeams(ctx context.Context, arg string) []*model.Team {
 	res, _ := analysis.SearchTeams(db.pool, arg)
 	ret := make([]*model.Team, len(res))
 	//nolint:gocritic // by design

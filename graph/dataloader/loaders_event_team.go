@@ -13,9 +13,9 @@ import (
 //nolint:whitespace // editor/linter issue
 func (i *DataLoader) GetTeamByEventEntry(
 	ctx context.Context,
-	eventEntryId int,
+	eventEntryID int,
 ) (*model.EventTeam, []error) {
-	thunk := i.teamByEventEntryLoader.Load(ctx, storage.IntKey(eventEntryId))
+	thunk := i.teamByEventEntryLoader.Load(ctx, storage.IntKey(eventEntryID))
 	result, err := thunk()
 	if err != nil {
 		log.Printf("error loading event team data: %v", err)

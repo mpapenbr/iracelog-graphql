@@ -13,15 +13,15 @@ import (
 )
 
 //nolint:whitespace // editor/linter issue
-func GetEventEntriesByEventId(
+func GetEventEntriesByEventID(
 	exec bob.Executor,
 	eventIDs []int,
 ) (map[int][]*models.CCarEntry, error) {
-	myIds := utils.IntSliceToInt32Slice(eventIDs)
+	myIDs := utils.IntSliceToInt32Slice(eventIDs)
 
 	query := models.CCarEntries.Query(
 		// see also notes in interanl/car/car/car.go
-		sm.Where(models.CCarEntryColumns.EventID.EQ(psql.F("ANY", expr.Arg(myIds)))),
+		sm.Where(models.CCarEntryColumns.EventID.EQ(psql.F("ANY", expr.Arg(myIDs)))),
 		sm.OrderBy(models.CCarEntryColumns.CarNumberRaw),
 	)
 
@@ -44,16 +44,16 @@ func GetEventEntriesByEventId(
 }
 
 //nolint:whitespace // editor/linter issue
-func GetEventEntriesByIds(
+func GetEventEntriesByIDs(
 	exec bob.Executor,
 	ids []int) (
 	map[int]*models.CCarEntry, error,
 ) {
-	myIds := utils.IntSliceToInt32Slice(ids)
+	myIDs := utils.IntSliceToInt32Slice(ids)
 
 	query := models.CCarEntries.Query(
 		// see also notes in interanl/car/car/car.go
-		sm.Where(models.CCarEntryColumns.ID.EQ(psql.F("ANY", expr.Arg(myIds)))),
+		sm.Where(models.CCarEntryColumns.ID.EQ(psql.F("ANY", expr.Arg(myIDs)))),
 		sm.OrderBy(models.CCarEntryColumns.CarNumberRaw),
 	)
 

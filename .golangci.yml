@@ -154,7 +154,6 @@ linters:
     staticcheck:
       checks:
         - all
-        - "-ST1003"
       dot-import-whitelist:
         - fmt
     tagliatelle:

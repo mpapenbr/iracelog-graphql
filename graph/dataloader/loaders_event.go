@@ -48,9 +48,9 @@ func (i *DataLoader) GetEvent(
 
 //nolint:whitespace // editor/linter issue
 func (i *DataLoader) GetEventsForTrack(
-	ctx context.Context, trackId int,
+	ctx context.Context, trackID int,
 ) []*model.Event {
-	thunk := i.eventsByTrackLoader.Load(ctx, storage.IntKey(trackId))
+	thunk := i.eventsByTrackLoader.Load(ctx, storage.IntKey(trackID))
 	result, err := thunk()
 	if err != nil {
 		return nil

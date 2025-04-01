@@ -68,7 +68,7 @@ var ColumnNames = struct {
 		ID:           "id",
 		EventID:      "event_id",
 		CCarID:       "c_car_id",
-		CarIdx:       "car_idx",
+		CarIDx:       "car_idx",
 		CarNumber:    "car_number",
 		CarNumberRaw: "car_number_raw",
 	},

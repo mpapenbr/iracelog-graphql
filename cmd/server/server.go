@@ -21,7 +21,7 @@ import (
 
 var (
 	supportTenants  bool
-	defaultTenantId int = 1 // default tenant id (used if tenants are disabled)
+	defaultTenantID int = 1 // default tenant id (used if tenants are disabled)
 )
 
 func NewServerCmd() *cobra.Command {
@@ -37,9 +37,9 @@ func NewServerCmd() *cobra.Command {
 		"enable-tenants",
 		false,
 		"enables tenant support")
-	cmd.Flags().IntVar(&defaultTenantId,
+	cmd.Flags().IntVar(&defaultTenantID,
 		"default-tenant-id",
-		defaultTenantId,
+		defaultTenantID,
 		"id of the internal default tenant (will be used if tenants are disabled)")
 	return cmd
 }
@@ -58,7 +58,7 @@ func startServer(ctx context.Context) {
 	}
 	srv.SetupLogger()
 	srv.waitForRequiredServices()
-	srv.SetupDbPgx()
+	srv.SetupDBPgx()
 
 	if err := srv.Start(); err != nil {
 		srv.log.Error("error starting server", log.ErrorField(err))
@@ -69,7 +69,7 @@ func (s *graphqlServer) SetupLogger() {
 	s.log = log.GetFromContext(s.ctx).Named("server")
 }
 
-func (s *graphqlServer) SetupDbPgx() {
+func (s *graphqlServer) SetupDBPgx() {
 	pgTracer := pgxtrace.CompositeQueryTracer{
 		postgres.NewMyTracer(log.GetFromContext(s.ctx).Named("sql"), log.DebugLevel),
 	}
@@ -86,7 +86,7 @@ func (s *graphqlServer) SetupDbPgx() {
 	pgOptions := []postgres.PoolConfigOption{
 		postgres.WithTracer(pgTracer),
 	}
-	s.pool = postgres.InitWithUrl(
+	s.pool = postgres.InitWithURL(
 		config.DB,
 		pgOptions...,
 	)
@@ -98,15 +98,15 @@ func (s *graphqlServer) Start() error {
 
 	s.log.Info("Starting server")
 	go func() {
-		storageOpts := []storage.DbStorageOption{}
+		storageOpts := []storage.DBStorageOption{}
 
-		myStorage := storage.NewDbStorage(s.pool, storageOpts...)
+		myStorage := storage.NewDBStorage(s.pool, storageOpts...)
 		opts := []server.Option{
 			server.WithContext(s.ctx),
 			server.WithLogger(log.GetFromContext(s.ctx).Named("gql")),
 			server.WithStorage(myStorage),
 			server.WithTenantResolver(func(r *http.Request) (int, error) {
-				return defaultTenantId, nil
+				return defaultTenantID, nil
 			}),
 		}
 		if config.Addr != "" {
@@ -139,16 +139,16 @@ func (s *graphqlServer) Start() error {
 func (s *graphqlServer) waitForRequiredServices() {
 	var err error
 	wg := sync.WaitGroup{}
-	checkTcp := func(addr string) {
+	checkTCP := func(addr string) {
 		if err = utils.WaitForTCP(addr, config.WaitForServices); err != nil {
 			s.log.Fatal("required services not ready", log.ErrorField(err))
 		}
 		wg.Done()
 	}
 
-	if postgresAddr := utils.ExtractFromDBUrl(config.DB); postgresAddr != "" {
+	if postgresAddr := utils.ExtractFromDBURL(config.DB); postgresAddr != "" {
 		wg.Add(1)
-		go checkTcp(postgresAddr)
+		go checkTCP(postgresAddr)
 	}
 
 	s.log.Debug("Waiting for connection checks to return")

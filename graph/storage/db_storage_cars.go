@@ -13,17 +13,17 @@ import (
 // contains implementations of storage interface that return a model.Car items
 //
 //nolint:whitespace // editor/linter issue
-func (db *DbStorage) CollectEventCars(
+func (db *DBStorage) CollectEventCars(
 	ctx context.Context,
-	eventIds dataloader.Keys,
+	eventIDs dataloader.Keys,
 ) map[string][]*model.Car {
-	res, _ := car.GetEventCars(db.executor, IntKeysToSlice(eventIds))
+	res, _ := car.GetEventCars(db.executor, IntKeysToSlice(eventIDs))
 	ret := map[string][]*model.Car{}
 	for k, v := range res {
 		key := IntKey(k).String()
 		ed := make([]*model.Car, len(v))
 		for i, d := range v {
-			ed[i] = convertDbCarToModel(d)
+			ed[i] = convertDBCarToModel(d)
 		}
 		ret[key] = ed
 	}
@@ -31,15 +31,15 @@ func (db *DbStorage) CollectEventCars(
 }
 
 //nolint:whitespace // editor/linter issue
-func (db *DbStorage) CollectCarsByEventEntry(
+func (db *DBStorage) CollectCarsByEventEntry(
 	ctx context.Context,
-	eventEntryIds dataloader.Keys,
+	eventEntryIDs dataloader.Keys,
 ) map[string]*model.Car {
-	res, _ := car.GetEventEntryCars(db.executor, IntKeysToSlice(eventEntryIds))
+	res, _ := car.GetEventEntryCars(db.executor, IntKeysToSlice(eventEntryIDs))
 	ret := map[string]*model.Car{}
 	for k, d := range res {
 		key := IntKey(k).String()
-		ed := convertDbCarToModel(d)
+		ed := convertDBCarToModel(d)
 		ret[key] = ed
 	}
 	return ret

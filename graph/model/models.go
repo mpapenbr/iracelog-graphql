@@ -14,13 +14,13 @@ type Event struct {
 	Name              string    `json:"name"`
 	Description       string    `json:"description"`
 	Key               string    `json:"key"`
-	TrackId           int       `json:"trackId"`
+	TrackID           int       `json:"trackId"`
 	RecordDate        time.Time `json:"recordDate"`
 	EventDate         time.Time `json:"eventDate"`
 	RaceloggerVersion string    `json:"raceloggerVersion"`
 	TeamRacing        bool      `json:"teamRacing"`
 	MultiClass        bool      `json:"multiClass"`
-	IracingSessionId  int       `json:"iracingSessionId"`
+	IracingSessionID  int       `json:"iracingSessionId"`
 	NumCarClasses     int       `json:"numCarClasses"`
 	NumCarTypes       int       `json:"numCarTypes"`
 }

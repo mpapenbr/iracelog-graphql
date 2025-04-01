@@ -12,15 +12,15 @@ import (
 	"golang.org/x/exp/slices"
 )
 
-type DbDriverSummary struct {
+type DBDriverSummary struct {
 	Name     string   `json:"name"`
 	CarNum   []string `json:"carNum"`
 	CarClass []string `json:"carClass"`
 	Teams    []string `json:"drivers"`
-	EventIds []int    `json:"eventId"`
+	EventIDs []int    `json:"eventID"`
 }
 
-func SearchDrivers(pool *pgxpool.Pool, arg string) ([]DbDriverSummary, error) {
+func SearchDrivers(pool *pgxpool.Pool, arg string) ([]DBDriverSummary, error) {
 	rows, err := pool.Query(context.Background(), fmt.Sprintf(
 		`select s.event_id,dInfo->>'driverName' as driverName, tInfo from 
 	(select
@@ -34,26 +34,26 @@ func SearchDrivers(pool *pgxpool.Pool, arg string) ([]DbDriverSummary, error) {
 	`, arg, arg, arg))
 	if err != nil {
 		log.Printf("error reading analysis: %v", err)
-		return []DbDriverSummary{}, err
+		return []DBDriverSummary{}, err
 	}
 	defer rows.Close()
-	lookup := map[string]DbDriverSummary{}
+	lookup := map[string]DBDriverSummary{}
 
 	for rows.Next() {
 		var dName string
 		var carInfo CarInfo
-		var eventId int
-		err = rows.Scan(&eventId, &dName, &carInfo)
+		var eventID int
+		err = rows.Scan(&eventID, &dName, &carInfo)
 		if err != nil {
 			log.Printf("Error scaning result: %v\n", err)
 		}
 		val, ok := lookup[dName]
 		if !ok {
-			val = DbDriverSummary{Name: dName}
+			val = DBDriverSummary{Name: dName}
 		}
 		val.CarNum = append(val.CarNum, carInfo.CarNum)
 		val.CarClass = append(val.CarClass, carInfo.CarClass)
-		val.EventIds = append(val.EventIds, eventId)
+		val.EventIDs = append(val.EventIDs, eventID)
 
 		val.Teams = append(val.Teams, carInfo.Name)
 
@@ -62,7 +62,7 @@ func SearchDrivers(pool *pgxpool.Pool, arg string) ([]DbDriverSummary, error) {
 	}
 
 	for k, v := range lookup {
-		v.EventIds = unique(v.EventIds)
+		v.EventIDs = unique(v.EventIDs)
 		v.Teams = unique(v.Teams)
 		v.CarNum = unique(v.CarNum)
 		v.CarClass = unique(v.CarClass)
@@ -76,7 +76,7 @@ func SearchDrivers(pool *pgxpool.Pool, arg string) ([]DbDriverSummary, error) {
 		keys = append(keys, k)
 	}
 	sort.Strings(keys)
-	ret := make([]DbDriverSummary, len(keys))
+	ret := make([]DBDriverSummary, len(keys))
 	for i, v := range keys {
 		ret[i] = lookup[v]
 	}
@@ -86,7 +86,7 @@ func SearchDrivers(pool *pgxpool.Pool, arg string) ([]DbDriverSummary, error) {
 /*
 teams contains the exact team names for which the drivers should be collected.
 */
-func SearchDriversInTeams(pool *pgxpool.Pool, teams []string) (map[string][]DbDriverSummary, error) {
+func SearchDriversInTeams(pool *pgxpool.Pool, teams []string) (map[string][]DBDriverSummary, error) {
 	work := make([]string, len(teams))
 	for i, t := range teams {
 		work[i] = fmt.Sprintf("('%s')", t)
@@ -105,32 +105,32 @@ func SearchDriversInTeams(pool *pgxpool.Pool, teams []string) (map[string][]DbDr
 	`, strings.Join(work, ",")))
 	if err != nil {
 		log.Printf("error reading analysis: %v", err)
-		return map[string][]DbDriverSummary{}, err
+		return map[string][]DBDriverSummary{}, err
 	}
 	defer rows.Close()
-	teamLookup := map[string][]DbDriverSummary{}
-	driverLookup := map[string]DbDriverSummary{}
+	teamLookup := map[string][]DBDriverSummary{}
+	driverLookup := map[string]DBDriverSummary{}
 
 	for rows.Next() {
 		var teamName string
 		var carInfo CarInfo
-		var eventId int
-		err = rows.Scan(&eventId, &teamName, &carInfo)
+		var eventID int
+		err = rows.Scan(&eventID, &teamName, &carInfo)
 		if err != nil {
 			log.Printf("Error scaning result: %v\n", err)
 		}
 		teamEntry, ok := teamLookup[teamName]
 		if !ok {
-			teamEntry = []DbDriverSummary{}
+			teamEntry = []DBDriverSummary{}
 		}
 		for _, d := range carInfo.Drivers {
 			driverEntry, ok := driverLookup[d.DriverName]
 			if !ok {
-				driverEntry = DbDriverSummary{Name: d.DriverName}
+				driverEntry = DBDriverSummary{Name: d.DriverName}
 			}
 			driverEntry.CarNum = append(driverEntry.CarNum, carInfo.CarNum)
 			driverEntry.CarClass = append(driverEntry.CarClass, carInfo.CarClass)
-			driverEntry.EventIds = append(driverEntry.EventIds, eventId)
+			driverEntry.EventIDs = append(driverEntry.EventIDs, eventID)
 			driverEntry.Teams = append(driverEntry.Teams, teamName)
 			driverLookup[d.DriverName] = driverEntry
 
@@ -140,7 +140,7 @@ func SearchDriversInTeams(pool *pgxpool.Pool, teams []string) (map[string][]DbDr
 	}
 
 	for k, v := range driverLookup {
-		v.EventIds = unique(v.EventIds)
+		v.EventIDs = unique(v.EventIDs)
 		v.Teams = unique(v.Teams)
 		v.CarNum = unique(v.CarNum)
 		v.CarClass = unique(v.CarClass)
@@ -169,7 +169,7 @@ func SearchDriversInTeams(pool *pgxpool.Pool, teams []string) (map[string][]DbDr
 	return teamLookup, nil
 }
 
-func CollectEventIdsForDrivers(pool *pgxpool.Pool, driverNames []string) (map[string][]int, error) {
+func CollectEventIDsForDrivers(pool *pgxpool.Pool, driverNames []string) (map[string][]int, error) {
 	work := make([]string, len(driverNames))
 	for i, t := range driverNames {
 		work[i] = fmt.Sprintf("('%s')", t)
@@ -187,14 +187,14 @@ func CollectEventIdsForDrivers(pool *pgxpool.Pool, driverNames []string) (map[st
 
 	ret := map[string][]int{}
 	for rows.Next() {
-		var eventId int
+		var eventID int
 		var driver string
-		err = rows.Scan(&eventId, &driver)
+		err = rows.Scan(&eventID, &driver)
 		v, ok := ret[driver]
 		if !ok {
 			v = []int{}
 		}
-		v = append(v, eventId)
+		v = append(v, eventID)
 		ret[driver] = v
 	}
 	return ret, nil

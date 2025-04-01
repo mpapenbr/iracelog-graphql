@@ -16,7 +16,7 @@ import (
 )
 
 // create a pg connection pool for the iracelog testdatabase
-func SetupTestDb() *pgxpool.Pool {
+func SetupTestDB() *pgxpool.Pool {
 	ctx := context.Background()
 	port, err := nat.NewPort("tcp", "5432")
 	if err != nil {
@@ -36,12 +36,12 @@ func SetupTestDb() *pgxpool.Pool {
 	}
 	containerPort, _ := container.MappedPort(ctx, port)
 	host, _ := container.Host(ctx)
-	dbUrl := fmt.Sprintf("postgresql://postgres:password@%s:%s/postgres",
+	dbURL := fmt.Sprintf("postgresql://postgres:password@%s:%s/postgres",
 		host, containerPort.Port())
-	pool := database.InitWithUrl(dbUrl)
+	pool := database.InitWithURL(dbURL)
 	return pool
 }
 
-func SetupStdlibDb() *sql.DB {
-	return stdlib.OpenDBFromPool(SetupTestDb())
+func SetupStdlibDB() *sql.DB {
+	return stdlib.OpenDBFromPool(SetupTestDB())
 }
