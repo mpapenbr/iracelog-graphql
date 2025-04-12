@@ -11,7 +11,7 @@ require (
 	github.com/sirupsen/logrus v1.9.3 // indirect
 	github.com/stretchr/testify v1.10.0
 	github.com/testcontainers/testcontainers-go v0.36.0
-	github.com/vektah/gqlparser/v2 v2.5.23
+	github.com/vektah/gqlparser/v2 v2.5.24
 	golang.org/x/exp v0.0.0-20240506185415-9bf2ced13842
 )
 
@@ -27,7 +27,7 @@ require (
 	github.com/spf13/pflag v1.0.6
 	github.com/spf13/viper v1.20.1
 	github.com/stephenafamo/bob v0.31.0
-	github.com/stephenafamo/scan v0.6.1
+	github.com/stephenafamo/scan v0.6.2
 	go.uber.org/zap v1.27.0
 	moul.io/zapfilter v1.7.0
 )
