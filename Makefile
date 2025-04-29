@@ -138,7 +138,7 @@ bob:
 	go run github.com/stephenafamo/bob/gen/bobgen-psql@latest -c ./bobgen.yml
 
 .PHONY: generate graphql
-## `bob`: Generate graphql files
+## `gqlgen`: Generate graphql files
 gqlgen:
 	echo "  >  Generating graphql files "
 	go run github.com/99designs/gqlgen

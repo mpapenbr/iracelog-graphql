@@ -3,6 +3,7 @@
 package model
 
 import (
+	"bytes"
 	"fmt"
 	"io"
 	"strconv"
@@ -12,7 +13,7 @@ type Car struct {
 	ID        int    `json:"id"`
 	Name      string `json:"name"`
 	NameShort string `json:"nameShort"`
-	CarID     int    `json:"carID"`
+	CarID     int    `json:"carId"`
 	// fuel capacity in percent
 	FuelPct float64 `json:"fuelPct"`
 	// engine power adjustment percent
@@ -41,7 +42,7 @@ type Driver struct {
 type EventDriver struct {
 	ID              int     `json:"id"`
 	Name            string  `json:"name"`
-	DriverID        int     `json:"driverID"`
+	DriverID        int     `json:"driverId"`
 	Initials        *string `json:"initials,omitempty"`
 	AbbrevName      *string `json:"abbrevName,omitempty"`
 	IRating         *int    `json:"iRating,omitempty"`
@@ -73,7 +74,7 @@ type EventSortArg struct {
 type EventTeam struct {
 	ID      int            `json:"id"`
 	Name    string         `json:"name"`
-	TeamID  int            `json:"teamID"`
+	TeamID  int            `json:"teamId"`
 	Drivers []*EventDriver `json:"drivers"`
 }
 
@@ -143,6 +144,20 @@ func (e EventSortField) MarshalGQL(w io.Writer) {
 	fmt.Fprint(w, strconv.Quote(e.String()))
 }
 
+func (e *EventSortField) UnmarshalJSON(b []byte) error {
+	s, err := strconv.Unquote(string(b))
+	if err != nil {
+		return err
+	}
+	return e.UnmarshalGQL(s)
+}
+
+func (e EventSortField) MarshalJSON() ([]byte, error) {
+	var buf bytes.Buffer
+	e.MarshalGQL(&buf)
+	return buf.Bytes(), nil
+}
+
 type SortOrder string
 
 const (
@@ -182,6 +197,20 @@ func (e *SortOrder) UnmarshalGQL(v any) error {
 
 func (e SortOrder) MarshalGQL(w io.Writer) {
 	fmt.Fprint(w, strconv.Quote(e.String()))
+}
+
+func (e *SortOrder) UnmarshalJSON(b []byte) error {
+	s, err := strconv.Unquote(string(b))
+	if err != nil {
+		return err
+	}
+	return e.UnmarshalGQL(s)
+}
+
+func (e SortOrder) MarshalJSON() ([]byte, error) {
+	var buf bytes.Buffer
+	e.MarshalGQL(&buf)
+	return buf.Bytes(), nil
 }
 
 type TrackSortField string
@@ -231,4 +260,18 @@ func (e *TrackSortField) UnmarshalGQL(v any) error {
 
 func (e TrackSortField) MarshalGQL(w io.Writer) {
 	fmt.Fprint(w, strconv.Quote(e.String()))
+}
+
+func (e *TrackSortField) UnmarshalJSON(b []byte) error {
+	s, err := strconv.Unquote(string(b))
+	if err != nil {
+		return err
+	}
+	return e.UnmarshalGQL(s)
+}
+
+func (e TrackSortField) MarshalJSON() ([]byte, error) {
+	var buf bytes.Buffer
+	e.MarshalGQL(&buf)
+	return buf.Bytes(), nil
 }
