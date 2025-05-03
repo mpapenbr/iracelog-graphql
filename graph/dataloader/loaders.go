@@ -128,7 +128,7 @@ func NewDataLoader(db storage.Storage) *DataLoader {
 		name: "teamsForDrivers", collector: db.CollectTeamsForDrivers,
 	}
 
-	analysis := &genericMapBatcher[analysis.DBAnalysis]{collector: db.CollectAnalysisData}
+	analysisData := &genericMapBatcher[analysis.DBAnalysis]{collector: db.CollectAnalysisData}
 
 	driverEventLink := &genericMapBatcher[[]int]{
 		name: "eventIDsForDriver", collector: db.CollectEventIDsForDrivers,
@@ -172,7 +172,7 @@ func NewDataLoader(db storage.Storage) *DataLoader {
 		eventLoader:               dataloader.NewBatchedLoader(events.get),
 		driverLoader:              dataloader.NewBatchedLoader(drivers.get),
 		teamLoader:                dataloader.NewBatchedLoader(teams.get),
-		analysisLoader:            dataloader.NewBatchedLoader(analysis.get),
+		analysisLoader:            dataloader.NewBatchedLoader(analysisData.get),
 		teamEventLinkLoader:       dataloader.NewBatchedLoader(teamEventLink.get),
 		driverEventLinkLoader:     dataloader.NewBatchedLoader(driverEventLink.get),
 		eventsByTrackLoader:       dataloader.NewBatchedLoader(eventsByTrack.get),

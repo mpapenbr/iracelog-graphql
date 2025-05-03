@@ -3,7 +3,7 @@ module github.com/mpapenbr/iracelog-graphql
 go 1.24
 
 require (
-	github.com/99designs/gqlgen v0.17.72
+	github.com/99designs/gqlgen v0.17.73
 	github.com/docker/go-connections v0.5.0
 	github.com/gorilla/websocket v1.5.3 // indirect
 	github.com/graph-gophers/dataloader v5.0.0+incompatible
@@ -11,7 +11,7 @@ require (
 	github.com/sirupsen/logrus v1.9.3 // indirect
 	github.com/stretchr/testify v1.10.0
 	github.com/testcontainers/testcontainers-go v0.37.0
-	github.com/vektah/gqlparser/v2 v2.5.25
+	github.com/vektah/gqlparser/v2 v2.5.26
 	golang.org/x/exp v0.0.0-20250305212735-054e65f0b394
 )
 
@@ -26,7 +26,7 @@ require (
 	github.com/spf13/cobra v1.9.1
 	github.com/spf13/pflag v1.0.6
 	github.com/spf13/viper v1.20.1
-	github.com/stephenafamo/bob v0.32.0
+	github.com/stephenafamo/bob v0.34.2
 	github.com/stephenafamo/scan v0.6.2
 	go.uber.org/zap v1.27.0
 	moul.io/zapfilter v1.7.0

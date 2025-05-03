@@ -22,12 +22,12 @@ func (db *DBStorage) GetAllTracks(
 	var result []*model.Track
 
 	dbTrackSortArg := convertTrackSortArgs(sort)
-	tracks, err := tracks.GetAll(
+	dbTracks, err := tracks.GetAll(
 		db.executor,
 		internal.DBPageable{Limit: limit, Offset: offset, Sort: dbTrackSortArg})
 	if err == nil {
 		// convert the internal database Track to the GraphQL-Track
-		for _, track := range tracks {
+		for _, track := range dbTracks {
 			result = append(result, convertDBTrackToModel(track))
 		}
 	}
@@ -42,10 +42,10 @@ func (db *DBStorage) GetTracksByKeys(
 	intIDs := IntKeysToSlice(ids)
 	result := map[string]*model.Track{}
 
-	tracks, _ := tracks.GetByIDs(db.executor, intIDs)
+	dbTracks, _ := tracks.GetByIDs(db.executor, intIDs)
 
 	// convert the internal database Track to the GraphQL-Track
-	for _, track := range tracks {
+	for _, track := range dbTracks {
 		result[IntKey(track.ID).String()] = convertDBTrackToModel(track)
 	}
 	return result
