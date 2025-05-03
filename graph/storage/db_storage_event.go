@@ -28,14 +28,14 @@ func (db *DBStorage) GetAllEvents(
 	}
 	tenantID, _ := tp()
 	dbEventSortArg := convertEventSortArgs(sort)
-	events, err := events.GetALl(db.executor, tenantID, internal.DBPageable{
+	dbEvents, err := events.GetALl(db.executor, tenantID, internal.DBPageable{
 		Limit:  limit,
 		Offset: offset,
 		Sort:   dbEventSortArg,
 	})
 	if err == nil {
 		// convert the internal database Track to the GraphQL-Track
-		for _, dbEvents := range events {
+		for _, dbEvents := range dbEvents {
 			// this would cause assigning the last loop content to all result entries
 
 			result = append(result, convertDBEventToModel(dbEvents))
@@ -56,9 +56,9 @@ func (db *DBStorage) GetEventsByKeys(
 	tenantID, _ := tp()
 	intIDs := IntKeysToSlice(ids)
 	result := map[string]*model.Event{}
-	events, _ := events.GetByIDs(db.executor, tenantID, intIDs)
+	dbEvents, _ := events.GetByIDs(db.executor, tenantID, intIDs)
 	// convert the internal database Track to the GraphQL-Track
-	for _, dbEvents := range events {
+	for _, dbEvents := range dbEvents {
 		// this would cause assigning the last loop content to all result entries
 		result[IntKey(dbEvents.ID).String()] = convertDBEventToModel(dbEvents)
 	}

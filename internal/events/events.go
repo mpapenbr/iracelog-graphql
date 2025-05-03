@@ -224,18 +224,18 @@ func modSubQueryTeam(searchArg string) mods.Where[*dialect.SelectQuery] {
 }
 
 func createPageableMods(pageable internal.DBPageable) []bob.Mod[*dialect.SelectQuery] {
-	mods := make([]bob.Mod[*dialect.SelectQuery], 0)
+	qMods := make([]bob.Mod[*dialect.SelectQuery], 0)
 	if pageable.Limit != nil {
-		mods = append(mods, sm.Limit(*pageable.Limit))
+		qMods = append(qMods, sm.Limit(*pageable.Limit))
 	}
 	if pageable.Offset != nil {
-		mods = append(mods, sm.Offset(*pageable.Offset))
+		qMods = append(qMods, sm.Offset(*pageable.Offset))
 	}
 	if pageable.Sort != nil {
 		//nolint:gocritic // by design
 		for _, s := range pageable.Sort.Expressions {
-			mods = append(mods, sm.OrderBy(s))
+			qMods = append(qMods, sm.OrderBy(s))
 		}
 	}
-	return mods
+	return qMods
 }

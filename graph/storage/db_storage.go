@@ -58,14 +58,14 @@ func (db *DBStorage) SimpleSearchEvents(
 	tenantID, _ := tp()
 	var result []*model.Event
 	dbEventSortArg := convertEventSortArgs(sort)
-	events, err := events.SimpleEventSearch(
+	dbEvents, err := events.SimpleEventSearch(
 		db.executor,
 		tenantID,
 		arg,
 		internal.DBPageable{Limit: limit, Offset: offset, Sort: dbEventSortArg})
 	if err == nil {
 		// convert the internal database Track to the GraphQL-Track
-		for _, dbEvents := range events {
+		for _, dbEvents := range dbEvents {
 			// this would cause assigning the last loop content to all result entries
 
 			result = append(result, convertDBEventToModel(dbEvents))
@@ -89,14 +89,14 @@ func (db *DBStorage) AdvancedSearchEvents(
 	}
 	tenantID, _ := tp()
 	dbEventSortArg := convertEventSortArgs(sort)
-	events, err := events.AdvancedEventSearch(
+	dbEvents, err := events.AdvancedEventSearch(
 		db.executor,
 		tenantID,
 		arg,
 		internal.DBPageable{Limit: limit, Offset: offset, Sort: dbEventSortArg})
 	if err == nil {
 		// convert the internal database Track to the GraphQL-Track
-		for _, dbEvents := range events {
+		for _, dbEvents := range dbEvents {
 			// this would cause assigning the last loop content to all result entries
 
 			result = append(result, convertDBEventToModel(dbEvents))
