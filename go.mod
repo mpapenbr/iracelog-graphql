@@ -1,6 +1,8 @@
 module github.com/mpapenbr/iracelog-graphql
 
-go 1.24
+go 1.24.0
+
+toolchain go1.24.1
 
 require (
 	github.com/99designs/gqlgen v0.17.73
@@ -16,17 +18,17 @@ require (
 )
 
 require (
-	github.com/aarondl/opt v0.0.0-20230114172057-b91f370c41f0
 	github.com/exaring/otelpgx v0.9.3
 	github.com/gofrs/uuid/v5 v5.3.2
 	github.com/jackc/pgx-gofrs-uuid v0.0.0-20230224015001-1d428863c2e2
 	github.com/jackc/pgx/v5 v5.7.5
+	github.com/lib/pq v1.10.7
 	github.com/pgx-contrib/pgxtrace v0.0.0-20241223102757-e8c8837146e4
 	github.com/shopspring/decimal v1.4.0
 	github.com/spf13/cobra v1.9.1
 	github.com/spf13/pflag v1.0.6
 	github.com/spf13/viper v1.20.1
-	github.com/stephenafamo/bob v0.34.2
+	github.com/stephenafamo/bob v0.38.0
 	github.com/stephenafamo/scan v0.6.2
 	go.uber.org/zap v1.27.0
 	moul.io/zapfilter v1.7.0
@@ -37,6 +39,7 @@ require (
 	github.com/Azure/go-ansiterm v0.0.0-20230124172434-306776ec8161 // indirect
 	github.com/Microsoft/go-winio v0.6.2 // indirect
 	github.com/aarondl/json v0.0.0-20221020222930-8b0db17ef1bf // indirect
+	github.com/aarondl/opt v0.0.0-20230114172057-b91f370c41f0 // indirect
 	github.com/cenkalti/backoff/v4 v4.2.1 // indirect
 	github.com/containerd/log v0.1.0 // indirect
 	github.com/containerd/platforms v0.2.1 // indirect

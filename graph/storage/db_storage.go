@@ -33,7 +33,7 @@ func NewDBStorage(pool *pgxpool.Pool, opts ...DBStorageOption) Storage {
 
 	ret := &DBStorage{
 		pool:     pool,
-		executor: bob.New(db),
+		executor: bob.NewDB(db),
 	}
 	for _, opt := range opts {
 		opt(ret)
