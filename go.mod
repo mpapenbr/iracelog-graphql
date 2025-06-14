@@ -29,7 +29,7 @@ require (
 	github.com/spf13/pflag v1.0.6
 	github.com/spf13/viper v1.20.1
 	github.com/stephenafamo/bob v0.38.0
-	github.com/stephenafamo/scan v0.6.2
+	github.com/stephenafamo/scan v0.7.0
 	go.uber.org/zap v1.27.0
 	moul.io/zapfilter v1.7.0
 )
