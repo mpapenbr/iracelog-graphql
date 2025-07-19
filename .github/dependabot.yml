@@ -2,10 +2,9 @@ version: 2
 updates:
   - package-ecosystem: "gomod"
     directory: "/" # Location of package manifests
-    schedule:
-      interval: "weekly"
-    reviewers:
-    - mpapenbr
+    # Auto assign PRs raised to this account on Github
+    assignees:
+      - "mpapenbr"
     # Check for updates to dependencies once a week - Saturday
     schedule:
       interval: "weekly"
@@ -19,8 +18,12 @@ updates:
     labels:
       - developer
       - build
+    # Auto assign PRs raised to this account on Github
+    assignees:
+      - "mpapenbr"
     schedule:
       interval: "weekly"
+      day: "saturday"
     groups:
       github-actions:
         dependency-type: "production"
