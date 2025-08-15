@@ -1,8 +1,6 @@
 module github.com/mpapenbr/iracelog-graphql
 
-go 1.24.0
-
-toolchain go1.24.1
+go 1.25
 
 require (
 	github.com/99designs/gqlgen v0.17.78
