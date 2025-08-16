@@ -26,7 +26,7 @@ require (
 	github.com/spf13/cobra v1.9.1
 	github.com/spf13/pflag v1.0.7
 	github.com/spf13/viper v1.20.1
-	github.com/stephenafamo/bob v0.39.0
+	github.com/stephenafamo/bob v0.40.2
 	github.com/stephenafamo/scan v0.7.0
 	go.uber.org/zap v1.27.0
 	moul.io/zapfilter v1.7.0
