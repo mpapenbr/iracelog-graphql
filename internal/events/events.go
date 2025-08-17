@@ -200,6 +200,7 @@ func modSubQueryCar(searchArg string) mods.Where[*dialect.SelectQuery] {
 	return w
 }
 
+//nolint:dupl // false positive
 func modSubQueryDriver(searchArg string) mods.Where[*dialect.SelectQuery] {
 	sub := psql.Select(
 		sm.Columns(models.CCarEntries.Columns.EventID),
@@ -211,6 +212,7 @@ func modSubQueryDriver(searchArg string) mods.Where[*dialect.SelectQuery] {
 	return w
 }
 
+//nolint:dupl // false positive
 func modSubQueryTeam(searchArg string) mods.Where[*dialect.SelectQuery] {
 	sub := psql.Select(
 		sm.Columns(models.CCarEntries.Columns.EventID),
