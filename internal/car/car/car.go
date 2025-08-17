@@ -25,8 +25,8 @@ func GetEventCars(exec bob.Executor, eventIDs []int) (map[int][]*models.CCar, er
 		// otherwise we could use models.SelectWhere.CCars.EventID.In(myIDs...),
 		// bonus: for IN we have to check for empty ids, with any we don't
 		// bonus: we learn how to code this with bob ;)
-		sm.Where(models.CCarColumns.EventID.EQ(psql.F("ANY", expr.Arg(myIDs)))),
-		sm.OrderBy(models.CCarColumns.Name),
+		sm.Where(models.CCars.Columns.EventID.EQ(psql.F("ANY", expr.Arg(myIDs)))),
+		sm.OrderBy(models.CCars.Columns.Name),
 	)
 
 	res, err := query.All(context.Background(), exec)
@@ -62,17 +62,17 @@ func GetEventEntryCars(
 	}
 
 	smods := []bob.Mod[*dialect.SelectQuery]{
-		sm.Columns(models.CCars.Columns()),
-		sm.Columns(models.CCarEntryColumns.ID.As("e_id")),
+		sm.Columns(models.CCars.Columns.Names()),
+		sm.Columns(models.CCarEntries.Columns.ID.As("e_id")),
 	}
 	whereMods := []mods.Where[*dialect.SelectQuery]{
-		sm.Where(models.CCarEntryColumns.ID.EQ(psql.F("ANY", expr.Arg(myIDs)))),
+		sm.Where(models.CCarEntries.Columns.ID.EQ(psql.F("ANY", expr.Arg(myIDs)))),
 	}
 
 	smods = append(smods,
-		sm.From(models.TableNames.CCars),
-		sm.InnerJoin(models.TableNames.CCarEntries).
-			On(models.CCarEntryColumns.CCarID.EQ(models.CCarColumns.ID)),
+		sm.From(models.CCars.Name()),
+		sm.InnerJoin(models.CCarEntries.Name()).
+			On(models.CCarEntries.Columns.CCarID.EQ(models.CCars.Columns.ID)),
 		psql.WhereAnd(whereMods...),
 	)
 

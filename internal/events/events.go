@@ -182,44 +182,46 @@ func sqlStringContains(arg string) string {
 
 func modSubQueryTrack(searchArg string) mods.Where[*dialect.SelectQuery] {
 	sub := psql.Select(
-		sm.Columns(models.TrackColumns.ID),
-		sm.From(models.TableNames.Tracks),
+		sm.Columns(models.Tracks.Columns.ID),
+		sm.From(models.Tracks.Name()),
 		models.SelectWhere.Tracks.Name.ILike(sqlStringContains(searchArg)),
 	)
-	w := sm.Where(models.EventColumns.TrackID.In(sub))
+	w := sm.Where(models.Events.Columns.TrackID.In(sub))
 	return w
 }
 
 func modSubQueryCar(searchArg string) mods.Where[*dialect.SelectQuery] {
 	sub := psql.Select(
-		sm.Columns(models.CCarColumns.EventID),
-		sm.From(models.TableNames.CCars),
+		sm.Columns(models.CCars.Columns.EventID),
+		sm.From(models.CCars.Name()),
 		models.SelectWhere.CCars.Name.ILike(sqlStringContains(searchArg)),
 	)
-	w := sm.Where(models.EventColumns.ID.In(sub))
+	w := sm.Where(models.Events.Columns.ID.In(sub))
 	return w
 }
 
+//nolint:dupl // false positive
 func modSubQueryDriver(searchArg string) mods.Where[*dialect.SelectQuery] {
 	sub := psql.Select(
-		sm.Columns(models.CCarEntryColumns.EventID),
-		sm.From(models.TableNames.CCarEntries),
-		sm.InnerJoin(models.TableNames.CCarDrivers).
-			On(models.CCarEntryColumns.ID.EQ(models.CCarDriverColumns.CCarEntryID)),
+		sm.Columns(models.CCarEntries.Columns.EventID),
+		sm.From(models.CCarEntries.Name()),
+		sm.InnerJoin(models.CCarDrivers.Name()).
+			On(models.CCarEntries.Columns.ID.EQ(models.CCarDrivers.Columns.CCarEntryID)),
 		models.SelectWhere.CCarDrivers.Name.ILike(sqlStringContains(searchArg)))
-	w := sm.Where(models.EventColumns.ID.In(sub))
+	w := sm.Where(models.Events.Columns.ID.In(sub))
 	return w
 }
 
+//nolint:dupl // false positive
 func modSubQueryTeam(searchArg string) mods.Where[*dialect.SelectQuery] {
 	sub := psql.Select(
-		sm.Columns(models.CCarEntryColumns.EventID),
-		sm.From(models.TableNames.CCarEntries),
-		sm.InnerJoin(models.TableNames.CCarTeams).
-			On(models.CCarEntryColumns.ID.EQ(models.CCarTeamColumns.CCarEntryID)),
+		sm.Columns(models.CCarEntries.Columns.EventID),
+		sm.From(models.CCarEntries.Name()),
+		sm.InnerJoin(models.CCarTeams.Name()).
+			On(models.CCarEntries.Columns.ID.EQ(models.CCarTeams.Columns.CCarEntryID)),
 		models.SelectWhere.CCarTeams.Name.ILike(sqlStringContains(searchArg)),
 	)
-	w := sm.Where(models.EventColumns.ID.In(sub))
+	w := sm.Where(models.Events.Columns.ID.In(sub))
 	return w
 }
 

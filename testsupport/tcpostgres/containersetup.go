@@ -54,7 +54,7 @@ func SetupPostgres(
 	ctx context.Context, opts ...PostgresContainerOption,
 ) (*PostgresContainer, error) {
 	req := testcontainers.ContainerRequest{
-		Image:        "ghcr.io/mpapenbr/iracelog-testdb:v0.2.0",
+		Image:        "ghcr.io/mpapenbr/iracelog-testdb:v0.3.1",
 		Env:          map[string]string{},
 		ExposedPorts: []string{},
 		Cmd:          []string{"postgres", "-c", "fsync=off"},

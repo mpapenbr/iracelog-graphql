@@ -27,18 +27,18 @@ func GetEventDrivers(ctx context.Context, exec bob.Executor, eventIDs []int) (
 	}
 
 	smods := []bob.Mod[*dialect.SelectQuery]{
-		sm.Columns(models.CCarDrivers.Columns()),
-		sm.Columns(models.CCarEntryColumns.EventID.As("event_id")),
-		sm.OrderBy(models.CCarDriverColumns.Name).Asc(),
+		sm.Columns(models.CCarDrivers.Columns.Names()),
+		sm.Columns(models.CCarEntries.Columns.EventID.As("event_id")),
+		sm.OrderBy(models.CCarDrivers.Columns.Name).Asc(),
 	}
 	whereMods := []mods.Where[*dialect.SelectQuery]{
-		sm.Where(models.CCarEntryColumns.EventID.EQ(psql.F("ANY", expr.Arg(myIDs)))),
+		sm.Where(models.CCarEntries.Columns.EventID.EQ(psql.F("ANY", expr.Arg(myIDs)))),
 	}
 
 	smods = append(smods,
-		sm.From(models.TableNames.CCarDrivers),
-		sm.InnerJoin(models.TableNames.CCarEntries).
-			On(models.CCarEntryColumns.ID.EQ(models.CCarDriverColumns.CCarEntryID)),
+		sm.From(models.CCarDrivers.Name()),
+		sm.InnerJoin(models.CCarEntries.Name()).
+			On(models.CCarEntries.Columns.ID.EQ(models.CCarDrivers.Columns.CCarEntryID)),
 		psql.WhereAnd(whereMods...),
 	)
 
@@ -72,18 +72,18 @@ func GetDriversByEventEntry(ctx context.Context, exec bob.Executor, eventIDs []i
 	}
 
 	smods := []bob.Mod[*dialect.SelectQuery]{
-		sm.Columns(models.CCarDrivers.Columns()),
-		sm.Columns(models.CCarEntryColumns.ID.As("e_id")),
-		sm.OrderBy(models.CCarDriverColumns.Name).Asc(),
+		sm.Columns(models.CCarDrivers.Columns.Names()),
+		sm.Columns(models.CCarEntries.Columns.ID.As("e_id")),
+		sm.OrderBy(models.CCarDrivers.Columns.Name).Asc(),
 	}
 	whereMods := []mods.Where[*dialect.SelectQuery]{
-		sm.Where(models.CCarEntryColumns.ID.EQ(psql.F("ANY", expr.Arg(myIDs)))),
+		sm.Where(models.CCarEntries.Columns.ID.EQ(psql.F("ANY", expr.Arg(myIDs)))),
 	}
 
 	smods = append(smods,
-		sm.From(models.TableNames.CCarDrivers),
-		sm.InnerJoin(models.TableNames.CCarEntries).
-			On(models.CCarEntryColumns.ID.EQ(models.CCarDriverColumns.CCarEntryID)),
+		sm.From(models.CCarDrivers.Name()),
+		sm.InnerJoin(models.CCarEntries.Name()).
+			On(models.CCarEntries.Columns.ID.EQ(models.CCarDrivers.Columns.CCarEntryID)),
 		psql.WhereAnd(whereMods...),
 	)
 
@@ -121,20 +121,20 @@ func GetDriversByTeam(
 	}
 
 	smods := []bob.Mod[*dialect.SelectQuery]{
-		sm.Columns(models.CCarDrivers.Columns()),
-		sm.Columns(models.CCarTeamColumns.ID.As("t_id")),
-		sm.OrderBy(models.CCarDrivers.Name).Asc(),
+		sm.Columns(models.CCarDrivers.Columns.Names()),
+		sm.Columns(models.CCarTeams.Columns.ID.As("t_id")),
+		sm.OrderBy(models.CCarDrivers.Columns.Name).Asc(),
 	}
 	whereMods := []mods.Where[*dialect.SelectQuery]{
-		sm.Where(models.CCarTeamColumns.ID.EQ(psql.F("ANY", expr.Arg(myIDs)))),
+		sm.Where(models.CCarTeams.Columns.ID.EQ(psql.F("ANY", expr.Arg(myIDs)))),
 	}
 
 	smods = append(smods,
-		sm.From(models.TableNames.CCarDrivers),
-		sm.InnerJoin(models.TableNames.CCarEntries).
-			On(models.CCarEntryColumns.ID.EQ(models.CCarDriverColumns.CCarEntryID)),
-		sm.InnerJoin(models.TableNames.CCarTeams).
-			On(models.CCarEntryColumns.ID.EQ(models.CCarTeamColumns.CCarEntryID)),
+		sm.From(models.CCarDrivers.Name()),
+		sm.InnerJoin(models.CCarEntries.Name()).
+			On(models.CCarEntries.Columns.ID.EQ(models.CCarDrivers.Columns.CCarEntryID)),
+		sm.InnerJoin(models.CCarTeams.Name()).
+			On(models.CCarEntries.Columns.ID.EQ(models.CCarTeams.Columns.CCarEntryID)),
 		psql.WhereAnd(whereMods...),
 	)
 

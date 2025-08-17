@@ -21,8 +21,8 @@ func GetEventEntriesByEventID(
 
 	query := models.CCarEntries.Query(
 		// see also notes in interanl/car/car/car.go
-		sm.Where(models.CCarEntryColumns.EventID.EQ(psql.F("ANY", expr.Arg(myIDs)))),
-		sm.OrderBy(models.CCarEntryColumns.CarNumberRaw),
+		sm.Where(models.CCarEntries.Columns.EventID.EQ(psql.F("ANY", expr.Arg(myIDs)))),
+		sm.OrderBy(models.CCarEntries.Columns.CarNumberRaw),
 	)
 
 	res, err := query.All(context.Background(), exec)
@@ -53,8 +53,8 @@ func GetEventEntriesByIDs(
 
 	query := models.CCarEntries.Query(
 		// see also notes in interanl/car/car/car.go
-		sm.Where(models.CCarEntryColumns.ID.EQ(psql.F("ANY", expr.Arg(myIDs)))),
-		sm.OrderBy(models.CCarEntryColumns.CarNumberRaw),
+		sm.Where(models.CCarEntries.Columns.ID.EQ(psql.F("ANY", expr.Arg(myIDs)))),
+		sm.OrderBy(models.CCarEntries.Columns.CarNumberRaw),
 	)
 
 	res, err := query.All(context.Background(), exec)

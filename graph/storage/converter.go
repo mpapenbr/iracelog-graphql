@@ -18,7 +18,7 @@ func convertEventSortArgs(modelArgs []*model.EventSortArg) *clause.OrderBy {
 	ret := clause.OrderBy{}
 	if len(modelArgs) == 0 {
 		ret.AppendOrder(clause.OrderDef{
-			Expression: models.EventColumns.EventTime,
+			Expression: models.Events.Columns.EventTime,
 			Direction:  DESC,
 		})
 
@@ -29,9 +29,9 @@ func convertEventSortArgs(modelArgs []*model.EventSortArg) *clause.OrderBy {
 		//nolint:exhaustive // by design
 		switch arg.Field {
 		case model.EventSortFieldName:
-			item.Expression = models.EventColumns.Name
+			item.Expression = models.Events.Columns.Name
 		case model.EventSortFieldRecordDate:
-			item.Expression = models.EventColumns.EventTime
+			item.Expression = models.Events.Columns.EventTime
 		}
 		if arg.Order != nil && *arg.Order == model.SortOrderDesc {
 			item.Direction = DESC
@@ -47,7 +47,7 @@ func convertTrackSortArgs(modelArgs []*model.TrackSortArg) *clause.OrderBy {
 	ret := clause.OrderBy{}
 	if len(modelArgs) == 0 {
 		ret.AppendOrder(clause.OrderDef{
-			Expression: models.TrackColumns.Name,
+			Expression: models.Tracks.Columns.Name,
 			Direction:  ASC,
 		})
 
@@ -57,18 +57,18 @@ func convertTrackSortArgs(modelArgs []*model.TrackSortArg) *clause.OrderBy {
 		var item clause.OrderDef
 		switch arg.Field {
 		case model.TrackSortFieldName:
-			item.Expression = models.TrackColumns.Name
+			item.Expression = models.Tracks.Columns.Name
 		case model.TrackSortFieldShortName:
-			item.Expression = models.TrackColumns.ShortName
+			item.Expression = models.Tracks.Columns.ShortName
 		case model.TrackSortFieldID:
-			item.Expression = models.TrackColumns.ID
+			item.Expression = models.Tracks.Columns.ID
 		case model.TrackSortFieldLength:
-			item.Expression = models.TrackColumns.TrackLength
+			item.Expression = models.Tracks.Columns.TrackLength
 		case model.TrackSortFieldPitlaneLength:
-			item.Expression = models.TrackColumns.PitLaneLength
+			item.Expression = models.Tracks.Columns.PitLaneLength
 		case model.TrackSortFieldNumSectors:
 			item.Expression = dialect.NewExpression(
-				psql.F("jsonb_array_length", models.TrackColumns.Sectors))
+				psql.F("jsonb_array_length", models.Tracks.Columns.Sectors))
 		}
 		if arg.Order != nil && *arg.Order == model.SortOrderDesc {
 			item.Direction = DESC
@@ -84,7 +84,7 @@ func convertDBEventToModel(dbEvent *models.Event) *model.Event {
 	return &model.Event{
 		ID:                int(dbEvent.ID),
 		Name:              dbEvent.Name,
-		Description:       dbEvent.Description.V,
+		Description:       dbEvent.Description.GetOr(""),
 		Key:               dbEvent.EventKey,
 		TrackID:           int(dbEvent.TrackID),
 		RecordDate:        dbEvent.EventTime,

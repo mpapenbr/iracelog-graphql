@@ -27,17 +27,17 @@ func GetTeamsByEventEntry(
 	}
 
 	smods := []bob.Mod[*dialect.SelectQuery]{
-		sm.Columns(models.CCarTeams.Columns()),
-		sm.Columns(models.CCarEntryColumns.ID.As("e_id")),
+		sm.Columns(models.CCarTeams.Columns.Names()),
+		sm.Columns(models.CCarEntries.Columns.ID.As("e_id")),
 	}
 	whereMods := []mods.Where[*dialect.SelectQuery]{
-		sm.Where(models.CCarEntryColumns.ID.EQ(psql.F("ANY", expr.Arg(myIDs)))),
+		sm.Where(models.CCarEntries.Columns.ID.EQ(psql.F("ANY", expr.Arg(myIDs)))),
 	}
 
 	smods = append(smods,
-		sm.From(models.TableNames.CCarTeams),
-		sm.InnerJoin(models.TableNames.CCarEntries).
-			On(models.CCarEntryColumns.CCarID.EQ(models.CCarTeamColumns.ID)),
+		sm.From(models.CCarTeams.Name()),
+		sm.InnerJoin(models.CCarEntries.Name()).
+			On(models.CCarEntries.Columns.CCarID.EQ(models.CCarTeams.Columns.ID)),
 		psql.WhereAnd(whereMods...),
 	)
 
