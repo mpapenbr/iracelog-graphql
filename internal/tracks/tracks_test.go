@@ -68,7 +68,7 @@ func TestGetALl(t *testing.T) {
 			name: "2 results, displayShort asc",
 			args: args{
 				pageable: internal.DBPageable{Limit: intHelper(2)},
-				sortCols: []sortCol{{models.TrackColumns.ShortName, "asc"}},
+				sortCols: []sortCol{{models.Tracks.Columns.ShortName, "asc"}},
 			},
 			want: []checkData{
 				{id: 268, trackName: "24 Heures"},
@@ -81,8 +81,8 @@ func TestGetALl(t *testing.T) {
 			args: args{
 				pageable: internal.DBPageable{Limit: intHelper(2)},
 				sortCols: []sortCol{
-					{models.TrackColumns.TrackLength, "desc"},
-					{models.TrackColumns.ID, "desc"}, // we have 3 Spa entries...,
+					{models.Tracks.Columns.TrackLength, "desc"},
+					{models.Tracks.Columns.ID, "desc"}, // we have 3 Spa entries...,
 				},
 			},
 			want: []checkData{
@@ -95,7 +95,7 @@ func TestGetALl(t *testing.T) {
 			name: "2 results, trackLength, default sorting (asc)",
 			args: args{
 				pageable: internal.DBPageable{Limit: intHelper(2)},
-				sortCols: []sortCol{{models.TrackColumns.TrackLength, ""}},
+				sortCols: []sortCol{{models.Tracks.Columns.TrackLength, ""}},
 			},
 			want: []checkData{
 				{id: 106, trackName: "Watkins"},
@@ -110,11 +110,11 @@ func TestGetALl(t *testing.T) {
 				sortCols: []sortCol{
 					{
 						dialect.NewExpression(
-							psql.F("jsonb_array_length", models.TrackColumns.Sectors)),
+							psql.F("jsonb_array_length", models.Tracks.Columns.Sectors)),
 						"desc",
 					},
 					{ // include ID to have defined order (both have 7 sectors)
-						models.TrackColumns.ID, "asc",
+						models.Tracks.Columns.ID, "asc",
 					},
 				},
 			},

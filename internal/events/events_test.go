@@ -68,7 +68,7 @@ func TestGetALl(t *testing.T) {
 
 					Limit: intHelper(2),
 				},
-				sortCols: []sortCol{{models.EventColumns.Name, "desc"}},
+				sortCols: []sortCol{{models.Events.Columns.Name, "desc"}},
 			},
 			want: []checkData{
 				{id: 8, eventName: "VRPC Sprint Zandvoort"},
@@ -83,7 +83,7 @@ func TestGetALl(t *testing.T) {
 					Limit:   intHelper(2),
 					Offset:  intHelper(1),
 				},
-				sortCols: []sortCol{{models.EventColumns.Name, "asc"}},
+				sortCols: []sortCol{{models.Events.Columns.Name, "asc"}},
 			},
 			want: []checkData{
 				{id: 4, eventName: "6 Hrs of the Glen"},
@@ -101,8 +101,8 @@ func TestGetALl(t *testing.T) {
 					Offset: intHelper(1),
 				},
 				sortCols: []sortCol{
-					{models.EventColumns.Name, "desc"},
-					{models.EventColumns.ID, "desc"},
+					{models.Events.Columns.Name, "desc"},
+					{models.Events.Columns.ID, "desc"},
 				},
 			},
 			want: []checkData{
@@ -204,7 +204,7 @@ func TestGetEventsByTrackIDs(t *testing.T) {
 				pageable: internal.DBPageable{
 					SortOld: []internal.DBSortArg{{Column: "id", Order: "asc"}},
 				},
-				sortCols: []sortCol{{models.EventColumns.ID, "asc"}},
+				sortCols: []sortCol{{models.Events.Columns.ID, "asc"}},
 			},
 
 			want: map[int][]checkData{
@@ -225,8 +225,8 @@ func TestGetEventsByTrackIDs(t *testing.T) {
 					},
 				},
 				sortCols: []sortCol{
-					{models.EventColumns.Name, "asc"},
-					{models.EventColumns.ID, "desc"},
+					{models.Events.Columns.Name, "asc"},
+					{models.Events.Columns.ID, "desc"},
 				},
 			},
 
@@ -325,7 +325,7 @@ func TestSimpleSearchEvents(t *testing.T) {
 	}
 	order := clause.OrderBy{}
 	order.AppendOrder(clause.OrderDef{
-		Expression: models.EventColumns.ID,
+		Expression: models.Events.Columns.ID,
 		Direction:  "asc",
 	})
 
@@ -396,7 +396,7 @@ func TestAdvancedEventSearch(t *testing.T) {
 	}
 	order := clause.OrderBy{}
 	order.AppendOrder(clause.OrderDef{
-		Expression: models.EventColumns.ID,
+		Expression: models.Events.Columns.ID,
 		Direction:  "asc",
 	})
 	for _, tt := range tests {
