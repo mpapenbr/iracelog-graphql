@@ -16,6 +16,7 @@ require (
 )
 
 require (
+	github.com/aarondl/opt v0.0.0-20250607033636-982744e1bd65
 	github.com/exaring/otelpgx v0.9.3
 	github.com/gofrs/uuid/v5 v5.3.2
 	github.com/jackc/pgx-gofrs-uuid v0.0.0-20230224015001-1d428863c2e2
@@ -36,7 +37,6 @@ require (
 	dario.cat/mergo v1.0.1 // indirect
 	github.com/Azure/go-ansiterm v0.0.0-20230124172434-306776ec8161 // indirect
 	github.com/Microsoft/go-winio v0.6.2 // indirect
-	github.com/aarondl/opt v0.0.0-20250607033636-982744e1bd65 // indirect
 	github.com/cenkalti/backoff/v4 v4.2.1 // indirect
 	github.com/containerd/errdefs v1.0.0 // indirect
 	github.com/containerd/errdefs/pkg v0.3.0 // indirect

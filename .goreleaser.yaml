@@ -13,7 +13,7 @@ builds:
     goos:
       - linux
     ldflags:
-      - -s -w -X github.com/mpapenbr/iracelog-graphql/graph.Version={{.Version}}
+      - -s -w -X {{ .ModulePath }}/version.Version={{ .Version }} -X {{ .ModulePath }}/version.BuildDate={{ .Date }} -X {{ .ModulePath }}/version.GitCommit={{ .ShortCommit }}
 
 dockers:
   - id: graphql-amd64
