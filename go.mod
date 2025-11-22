@@ -29,7 +29,7 @@ require (
 	github.com/spf13/viper v1.21.0
 	github.com/stephenafamo/bob v0.41.1
 	github.com/stephenafamo/scan v0.7.0
-	go.uber.org/zap v1.27.0
+	go.uber.org/zap v1.27.1
 	moul.io/zapfilter v1.7.0
 )
 
