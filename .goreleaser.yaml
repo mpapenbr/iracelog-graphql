@@ -1,6 +1,9 @@
-version: 2
-# This is an example .goreleaser.yml file with some sensible defaults.
+# yaml-language-server: $schema=https://goreleaser.com/static/schema.json
+
 # Make sure to check the documentation at https://goreleaser.com
+
+version: 2
+
 before:
   hooks:
     # You may remove this if you don't use go modules.
@@ -12,58 +15,64 @@ builds:
       - CGO_ENABLED=0
     goos:
       - linux
+    # ensures mod timestamp to be the commit timestamp
+    mod_timestamp: "{{ .CommitTimestamp }}"
+    flags:
+      - -trimpath
     ldflags:
       - -s -w -X {{ .ModulePath }}/version.Version={{ .Version }} -X {{ .ModulePath }}/version.BuildDate={{ .Date }} -X {{ .ModulePath }}/version.GitCommit={{ .ShortCommit }}
 
-dockers:
-  - id: graphql-amd64
-    image_templates:
-      - "ghcr.io/mpapenbr/{{ .ProjectName }}:{{ .Tag }}-amd64"
-    build_flag_templates:
-      - "--pull"
-      - "--label=org.opencontainers.image.created={{.Date}}"
-      - "--label=org.opencontainers.image.title={{.ProjectName}}"
-      - "--label=org.opencontainers.image.revision={{.FullCommit}}"
-      - "--label=org.opencontainers.image.version={{.Version}}"
-      - "--label=org.opencontainers.image.source=https://{{.ModulePath}}"
-      - "--label=org.opencontainers.image.url=https://{{.ModulePath}}"
-      - "--label=org.opencontainers.image.description=GraphQL for iRacelog"
-      - "--label=org.opencontainers.image.licenses=MIT license"
-      - "--build-arg=ARCH=amd64"
-      - "--platform=linux/amd64"
+dockers_v2:
+  - id: standard
+    images:
+      - "ghcr.io/mpapenbr/{{ .ProjectName }}"
+    labels:
+      org.opencontainers.image.created: "{{ .Date }}"
+      org.opencontainers.image.title: "{{ .ProjectName }}"
+      org.opencontainers.image.revision: "{{ .FullCommit }}"
+      org.opencontainers.image.version: "{{ .Version }}"
+      org.opencontainers.image.source: "https://{{ .ModulePath }}"
+      org.opencontainers.image.url: "https://{{ .ModulePath }}"
+      org.opencontainers.image.description: "GraphQL for iRacelog"
+      org.opencontainers.image.licenses: "MIT license"
+    annotations:
+      "index:org.opencontainers.image.description": "GraphQL for iRacelog"
+    platforms:
+      - linux/amd64
+      - linux/arm64
+    sbom: true
     extra_files:
       - samples
-    use: buildx
-    goarch: amd64
 
-  - id: graphql-arm64
-    image_templates:
-      - "ghcr.io/mpapenbr/{{ .ProjectName }}:{{ .Tag }}-arm64"
-    build_flag_templates:
-      - "--pull"
-      - "--label=org.opencontainers.image.created={{.Date}}"
-      - "--label=org.opencontainers.image.title={{.ProjectName}}"
-      - "--label=org.opencontainers.image.revision={{.FullCommit}}"
-      - "--label=org.opencontainers.image.version={{.Version}}"
-      - "--label=org.opencontainers.image.source=https://{{.ModulePath}}"
-      - "--label=org.opencontainers.image.url=https://{{.ModulePath}}"
-      - "--label=org.opencontainers.image.description=GraphQL for iRacelog"
-      - "--label=org.opencontainers.image.licenses=MIT license"
-      - "--build-arg=ARCH=arm64"
-      - "--platform=linux/arm64"
-    extra_files:
-      - samples
-    use: buildx
-    goarch: arm64
+sboms:
+  - artifacts: archive
 
-docker_manifests:
-  - name_template: "ghcr.io/mpapenbr/{{ .ProjectName }}:{{ .Tag }}"
-    image_templates:
-      - "ghcr.io/mpapenbr/{{ .ProjectName }}:{{ .Tag }}-amd64"
-      - "ghcr.io/mpapenbr/{{ .ProjectName }}:{{ .Tag }}-arm64"
-
+checksum:
+  name_template: "checksums.txt"
 snapshot:
   version_template: "{{ incpatch .Version }}-next"
+
+signs:
+  - cmd: cosign
+    signature: "${artifact}.sigstore.json"
+    args:
+      - sign-blob
+      - "--bundle=${signature}"
+      - "${artifact}"
+      - "--yes" # needed on cosign 2.0.0+
+    artifacts: checksum
+    output: true
+
+# signs our docker image
+# https://goreleaser.com/customization/docker_sign
+docker_signs:
+  - cmd: cosign
+    output: true
+    args:
+      - "sign"
+      - "${artifact}"
+      - "--yes"
+
 changelog:
   sort: asc
   use: github

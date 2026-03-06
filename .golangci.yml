@@ -207,6 +207,7 @@ linters:
       - examples$
 issues:
   uniq-by-line: true
+  max-same-issues: 0
 formatters:
   enable:
     - gci
