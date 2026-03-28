@@ -3,7 +3,7 @@ module github.com/mpapenbr/iracelog-graphql
 go 1.26
 
 require (
-	github.com/99designs/gqlgen v0.17.88
+	github.com/99designs/gqlgen v0.17.89
 	github.com/docker/go-connections v0.6.0
 	github.com/gorilla/websocket v1.5.3 // indirect
 	github.com/graph-gophers/dataloader v5.0.0+incompatible
@@ -20,7 +20,7 @@ require (
 	github.com/exaring/otelpgx v0.10.0
 	github.com/gofrs/uuid/v5 v5.4.0
 	github.com/jackc/pgx-gofrs-uuid v0.0.0-20230224015001-1d428863c2e2
-	github.com/jackc/pgx/v5 v5.8.0
+	github.com/jackc/pgx/v5 v5.9.1
 	github.com/lib/pq v1.12.0
 	github.com/pgx-contrib/pgxtrace v0.0.0-20241223102757-e8c8837146e4
 	github.com/shopspring/decimal v1.4.0
@@ -99,7 +99,7 @@ require (
 	go.opentelemetry.io/proto/otlp v1.0.0 // indirect
 	go.uber.org/multierr v1.10.0 // indirect
 	go.yaml.in/yaml/v3 v3.0.4 // indirect
-	golang.org/x/sync v0.19.0 // indirect
+	golang.org/x/sync v0.20.0 // indirect
 )
 
 require (
@@ -110,7 +110,7 @@ require (
 	github.com/opentracing/opentracing-go v1.2.0 // indirect
 	golang.org/x/crypto v0.48.0 // indirect
 	golang.org/x/mod v0.33.0 // indirect
-	golang.org/x/sys v0.41.0 // indirect
+	golang.org/x/sys v0.42.0 // indirect
 	golang.org/x/text v0.34.0 // indirect
 	golang.org/x/tools v0.42.0 // indirect
 	gopkg.in/yaml.v3 v3.0.1
