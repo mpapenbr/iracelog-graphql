@@ -4,7 +4,7 @@ go 1.26
 
 require (
 	github.com/99designs/gqlgen v0.17.89
-	github.com/docker/go-connections v0.6.0
+	github.com/docker/go-connections v0.7.0
 	github.com/gorilla/websocket v1.5.3 // indirect
 	github.com/graph-gophers/dataloader v5.0.0+incompatible
 	github.com/rs/cors v1.11.1
