@@ -11,7 +11,7 @@ require (
 	github.com/sirupsen/logrus v1.9.4 // indirect
 	github.com/stretchr/testify v1.11.1
 	github.com/testcontainers/testcontainers-go v0.42.0
-	github.com/vektah/gqlparser/v2 v2.5.32
+	github.com/vektah/gqlparser/v2 v2.5.33
 	golang.org/x/exp v0.0.0-20250305212735-054e65f0b394
 )
 
@@ -20,7 +20,7 @@ require (
 	github.com/exaring/otelpgx v0.10.0
 	github.com/gofrs/uuid/v5 v5.4.0
 	github.com/jackc/pgx-gofrs-uuid v0.0.0-20230224015001-1d428863c2e2
-	github.com/jackc/pgx/v5 v5.9.1
+	github.com/jackc/pgx/v5 v5.9.2
 	github.com/lib/pq v1.12.3
 	github.com/pgx-contrib/pgxtrace v0.0.0-20241223102757-e8c8837146e4
 	github.com/shopspring/decimal v1.4.0
