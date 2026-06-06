@@ -20,14 +20,14 @@ require (
 	github.com/exaring/otelpgx v0.11.1
 	github.com/gofrs/uuid/v5 v5.4.0
 	github.com/jackc/pgx-gofrs-uuid v0.0.0-20230224015001-1d428863c2e2
-	github.com/jackc/pgx/v5 v5.9.2
+	github.com/jackc/pgx/v5 v5.10.0
 	github.com/lib/pq v1.12.3
 	github.com/pgx-contrib/pgxtrace v0.0.0-20241223102757-e8c8837146e4
 	github.com/shopspring/decimal v1.4.0
 	github.com/spf13/cobra v1.10.2
 	github.com/spf13/pflag v1.0.10
 	github.com/spf13/viper v1.21.0
-	github.com/stephenafamo/bob v0.44.0
+	github.com/stephenafamo/bob v0.45.0
 	github.com/stephenafamo/scan v0.7.0
 	go.uber.org/zap v1.28.0
 	moul.io/zapfilter v1.7.0
