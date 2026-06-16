@@ -22,7 +22,7 @@ linters:
     - exhaustive
     - forbidigo
     - funlen
-    - goconst
+    # - goconst # Disabled because it reports too many false positives, especially in tests.
     - gocritic
     - gocyclo
     - goprintffuncname
