@@ -68,7 +68,7 @@ func TestGetALl(t *testing.T) {
 			name: "2 results, displayShort asc",
 			args: args{
 				pageable: internal.DBPageable{Limit: intHelper(2)},
-				sortCols: []sortCol{{models.Tracks.Columns.ShortName, "asc"}},
+				sortCols: []sortCol{{models.Tracks.Columns.ShortName.Expression, "asc"}},
 			},
 			want: []checkData{
 				{id: 268, trackName: "24 Heures"},
@@ -81,8 +81,8 @@ func TestGetALl(t *testing.T) {
 			args: args{
 				pageable: internal.DBPageable{Limit: intHelper(2)},
 				sortCols: []sortCol{
-					{models.Tracks.Columns.TrackLength, "desc"},
-					{models.Tracks.Columns.ID, "desc"}, // we have 3 Spa entries...,
+					{models.Tracks.Columns.TrackLength.Expression, "desc"},
+					{models.Tracks.Columns.ID.Expression, "desc"}, // we have 3 Spa entries...,
 				},
 			},
 			want: []checkData{
@@ -95,7 +95,7 @@ func TestGetALl(t *testing.T) {
 			name: "2 results, trackLength, default sorting (asc)",
 			args: args{
 				pageable: internal.DBPageable{Limit: intHelper(2)},
-				sortCols: []sortCol{{models.Tracks.Columns.TrackLength, ""}},
+				sortCols: []sortCol{{models.Tracks.Columns.TrackLength.Expression, ""}},
 			},
 			want: []checkData{
 				{id: 106, trackName: "Watkins"},
@@ -114,7 +114,7 @@ func TestGetALl(t *testing.T) {
 						"desc",
 					},
 					{ // include ID to have defined order (both have 7 sectors)
-						models.Tracks.Columns.ID, "asc",
+						models.Tracks.Columns.ID.Expression, "asc",
 					},
 				},
 			},

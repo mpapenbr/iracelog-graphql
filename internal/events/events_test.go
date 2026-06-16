@@ -68,7 +68,7 @@ func TestGetALl(t *testing.T) {
 
 					Limit: intHelper(2),
 				},
-				sortCols: []sortCol{{models.Events.Columns.Name, "desc"}},
+				sortCols: []sortCol{{models.Events.Columns.Name.Expression, "desc"}},
 			},
 			want: []checkData{
 				{id: 8, eventName: "VRPC Sprint Zandvoort"},
@@ -83,7 +83,7 @@ func TestGetALl(t *testing.T) {
 					Limit:   intHelper(2),
 					Offset:  intHelper(1),
 				},
-				sortCols: []sortCol{{models.Events.Columns.Name, "asc"}},
+				sortCols: []sortCol{{models.Events.Columns.Name.Expression, "asc"}},
 			},
 			want: []checkData{
 				{id: 4, eventName: "6 Hrs of the Glen"},
@@ -101,8 +101,8 @@ func TestGetALl(t *testing.T) {
 					Offset: intHelper(1),
 				},
 				sortCols: []sortCol{
-					{models.Events.Columns.Name, "desc"},
-					{models.Events.Columns.ID, "desc"},
+					{models.Events.Columns.Name.Expression, "desc"},
+					{models.Events.Columns.ID.Expression, "desc"},
 				},
 			},
 			want: []checkData{
@@ -204,7 +204,7 @@ func TestGetEventsByTrackIDs(t *testing.T) {
 				pageable: internal.DBPageable{
 					SortOld: []internal.DBSortArg{{Column: "id", Order: "asc"}},
 				},
-				sortCols: []sortCol{{models.Events.Columns.ID, "asc"}},
+				sortCols: []sortCol{{models.Events.Columns.ID.Expression, "asc"}},
 			},
 
 			want: map[int][]checkData{
@@ -225,8 +225,8 @@ func TestGetEventsByTrackIDs(t *testing.T) {
 					},
 				},
 				sortCols: []sortCol{
-					{models.Events.Columns.Name, "asc"},
-					{models.Events.Columns.ID, "desc"},
+					{models.Events.Columns.Name.Expression, "asc"},
+					{models.Events.Columns.ID.Expression, "desc"},
 				},
 			},
 
