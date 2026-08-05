@@ -4,7 +4,7 @@ go 1.26
 
 require (
 	github.com/99designs/gqlgen v0.17.94
-	github.com/docker/go-connections v0.7.0
+	github.com/docker/go-connections v0.8.1
 	github.com/graph-gophers/dataloader v5.0.0+incompatible
 	github.com/rs/cors v1.11.1
 	github.com/sirupsen/logrus v1.9.4 // indirect
@@ -26,8 +26,8 @@ require (
 	github.com/spf13/cobra v1.10.2
 	github.com/spf13/pflag v1.0.10
 	github.com/spf13/viper v1.21.0
-	github.com/stephenafamo/bob v0.48.0
-	github.com/stephenafamo/scan v0.7.0
+	github.com/stephenafamo/bob v0.49.0
+	github.com/stephenafamo/scan v0.9.0
 	go.uber.org/zap v1.28.0
 	moul.io/zapfilter v1.7.0
 )
