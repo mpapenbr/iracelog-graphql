@@ -15,7 +15,8 @@ func ExtractEventSearchKeys(arg string) (*events.EventSearchKeys, error) {
 	foundKeys := false
 	for _, v := range []string{"name", "car", "team", "driver", "track"} {
 		regex := regexp.MustCompile(
-			fmt.Sprintf("(?i)%s:\\s*(?P<arg>.+?)(?P<rest>(\\w+:)|$)", v))
+			fmt.Sprintf("(?i)%s:\\s*(?P<arg>.+?)(?P<rest>(\\w+:)|$)", v),
+		)
 
 		matches := regex.FindStringSubmatch(arg)
 		if matches != nil {

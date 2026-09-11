@@ -207,7 +207,8 @@ func modSubQueryDriver(searchArg string) mods.Where[*dialect.SelectQuery] {
 		sm.From(models.CCarEntries.Name()),
 		sm.InnerJoin(models.CCarDrivers.Name()).
 			On(models.CCarEntries.Columns.ID.EQ(models.CCarDrivers.Columns.CCarEntryID)),
-		models.SelectWhere.CCarDrivers.Name.ILike(sqlStringContains(searchArg)))
+		models.SelectWhere.CCarDrivers.Name.ILike(sqlStringContains(searchArg)),
+	)
 	w := sm.Where(models.Events.Columns.ID.In(sub))
 	return w
 }

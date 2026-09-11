@@ -69,7 +69,8 @@ func SetupPostgres(
 			ContainerRequest: req,
 			Started:          true,
 			Reuse:            true,
-		})
+		},
+	)
 	if err != nil {
 		return nil, err
 	}

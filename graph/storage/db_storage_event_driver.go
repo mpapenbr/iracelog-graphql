@@ -37,7 +37,8 @@ func (db *DBStorage) CollectDriversByEventEntry(
 	res, _ := driver.GetDriversByEventEntry(
 		ctx,
 		db.executor,
-		IntKeysToSlice(eventEntryIDs))
+		IntKeysToSlice(eventEntryIDs),
+	)
 	ret := map[string][]*model.EventDriver{}
 	for k, v := range res {
 		key := IntKey(k).String()
