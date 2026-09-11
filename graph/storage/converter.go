@@ -68,7 +68,8 @@ func convertTrackSortArgs(modelArgs []*model.TrackSortArg) *clause.OrderBy {
 			item.Expression = models.Tracks.Columns.PitLaneLength
 		case model.TrackSortFieldNumSectors:
 			item.Expression = dialect.NewExpression(
-				psql.F("jsonb_array_length", models.Tracks.Columns.Sectors))
+				psql.F("jsonb_array_length", models.Tracks.Columns.Sectors),
+			)
 		}
 		if arg.Order != nil && *arg.Order == model.SortOrderDesc {
 			item.Direction = DESC

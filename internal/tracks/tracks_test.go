@@ -110,7 +110,8 @@ func TestGetALl(t *testing.T) {
 				sortCols: []sortCol{
 					{
 						dialect.NewExpression(
-							psql.F("jsonb_array_length", models.Tracks.Columns.Sectors)),
+							psql.F("jsonb_array_length", models.Tracks.Columns.Sectors),
+						),
 						"desc",
 					},
 					{ // include ID to have defined order (both have 7 sectors)

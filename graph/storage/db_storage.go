@@ -62,7 +62,8 @@ func (db *DBStorage) SimpleSearchEvents(
 		db.executor,
 		tenantID,
 		arg,
-		internal.DBPageable{Limit: limit, Offset: offset, Sort: dbEventSortArg})
+		internal.DBPageable{Limit: limit, Offset: offset, Sort: dbEventSortArg},
+	)
 	if err == nil {
 		// convert the internal database Track to the GraphQL-Track
 		for _, dbEvents := range dbEvents {
@@ -93,7 +94,8 @@ func (db *DBStorage) AdvancedSearchEvents(
 		db.executor,
 		tenantID,
 		arg,
-		internal.DBPageable{Limit: limit, Offset: offset, Sort: dbEventSortArg})
+		internal.DBPageable{Limit: limit, Offset: offset, Sort: dbEventSortArg},
+	)
 	if err == nil {
 		// convert the internal database Track to the GraphQL-Track
 		for _, dbEvents := range dbEvents {

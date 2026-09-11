@@ -266,7 +266,8 @@ func TestGetEventsByTrackIDs(t *testing.T) {
 				db,
 				testTenantID,
 				tt.args.trackIDs,
-				tt.args.pageable)
+				tt.args.pageable,
+			)
 			if (err != nil) != tt.wantErr {
 				t.Errorf("GetEventsByTrackIDs() error = %v, wantErr %v", err, tt.wantErr)
 				return

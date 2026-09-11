@@ -24,7 +24,8 @@ func (db *DBStorage) GetAllTracks(
 	dbTrackSortArg := convertTrackSortArgs(sort)
 	dbTracks, err := tracks.GetAll(
 		db.executor,
-		internal.DBPageable{Limit: limit, Offset: offset, Sort: dbTrackSortArg})
+		internal.DBPageable{Limit: limit, Offset: offset, Sort: dbTrackSortArg},
+	)
 	if err == nil {
 		// convert the internal database Track to the GraphQL-Track
 		for _, track := range dbTracks {

@@ -89,7 +89,8 @@ func (db *DBStorage) GetEventsForTrackIDsKeys(
 		db.executor,
 		tenantID,
 		intTrackIDs,
-		internal.DBPageable{Sort: convertEventSortArgs([]*model.EventSortArg{})})
+		internal.DBPageable{Sort: convertEventSortArgs([]*model.EventSortArg{})},
+	)
 	if err == nil {
 		// convert the internal database Event to the GraphQL-Event
 		for k, event := range byTrackID {
