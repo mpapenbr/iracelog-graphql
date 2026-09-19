@@ -6,7 +6,7 @@ require (
 	github.com/99designs/gqlgen v0.17.95
 	github.com/aarondl/opt v0.0.0-20250607033636-982744e1bd65
 	github.com/docker/go-connections v0.8.1
-	github.com/exaring/otelpgx v0.11.1
+	github.com/exaring/otelpgx v0.12.0
 	github.com/go-chi/chi/v5 v5.3.2
 	github.com/gofrs/uuid/v5 v5.5.1
 	github.com/graph-gophers/dataloader v5.0.0+incompatible
