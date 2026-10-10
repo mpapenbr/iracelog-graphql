@@ -6,7 +6,7 @@ require (
 	github.com/99designs/gqlgen v0.17.95
 	github.com/aarondl/opt v0.0.0-20250607033636-982744e1bd65
 	github.com/docker/go-connections v0.8.1
-	github.com/exaring/otelpgx v0.12.0
+	github.com/exaring/otelpgx v0.12.1
 	github.com/go-chi/chi/v5 v5.3.2
 	github.com/gofrs/uuid/v5 v5.5.1
 	github.com/graph-gophers/dataloader v5.0.0+incompatible
@@ -15,7 +15,7 @@ require (
 	github.com/lib/pq v1.12.3
 	github.com/pgx-contrib/pgxtrace v0.0.0-20241223102757-e8c8837146e4
 	github.com/rs/cors v1.11.1
-	github.com/shopspring/decimal v1.4.0
+	github.com/shopspring/decimal v1.5.0
 	github.com/spf13/cobra v1.10.2
 	github.com/spf13/pflag v1.0.10
 	github.com/spf13/viper v1.21.0
@@ -23,7 +23,7 @@ require (
 	github.com/stephenafamo/scan v0.9.0
 	github.com/stretchr/testify v1.12.1
 	github.com/testcontainers/testcontainers-go v0.44.0
-	github.com/vektah/gqlparser/v2 v2.5.58
+	github.com/vektah/gqlparser/v2 v2.5.61
 	go.uber.org/zap v1.28.0
 	golang.org/x/exp v0.0.0-20250305212735-054e65f0b394
 	gopkg.in/yaml.v3 v3.0.1
