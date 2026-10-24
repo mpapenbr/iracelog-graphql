@@ -141,7 +141,7 @@ func (e *EventSortField) UnmarshalGQL(v any) error {
 }
 
 func (e EventSortField) MarshalGQL(w io.Writer) {
-	fmt.Fprint(w, strconv.Quote(e.String()))
+	_, _ = fmt.Fprint(w, strconv.Quote(e.String()))
 }
 
 func (e *EventSortField) UnmarshalJSON(b []byte) error {
@@ -196,7 +196,7 @@ func (e *SortOrder) UnmarshalGQL(v any) error {
 }
 
 func (e SortOrder) MarshalGQL(w io.Writer) {
-	fmt.Fprint(w, strconv.Quote(e.String()))
+	_, _ = fmt.Fprint(w, strconv.Quote(e.String()))
 }
 
 func (e *SortOrder) UnmarshalJSON(b []byte) error {
@@ -259,7 +259,7 @@ func (e *TrackSortField) UnmarshalGQL(v any) error {
 }
 
 func (e TrackSortField) MarshalGQL(w io.Writer) {
-	fmt.Fprint(w, strconv.Quote(e.String()))
+	_, _ = fmt.Fprint(w, strconv.Quote(e.String()))
 }
 
 func (e *TrackSortField) UnmarshalJSON(b []byte) error {
