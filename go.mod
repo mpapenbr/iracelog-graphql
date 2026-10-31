@@ -3,7 +3,7 @@ module github.com/mpapenbr/iracelog-graphql
 go 1.27
 
 require (
-	github.com/99designs/gqlgen v0.17.97
+	github.com/99designs/gqlgen v0.17.98
 	github.com/aarondl/opt v0.0.0-20250607033636-982744e1bd65
 	github.com/docker/go-connections v0.8.2
 	github.com/exaring/otelpgx v0.13.0
@@ -23,7 +23,7 @@ require (
 	github.com/stephenafamo/scan v0.9.0
 	github.com/stretchr/testify v1.12.1
 	github.com/testcontainers/testcontainers-go v0.44.0
-	github.com/vektah/gqlparser/v2 v2.5.63
+	github.com/vektah/gqlparser/v2 v2.5.64
 	go.uber.org/zap v1.28.0
 	golang.org/x/exp v0.0.0-20250305212735-054e65f0b394
 	gopkg.in/yaml.v3 v3.0.1
@@ -34,7 +34,7 @@ require (
 	dario.cat/mergo v1.0.2 // indirect
 	github.com/Azure/go-ansiterm v0.0.0-20250102033503-faa5f7b0171c // indirect
 	github.com/Microsoft/go-winio v0.6.2 // indirect
-	github.com/agnivade/levenshtein v1.2.1 // indirect
+	github.com/agnivade/levenshtein v1.2.2 // indirect
 	github.com/cenkalti/backoff/v4 v4.3.0 // indirect
 	github.com/cespare/xxhash/v2 v2.3.0 // indirect
 	github.com/coder/websocket v1.8.15 // indirect
