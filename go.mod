@@ -11,7 +11,7 @@ require (
 	github.com/gofrs/uuid/v5 v5.5.1
 	github.com/graph-gophers/dataloader v5.0.0+incompatible
 	github.com/jackc/pgx-gofrs-uuid v0.0.0-20230224015001-1d428863c2e2
-	github.com/jackc/pgx/v5 v5.12.0
+	github.com/jackc/pgx/v5 v5.13.0
 	github.com/lib/pq v1.12.3
 	github.com/pgx-contrib/pgxtrace v0.0.0-20241223102757-e8c8837146e4
 	github.com/rs/cors v1.11.1
